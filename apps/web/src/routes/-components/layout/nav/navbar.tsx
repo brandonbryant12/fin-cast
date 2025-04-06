@@ -17,14 +17,6 @@ export function Navbar({ session }: Readonly<{ session: AuthSession }>) {
         >
           Home
         </Link>
-        {session?.user ? (
-          <Link
-            {...postsLinkOptions}
-            activeProps={{ className: activeClassName }}
-          >
-            Posts
-          </Link>
-        ) : null}
       </div>
       {session?.user ? (
         <UserAvatar user={session.user} />

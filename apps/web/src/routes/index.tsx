@@ -22,28 +22,6 @@ function RouteComponent() {
       <div>
         Welcome, <span className="font-bold">{session.user.name}</span>!
       </div>
-      <div className="mt-3 flex gap-x-1.5">
-        Click{' '}
-        <Link
-          {...postsLinkOptions}
-          className="flex items-center gap-x-1 text-blue-500 underline"
-        >
-          here <Link2Icon className="mt-0.5" />
-        </Link>{' '}
-        to view your posts.
-      </div>
-      <div className="mt-3">
-        For the source code, see{' '}
-        <a
-          className="text-blue-500 underline"
-          target="_blank"
-          href="https://github.com/nktnet1/rt-stack"
-          rel="noreferrer"
-        >
-          RT Stack on GitHub
-        </a>
-        .
-      </div>
     </div>
   );
 }
