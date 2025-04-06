@@ -4,7 +4,7 @@ import NavContainer from '@/routes/-components/layout/nav/nav-container';
 import UserAvatar from '@/routes/-components/layout/nav/user-avatar';
 import { postsLinkOptions } from '@/validations/posts-link-options';
 
-const activeClassName = 'underline decoration-2 opacity-70';
+const activeClassName = 'text-[#14B8A6] font-semibold';
 
 export function Navbar({ session }: Readonly<{ session: AuthSession }>) {
   return (
@@ -37,7 +37,7 @@ export function Navbar({ session }: Readonly<{ session: AuthSession }>) {
           >
             Login
           </Link>
-          <span>|</span>
+          <span className="text-gray-300">|</span>
           <Link
             to="/register"
             activeProps={{ className: activeClassName }}

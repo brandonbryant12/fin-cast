@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface FeatureCardProps {
-  icon: React.ReactNode; // Placeholder for actual icon type
+  icon: React.ReactNode;
   title: string;
   description: string;
 }

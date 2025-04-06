@@ -1,0 +1,9 @@
+---
+description: A style guide for designing our web app
+globs: {apps/web,packages/ui}/**/*.tsx
+---
+# Application Style Guide
+
+This guide outlines the basic visual and component styles based on the initial landing page design to ensure consistency across the application.
+
+Please follow the rules laid out in [STYLE_GUIDE.md](mdc:apps/web/STYLE_GUIDE.md) and add to as we go if needed

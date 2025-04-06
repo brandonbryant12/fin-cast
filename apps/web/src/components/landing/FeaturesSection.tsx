@@ -1,5 +1,4 @@
 import { Mic, BrainCircuit, FileAudio, AudioLines } from 'lucide-react';
-import React from 'react';
 import { FeatureCard } from './FeatureCard';
 
 export function FeaturesSection() {
@@ -26,7 +25,7 @@ export function FeaturesSection() {
       title: 'Voice-First Dashboard',
       description: 'Navigate your finances using voice commands.',
     },
-  ];
+];
 
   return (
     <section className="py-16 bg-[#0F172A] text-white">
