@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/components/dialog';
+import { GeneratePodcastCard } from './GeneratePodcastCard';
 
 export function UnlinkedUserDashboard() {
   return (
@@ -25,28 +26,7 @@ export function UnlinkedUserDashboard() {
       </p>
 
       {/* Section 1: Available Action */}
-      <Card className="w-full max-w-md border-slate-700 bg-slate-800 text-white">
-        <CardHeader className="flex flex-row items-center gap-4">
-          <span className="text-2xl">🎤</span> {/* Placeholder Icon */}
-          <div>
-            <CardTitle className="text-white">
-              Create a Manual Financial Note
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              Record a quick audio update about your financial thoughts, goals,
-              or market observations.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Button
-            size="lg"
-            className="w-full bg-[#14B8A6] px-8 py-3 text-white hover:bg-[#0D9488]"
-          >
-            Create Your First Note
-          </Button>
-        </CardContent>
-      </Card>
+      <GeneratePodcastCard />
 
       {/* Section 2: Teaser & Call to Action for Linking Accounts */}
       <div className="mt-16 w-full max-w-4xl text-center">

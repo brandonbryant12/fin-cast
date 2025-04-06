@@ -61,6 +61,15 @@ This guide outlines the basic visual and component styles based on the initial l
 -   Provide meaningful `alt` text.
 -   Consider constraining max-width (`style={{ maxWidth: '...' }}`) for large illustrations if needed.
 
+## 6. Modals / Dialogs
+
+-   Use the Shadcn `Dialog` component (`@repo/ui/components/dialog`).
+-   **Style (Dark Theme):**
+    -   Background: Slate 800 (`bg-slate-800`)
+    -   Border: Slate 700 (`border-slate-700`)
+    -   Text: White (`text-white`)
+    -   Title Text: Centered, 2xl (`text-center text-2xl text-white`)
+
 ---
 
 *This is a living document. Update it as new components and styles are introduced.* 
