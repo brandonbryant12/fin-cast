@@ -9,14 +9,14 @@ import {
 
 export function GeneratePodcastCard() {
   return (
-    <Card className="w-full max-w-md border-slate-700 bg-slate-800 text-white">
+    <Card className="w-full max-w-md border-border bg-card text-card-foreground">
       <CardHeader className="flex flex-row items-center gap-4">
         <span className="text-2xl">📰</span> {/* Updated Placeholder Icon */}
         <div>
-          <CardTitle className="text-white">
+          <CardTitle className="text-card-foreground">
             Generate Podcast from Article URL
           </CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription className="text-muted-foreground">
             Paste a link to a financial article and we'll create an audio
             summary podcast for you.
           </CardDescription>
@@ -26,7 +26,7 @@ export function GeneratePodcastCard() {
         {/* TODO: Add URL Input Field Here */}
         <Button
           size="lg"
-          className="mt-4 w-full bg-[#14B8A6] px-8 py-3 text-white hover:bg-[#0D9488]"
+          className="mt-4 w-full bg-primary px-8 py-3 text-primary-foreground hover:bg-primary-hover"
         >
           Generate First Podcast
         </Button>

@@ -42,9 +42,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ session }: SidebarProps) {
-    const activeLinkClass = 'bg-slate-700 text-teal-400 border-l-4 border-teal-500'; // Adjusted active style slightly
+    const activeLinkClass = 'bg-sidebar-accent text-primary border-l-4 border-primary';
     const defaultLinkClass =
-        'flex items-center px-4 py-3 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 border-l-4 border-transparent';
+        'flex items-center px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors duration-200 border-l-4 border-transparent';
     const iconClass = 'mr-3 h-5 w-5';
 
     if (!session || !session.user) {
@@ -55,25 +55,25 @@ export function Sidebar({ session }: SidebarProps) {
     const user = session.user;
 
     return (
-        <aside className="w-64 flex-shrink-0 border-r border-slate-700 bg-slate-800 flex flex-col">
+        <aside className="w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
             <div>
-                <div className="p-4 h-16 flex items-center gap-2 border-b border-slate-700"> {/* Added border */}
+                <div className="p-4 h-16 flex items-center gap-2 border-b border-sidebar-border">
                     {/* <img src='/logo.png' alt="FinCast Logo" className="h-8 w-auto" /> */}
-                    <h1 className="text-2xl font-bold text-white">FinCast</h1>
+                    <h1 className="text-2xl font-bold text-sidebar-foreground">FinCast</h1>
                 </div>
                 <nav className="mt-2">
                     <ul>
                         {navItems.map((item, index) =>
                             item.type === 'separator' ? (
                                 <li key={`sep-${index}`} className="px-4 py-2">
-                                    <Minus className="h-2 w-full text-slate-600" strokeWidth={1} />
+                                    <Minus className="h-2 w-full text-muted-foreground" strokeWidth={1} />
                                 </li>
                             ) : (
                                 <li key={item.to}>
                                     <Link
                                         to={item.to}
                                         className={defaultLinkClass}
-                                            activeOptions={{ exact: item.to === '/' }} // Exact match only for dashboard
+                                        activeOptions={{ exact: item.to === '/' }}
                                         activeProps={{
                                             className: cn(defaultLinkClass, activeLinkClass),
                                         }}
@@ -88,9 +88,9 @@ export function Sidebar({ session }: SidebarProps) {
                 </nav>
             </div>
 
-            <div className="mt-auto p-4 border-t border-slate-700">
+            <div className="mt-auto p-4 border-t border-sidebar-border">
                 <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300 truncate mr-2" title={user.name ?? user.email ?? ''}>
+                    <span className="text-sm text-sidebar-foreground truncate mr-2" title={user.name ?? user.email ?? ''}>
                         Welcome, {user.name?.split(' ')[0] ?? 'User'}
                     </span>
                     <UserAvatar user={user} />

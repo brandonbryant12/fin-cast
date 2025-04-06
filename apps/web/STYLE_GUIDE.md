@@ -1,41 +1,46 @@
 # Application Style Guide
 
-This guide outlines the basic visual and component styles based on the initial landing page design to ensure consistency across the application.
+This guide outlines the basic visual and component styles based on the initial landing page design to ensure consistency across the application, using our semantic Tailwind theme.
 
-## 1. Colors
+## 1. Colors (Semantic Theme - Dark Mode)
 
-### Primary Palette (Dark Theme)
+Our application uses a dark theme defined with semantic color names in our Tailwind configuration (`tools/tailwind/style.css`). Components should utilize these semantic classes instead of hardcoding colors.
 
--   **Background:** Slate 900 (`#0F172A`) - Used for main page/section backgrounds.
--   **Foreground (Primary Text):** White (`#FFFFFF`) - Used for main headings and body text.
--   **Foreground (Secondary Text):** Gray 300 (`#D1D5DB`) - Used for subtitles, descriptions, and less emphasized text.
--   **Accent:** Teal 500 (`#14B8A6`) - Used for primary buttons and key interactive elements.
--   **Accent Hover:** Teal 600 (`#0D9488`) - Used for hover states on primary accent elements.
+-   **Background:** `bg-background` (Corresponds to `--background`, e.g., Slate 900)
+-   **Foreground (Primary Text):** `text-foreground` (Corresponds to `--foreground`, e.g., White)
+-   **Foreground (Secondary/Muted Text):** `text-muted-foreground` (Corresponds to `--muted-foreground`, e.g., Slate 400)
+-   **Primary Action / Accent:** `bg-primary` / `text-primary` (Corresponds to `--primary`, e.g., Teal 500)
+-   **Primary Action Hover:** `hover:bg-primary-hover` (Corresponds to `--primary-hover`, e.g., Teal 600)
+-   **Card Background:** `bg-card` (Corresponds to `--card`, e.g., Slate 800)
+-   **Card Foreground:** `text-card-foreground` (Corresponds to `--card-foreground`, e.g., White)
+-   **Borders:** `border-border` (Corresponds to `--border`, e.g., Slate 700)
+-   **Input Background:** `bg-input` (Corresponds to `--input`, e.g., Slate 700)
 
-### Example Usage (Tailwind):
+### Example Usage (Tailwind - Semantic):
 
--   Background: `bg-[#0F172A]`
--   Primary Text: `text-white`
--   Secondary Text: `text-gray-300`
--   Primary Button Background: `bg-[#14B8A6]`
--   Primary Button Hover: `hover:bg-[#0D9488]`
+-   Main Background: `bg-background`
+-   Primary Headings: `text-foreground`
+-   Subtitles/Descriptions: `text-muted-foreground`
+-   Primary Button Background: `bg-primary`
+-   Primary Button Hover: `hover:bg-primary-hover`
+-   Card: `bg-card border-border`
 
 ## 2. Typography
 
 -   **Headings (h1):**
-    -   Font: System default sans-serif (assumed from Tailwind defaults)
+    -   Font: System default sans-serif
     -   Weight: Bold (`font-bold`)
     -   Size: `text-4xl` (Mobile), `md:text-5xl`, `lg:text-6xl` (Desktop)
-    -   Color: White (`text-white`)
+    -   Color: `text-foreground`
 -   **Sub-Headings/Paragraphs (p):**
     -   Font: System default sans-serif
     -   Weight: Normal (default)
     -   Size: `text-lg` (Mobile), `md:text-xl` (Desktop)
-    -   Color: Gray 300 (`text-gray-300`)
+    -   Color: `text-muted-foreground`
 -   **Buttons:**
     -   Font: System default sans-serif
     -   Weight: Semibold (`font-semibold`)
-    -   Color: White (`text-white`) on accent background
+    -   Color: `text-primary-foreground` (on primary background), `text-secondary-foreground` (on secondary background), etc.
 
 ## 3. Layout
 
@@ -47,10 +52,10 @@ This guide outlines the basic visual and component styles based on the initial l
 
 -   **Buttons:**
     -   Use the Shadcn `Button` component (`@repo/ui/components/button`).
-    -   **Primary Action Button Style:**
-        -   Background: Accent (`bg-[#14B8A6]`)
-        -   Hover Background: Accent Hover (`hover:bg-[#0D9488]`)
-        -   Text: White (`text-white`), Semibold (`font-semibold`)
+    -   **Primary Action Button Style (Example):**
+        -   Background: `bg-primary`
+        -   Hover Background: `hover:bg-primary-hover`
+        -   Text: `text-primary-foreground`, Semibold (`font-semibold`)
         -   Padding: Large (`size="lg"`, `px-8 py-3`)
         -   Rounding: Rounded corners (`rounded-lg`)
 
@@ -64,12 +69,12 @@ This guide outlines the basic visual and component styles based on the initial l
 ## 6. Modals / Dialogs
 
 -   Use the Shadcn `Dialog` component (`@repo/ui/components/dialog`).
--   **Style (Dark Theme):**
-    -   Background: Slate 800 (`bg-slate-800`)
-    -   Border: Slate 700 (`border-slate-700`)
-    -   Text: White (`text-white`)
-    -   Title Text: Centered, 2xl (`text-center text-2xl text-white`)
+-   **Style (Dark Theme - Semantic):**
+    -   Background: `bg-card`
+    -   Border: `border-border`
+    -   Text: `text-card-foreground`
+    -   Title Text: Centered, 2xl (`text-center text-2xl text-card-foreground`)
 
 ---
 
-*This is a living document. Update it as new components and styles are introduced.* 
+*This is a living document. Update it as new components and styles are introduced. Prioritize using semantic theme classes.* 
