@@ -8,8 +8,6 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
@@ -19,19 +17,11 @@ import { Route as IndexImport } from './routes/index'
 import { Route as PublicRegisterImport } from './routes/_public/register'
 import { Route as PublicLoginImport } from './routes/_public/login'
 import { Route as ProtectedPostsIndexImport } from './routes/_protected/posts/index'
+import { Route as ProtectedPodcastsIndexImport } from './routes/_protected/podcasts/index'
+import { Route as ProtectedHomeIndexImport } from './routes/_protected/home/index'
 import { Route as ProtectedPostsPostidIndexImport } from './routes/_protected/posts/$postid/index'
 
-// Create Virtual Routes
-
-const PodcastsLazyImport = createFileRoute('/podcasts')()
-
 // Create/Update Routes
-
-const PodcastsLazyRoute = PodcastsLazyImport.update({
-  id: '/podcasts',
-  path: '/podcasts',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/podcasts.lazy').then((d) => d.Route))
 
 const PublicLayoutRoute = PublicLayoutImport.update({
   id: '/_public',
@@ -47,7 +37,7 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+} as any)
 
 const PublicRegisterRoute = PublicRegisterImport.update({
   id: '/register',
@@ -64,6 +54,18 @@ const PublicLoginRoute = PublicLoginImport.update({
 const ProtectedPostsIndexRoute = ProtectedPostsIndexImport.update({
   id: '/posts/',
   path: '/posts/',
+  getParentRoute: () => ProtectedLayoutRoute,
+} as any)
+
+const ProtectedPodcastsIndexRoute = ProtectedPodcastsIndexImport.update({
+  id: '/podcasts/',
+  path: '/podcasts/',
+  getParentRoute: () => ProtectedLayoutRoute,
+} as any)
+
+const ProtectedHomeIndexRoute = ProtectedHomeIndexImport.update({
+  id: '/home/',
+  path: '/home/',
   getParentRoute: () => ProtectedLayoutRoute,
 } as any)
 
@@ -98,13 +100,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLayoutImport
       parentRoute: typeof rootRoute
     }
-    '/podcasts': {
-      id: '/podcasts'
-      path: '/podcasts'
-      fullPath: '/podcasts'
-      preLoaderRoute: typeof PodcastsLazyImport
-      parentRoute: typeof rootRoute
-    }
     '/_public/login': {
       id: '/_public/login'
       path: '/login'
@@ -118,6 +113,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof PublicRegisterImport
       parentRoute: typeof PublicLayoutImport
+    }
+    '/_protected/home/': {
+      id: '/_protected/home/'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof ProtectedHomeIndexImport
+      parentRoute: typeof ProtectedLayoutImport
+    }
+    '/_protected/podcasts/': {
+      id: '/_protected/podcasts/'
+      path: '/podcasts'
+      fullPath: '/podcasts'
+      preLoaderRoute: typeof ProtectedPodcastsIndexImport
+      parentRoute: typeof ProtectedLayoutImport
     }
     '/_protected/posts/': {
       id: '/_protected/posts/'
@@ -139,11 +148,15 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface ProtectedLayoutRouteChildren {
+  ProtectedHomeIndexRoute: typeof ProtectedHomeIndexRoute
+  ProtectedPodcastsIndexRoute: typeof ProtectedPodcastsIndexRoute
   ProtectedPostsIndexRoute: typeof ProtectedPostsIndexRoute
   ProtectedPostsPostidIndexRoute: typeof ProtectedPostsPostidIndexRoute
 }
 
 const ProtectedLayoutRouteChildren: ProtectedLayoutRouteChildren = {
+  ProtectedHomeIndexRoute: ProtectedHomeIndexRoute,
+  ProtectedPodcastsIndexRoute: ProtectedPodcastsIndexRoute,
   ProtectedPostsIndexRoute: ProtectedPostsIndexRoute,
   ProtectedPostsPostidIndexRoute: ProtectedPostsPostidIndexRoute,
 }
@@ -169,9 +182,10 @@ const PublicLayoutRouteWithChildren = PublicLayoutRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof PublicLayoutRouteWithChildren
-  '/podcasts': typeof PodcastsLazyRoute
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
+  '/home': typeof ProtectedHomeIndexRoute
+  '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
@@ -179,9 +193,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof PublicLayoutRouteWithChildren
-  '/podcasts': typeof PodcastsLazyRoute
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
+  '/home': typeof ProtectedHomeIndexRoute
+  '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
@@ -191,9 +206,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedLayoutRouteWithChildren
   '/_public': typeof PublicLayoutRouteWithChildren
-  '/podcasts': typeof PodcastsLazyRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/register': typeof PublicRegisterRoute
+  '/_protected/home/': typeof ProtectedHomeIndexRoute
+  '/_protected/podcasts/': typeof ProtectedPodcastsIndexRoute
   '/_protected/posts/': typeof ProtectedPostsIndexRoute
   '/_protected/posts/$postid/': typeof ProtectedPostsPostidIndexRoute
 }
@@ -203,18 +219,20 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
-    | '/podcasts'
     | '/login'
     | '/register'
+    | '/home'
+    | '/podcasts'
     | '/posts'
     | '/posts/$postid'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | ''
-    | '/podcasts'
     | '/login'
     | '/register'
+    | '/home'
+    | '/podcasts'
     | '/posts'
     | '/posts/$postid'
   id:
@@ -222,9 +240,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/_public'
-    | '/podcasts'
     | '/_public/login'
     | '/_public/register'
+    | '/_protected/home/'
+    | '/_protected/podcasts/'
     | '/_protected/posts/'
     | '/_protected/posts/$postid/'
   fileRoutesById: FileRoutesById
@@ -234,14 +253,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedLayoutRoute: typeof ProtectedLayoutRouteWithChildren
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
-  PodcastsLazyRoute: typeof PodcastsLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedLayoutRoute: ProtectedLayoutRouteWithChildren,
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
-  PodcastsLazyRoute: PodcastsLazyRoute,
 }
 
 export const routeTree = rootRoute
@@ -256,8 +273,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_protected",
-        "/_public",
-        "/podcasts"
+        "/_public"
       ]
     },
     "/": {
@@ -266,6 +282,8 @@ export const routeTree = rootRoute
     "/_protected": {
       "filePath": "_protected/layout.tsx",
       "children": [
+        "/_protected/home/",
+        "/_protected/podcasts/",
         "/_protected/posts/",
         "/_protected/posts/$postid/"
       ]
@@ -277,9 +295,6 @@ export const routeTree = rootRoute
         "/_public/register"
       ]
     },
-    "/podcasts": {
-      "filePath": "podcasts.lazy.tsx"
-    },
     "/_public/login": {
       "filePath": "_public/login.tsx",
       "parent": "/_public"
@@ -287,6 +302,14 @@ export const routeTree = rootRoute
     "/_public/register": {
       "filePath": "_public/register.tsx",
       "parent": "/_public"
+    },
+    "/_protected/home/": {
+      "filePath": "_protected/home/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/podcasts/": {
+      "filePath": "_protected/podcasts/index.tsx",
+      "parent": "/_protected"
     },
     "/_protected/posts/": {
       "filePath": "_protected/posts/index.tsx",

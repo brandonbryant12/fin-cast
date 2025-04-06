@@ -1,4 +1,3 @@
-import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
 import { Link } from '@tanstack/react-router';
 import {
@@ -10,7 +9,7 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import type { AuthSession } from '@/clients/authClient';
-import UserAvatar from '../../routes/-components/layout/nav/user-avatar';
+import UserAvatar from '@/routes/-components/layout/nav/user-avatar';
 
 interface NavItemBase {
     type?: 'link' | 'separator';
@@ -30,11 +29,12 @@ interface NavSeparatorItem extends NavItemBase {
 type NavItem = NavLinkItem | NavSeparatorItem;
 
 const navItems: NavItem[] = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/home', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/podcasts', label: 'My Podcasts', icon: Podcast },
     { type: 'separator' },
-    { to: '/accounts', label: 'Connected Accounts', icon: LinkIcon },
-    { to: '/settings', label: 'Settings', icon: Settings },
+    // Links to /accounts and /settings can be added back here if needed
+    // { to: '/accounts', label: 'Connected Accounts', icon: LinkIcon },
+    // { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 interface SidebarProps {
@@ -42,7 +42,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ session }: SidebarProps) {
-    const activeLinkClass = 'bg-slate-800 text-teal-400 border-l-4 border-teal-500';
+    const activeLinkClass = 'bg-slate-700 text-teal-400 border-l-4 border-teal-500'; // Adjusted active style slightly
     const defaultLinkClass =
         'flex items-center px-4 py-3 text-gray-300 hover:bg-slate-700 hover:text-white transition-colors duration-200 border-l-4 border-transparent';
     const iconClass = 'mr-3 h-5 w-5';
@@ -57,7 +57,7 @@ export function Sidebar({ session }: SidebarProps) {
     return (
         <aside className="w-64 flex-shrink-0 border-r border-slate-700 bg-slate-800 flex flex-col">
             <div>
-                <div className="p-4 h-16 flex items-center gap-2">
+                <div className="p-4 h-16 flex items-center gap-2 border-b border-slate-700"> {/* Added border */}
                     {/* <img src='/logo.png' alt="FinCast Logo" className="h-8 w-auto" /> */}
                     <h1 className="text-2xl font-bold text-white">FinCast</h1>
                 </div>
@@ -73,6 +73,7 @@ export function Sidebar({ session }: SidebarProps) {
                                     <Link
                                         to={item.to}
                                         className={defaultLinkClass}
+                                            activeOptions={{ exact: item.to === '/' }} // Exact match only for dashboard
                                         activeProps={{
                                             className: cn(defaultLinkClass, activeLinkClass),
                                         }}
@@ -98,6 +99,3 @@ export function Sidebar({ session }: SidebarProps) {
         </aside>
     );
 }
-
-// Note: You might need to create dummy routes for /accounts and /settings
-// or adjust the Link 'to' props if they don't exist yet. 

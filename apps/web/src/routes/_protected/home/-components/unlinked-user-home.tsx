@@ -13,9 +13,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/components/dialog';
-import { GeneratePodcastCard } from './GeneratePodcastCard';
+import { GeneratePodcastCard } from '@/routes/_protected/podcasts/-components/generate-podcast-card';
 
-export function UnlinkedUserDashboard() {
+
+export function UnlinkedUserHome() {
   return (
     <div className="container mx-auto flex flex-col items-center px-4 py-16 md:py-24">
       <h1 className="mb-2 text-center text-4xl font-bold text-white md:text-5xl lg:text-6xl">

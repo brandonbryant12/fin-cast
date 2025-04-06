@@ -1,7 +1,7 @@
 import { Button } from '@repo/ui/components/button';
 import { Link } from '@tanstack/react-router';
-import { LogIn, UserPlus } from 'lucide-react';
 
+// Note: Component function name remains PascalCase
 export function HeroSection() {
   return (
     <section className="bg-slate-900 text-white py-16 md:py-24">
@@ -36,4 +36,4 @@ export function HeroSection() {
       </div>
     </section>
   );
-} 
+}

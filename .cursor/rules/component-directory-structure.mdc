@@ -1,0 +1,36 @@
+---
+description: Guide developers to place components in directories based on their scope (route-specific vs. shared), aligning with the rt-stack template pattern for better project structure and modularity. globs:
+globs: apps/web/src/**/*.tsx
+---
+
+## Component Organization Guidelines
+
+This project follows a structure where components are organized based on where they are used, inspired by the `rt-stack` template. Please adhere to the following when creating or modifying components:
+
+### 1. Route-Specific Components
+
+Components primarily or exclusively used by a single route and its children should be **co-located** with that route.
+
+* **DO NOT** place these components in the general `src/components/` subdirectories like `src/components/dashboard/`, `src/components/podcasts/`, or `src/components/landing/`.
+* **DO** create a `-components` subdirectory within the route's folder and place the component file there.
+
+    * **Example:** A `PodcastListItem` component used only within the `/podcasts` route belongs in `apps/web/src/routes/podcasts/-components/PodcastListItem.tsx`.
+    * **Example:** A `GeneratePodcastCard` used only on the main dashboard view (e.g., `/` route when logged in) might belong in `apps/web/src/routes/-components/index/GeneratePodcastCard.tsx` or `apps/web/src/routes/-components/dashboard/GeneratePodcastCard.tsx`.
+
+### 2. Shared Components
+
+Components designed for reuse across **multiple different routes or features** should be placed in a dedicated shared directory.
+
+* **DO** place these components in `apps/web/src/components/common/` (preferred) or `apps/web/src/components/shared/`.
+    * **Example:** A generic `StatusIndicator` badge or a reusable `InfoTooltip` used on both the dashboard and settings pages would go here.
+
+### 3. Layout Components
+
+Core layout components that structure the overall application interface (like the main `Sidebar`, `Navbar`, `Footer`) belong in:
+
+* **Preferred:** `apps/web/src/components/layout/`
+* *Alternative (closer to template):* `apps/web/src/routes/-components/layout/`
+
+### Rationale
+
+Co-locating route-specific components makes it easier to understand the UI related to a particular part of the application and improves maintainability. It clearly distinguishes between UI specific to one screen and UI shared globally.

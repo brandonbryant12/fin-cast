@@ -2,8 +2,8 @@ import { Toaster } from '@repo/ui/components/sonner';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 import React from 'react';
 import { authClient } from '@/clients/authClient';
-import { Sidebar } from '@/components/layout/Sidebar';
 import Spinner from '@/routes/-components/common/spinner';
+import { Sidebar } from '@/routes/-components/layout/nav/side-bar';
 
 export const Route = createRootRoute({
   component: RootComponent,

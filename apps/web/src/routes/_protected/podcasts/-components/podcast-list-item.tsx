@@ -5,16 +5,13 @@ import {
     AlertTriangle, // Warning Icon
     Play, // Play Icon
     Trash2, // Delete/Trash Icon
-    // Optional Icons:
-    // FileText, // Summary/Text Icon
-    // Download, // Download Icon
 } from 'lucide-react';
 
 // Define the possible statuses for a podcast
-type PodcastStatus = 'processing' | 'failed' | 'success';
+export type PodcastStatus = 'processing' | 'failed' | 'success';
 
 // Define the structure of the podcast data this component expects
-interface Podcast {
+export interface Podcast {
     id: string;
     status: PodcastStatus;
     title: string;
@@ -29,11 +26,9 @@ interface PodcastListItemProps {
     podcast: Podcast;
     onPlay: (id: string) => void;
     onDelete: (id: string) => void;
-    // Optional action handlers
-    // onViewSummary?: (id: string) => void;
-    // onDownload?: (id: string) => void;
 }
 
+// Note: Component function name remains PascalCase
 export function PodcastListItem({ podcast, onPlay, onDelete }: PodcastListItemProps) {
     const { id, status, title, sourceType, sourceDetail, generatedDate, duration, errorMessage } =
         podcast;
@@ -104,4 +99,4 @@ export function PodcastListItem({ podcast, onPlay, onDelete }: PodcastListItemPr
             </div>
         </div>
     );
-} 
+}

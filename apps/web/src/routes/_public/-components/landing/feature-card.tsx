@@ -6,6 +6,7 @@ interface FeatureCardProps {
   description: string;
 }
 
+// Note: Component function name remains PascalCase
 export function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
     <div className="flex items-start space-x-4 p-4 rounded-lg bg-[#1E293B] bg-opacity-50">
@@ -16,4 +17,4 @@ export function FeatureCard({ icon, title, description }: FeatureCardProps) {
       </div>
     </div>
   );
-} 
+}

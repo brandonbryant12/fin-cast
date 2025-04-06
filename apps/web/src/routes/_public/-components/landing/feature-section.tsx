@@ -1,6 +1,8 @@
 import { Mic, BrainCircuit, FileAudio, AudioLines } from 'lucide-react';
-import { FeatureCard } from './FeatureCard';
+// Import using the new kebab-case filename
+import { FeatureCard } from './feature-card';
 
+// Note: Component function name remains PascalCase
 export function FeaturesSection() {
   const features = [
     {
@@ -44,4 +46,4 @@ export function FeaturesSection() {
       </div>
     </section>
   );
-} 
+}
