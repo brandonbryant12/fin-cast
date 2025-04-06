@@ -29,6 +29,7 @@
     "@trpc/client": "catalog:",
     "@trpc/tanstack-react-query": "catalog:",
     "dotenv-cli": "catalog:",
+    "lucide-react": "^0.487.0",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

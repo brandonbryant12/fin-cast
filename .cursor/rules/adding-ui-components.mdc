@@ -1,0 +1,11 @@
+---
+description: Use shadcn for new components 
+globs: *.tsx
+---
+The command can be used to add shadcn components.
+
+Prefer to use them when available.
+
+`pnpm ui-add button`
+
+Add new components to the ui package
