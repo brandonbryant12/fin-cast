@@ -2,31 +2,31 @@
 description: Description of mono repo setup
 globs: 
 ---
-A modern & lightweight [turborepo](https://turbo.build/repo/docs) template for
+A modern & lightweight [turborepo](mdc:https:/turbo.build/repo/docs) template for
 fullstack projects with modular components, shared configs, containerised
 deployments and 100% type-safety.
 
-- [About](#about)
-  - [Stack overview](#stack-overview)
-  - [Base Functionalities](#base-functionalities)
-  - [Inspirations & Goals](#inspirations--goals)
-- [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Setup](#setup)
-  - [Using an External Database](#using-an-external-database)
-- [Developing](#developing)
-  - [Working with a single package](#working-with-a-single-package)
-  - [Adding new shadcn components](#adding-new-shadcn-components)
-  - [Adding new better-auth plugins](#adding-new-better-auth-plugins)
-  - [Tooling Scripts](#tooling-scripts)
-- [Containerisation (Docker/Podman)](#containerisation-dockerpodman)
-- [Deployment](#deployment)
-  - [Using Containers](#using-containers)
-  - [Using Major Platforms](#using-major-platforms)
-- [Other Notes](#other-notes)
-  - [Tanstack Router](#tanstack-router)
-  - [Server API Artificial Delays](#server-api-artificial-delays)
-  - [Environment Variables](#environment-variables)
+- [About](mdc:#about)
+  - [Stack overview](mdc:#stack-overview)
+  - [Base Functionalities](mdc:#base-functionalities)
+  - [Inspirations & Goals](mdc:#inspirations--goals)
+- [Quick Start](mdc:#quick-start)
+  - [Prerequisites](mdc:#prerequisites)
+  - [Setup](mdc:#setup)
+  - [Using an External Database](mdc:#using-an-external-database)
+- [Developing](mdc:#developing)
+  - [Working with a single package](mdc:#working-with-a-single-package)
+  - [Adding new shadcn components](mdc:#adding-new-shadcn-components)
+  - [Adding new better-auth plugins](mdc:#adding-new-better-auth-plugins)
+  - [Tooling Scripts](mdc:#tooling-scripts)
+- [Containerisation (Docker/Podman)](mdc:#containerisation-dockerpodman)
+- [Deployment](mdc:#deployment)
+  - [Using Containers](mdc:#using-containers)
+  - [Using Major Platforms](mdc:#using-major-platforms)
+- [Other Notes](mdc:#other-notes)
+  - [Tanstack Router](mdc:#tanstack-router)
+  - [Server API Artificial Delays](mdc:#server-api-artificial-delays)
+  - [Environment Variables](mdc:#environment-variables)
 
 ## About
 
@@ -59,29 +59,29 @@ tools
   └─ typescript
 ```
 
-View all catalog dependencies in [pnpm-workspace.yaml](pnpm-workspace.yaml).
+View all catalog dependencies in [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml).
 
 ### Base Functionalities
 
 The following features are implemented out-of-the-box:
 
-- login/register (using [better-auth email/password](https://www.better-auth.com/docs/authentication/email-password)) credentials provider
-- themes (dark/light mode using [next-themes](github.com/pacocoursey/next-themes))
-- web/server integration ([trpc](https://trpc.io/docs/quickstart) API example for creating/listing posts)
+- login/register (using [better-auth email/password](mdc:https:/www.better-auth.com/docs/authentication/email-password)) credentials provider
+- themes (dark/light mode using [next-themes](mdc:github.com/pacocoursey/next-themes))
+- web/server integration ([trpc](mdc:https:/trpc.io/docs/quickstart) API example for creating/listing posts)
 
-You can visit the [live demo](https://rtstack.nktnet.uk) to see these features in action.
+You can visit the [live demo](mdc:https:/rtstack.nktnet.uk) to see these features in action.
 
 ### Inspirations & Goals
 
 Many aspects of the RT Stack were derived from the
-[t3-oss/create-t3-turbo](https://github.com/t3-oss/create-t3-turbo). However,
+[t3-oss/create-t3-turbo](mdc:https:/github.com/t3-oss/create-t3-turbo). However,
 there is a preference for:
 
-- [tanstack router](https://tanstack.com/router/latest) (web) + [hono](https://hono.dev) (server) instead of [nextjs](https://nextjs.org) (fullstack)
-- [better auth](https://www.better-auth.com) for authentication instead [auth.js (next auth)](https://authjs.dev)
-- [valibot](https://valibot.dev) for input validation instead of [zod](https://zod.dev)
-- [tanstack form](https://tanstack.com/form/latest) instead of [react-hook-form](https://react-hook-form.com)
-- using `.env` in each application/package instead of globally, as per [turborepo's recommendations](https://turbo.build/repo/docs/crafting-your-repository/using-environment-variables#best-practices)
+- [tanstack router](mdc:https:/tanstack.com/router/latest) (web) + [hono](mdc:https:/hono.dev) (server) instead of [nextjs](mdc:https:/nextjs.org) (fullstack)
+- [better auth](mdc:https:/www.better-auth.com) for authentication instead [auth.js (next auth)](mdc:https:/authjs.dev)
+- [valibot](mdc:https:/valibot.dev) for input validation instead of [zod](mdc:https:/zod.dev)
+- [tanstack form](mdc:https:/tanstack.com/form/latest) instead of [react-hook-form](mdc:https:/react-hook-form.com)
+- using `.env` in each application/package instead of globally, as per [turborepo's recommendations](mdc:https:/turbo.build/repo/docs/crafting-your-repository/using-environment-variables#best-practices)
 
 This project also aims to consistently adopt the latest releases of dependencies and tools. For example:
 
@@ -97,12 +97,12 @@ This project also aims to consistently adopt the latest releases of dependencies
 
 Ensure the following tools are available on your system:
 
-1. [node](https://nodejs.org/en/download) (version 22+)
-1. [pnpm](https://pnpm.io/installation) (version 10+)
-1. [postgres](https://www.postgresql.org) database, which you can easily run using tools like:
-   - [docker](https://docs.docker.com/engine/install) and [docker-compose](https://docs.docker.com/compose)
-   - [podman](https://podman.io/docs/installation) and [podman-compose](https://github.com/containers/podman-compose)
-   - [supabase](https://supabase.com)'s free tier cloud database
+1. [node](mdc:https:/nodejs.org/en/download) (version 22+)
+1. [pnpm](mdc:https:/pnpm.io/installation) (version 10+)
+1. [postgres](mdc:https:/www.postgresql.org) database, which you can easily run using tools like:
+   - [docker](mdc:https:/docs.docker.com/engine/install) and [docker-compose](mdc:https:/docs.docker.com/compose)
+   - [podman](mdc:https:/podman.io/docs/installation) and [podman-compose](mdc:https:/github.com/containers/podman-compose)
+   - [supabase](mdc:https:/supabase.com)'s free tier cloud database
 
 ### Setup
 
@@ -139,7 +139,7 @@ By default the following URLs will be accessible:
 
 ### Using an External Database
 
-When using an external postgres database (e.g. from [supabase](https://supabase.com)), you can skip the step that spins up a local postgres instance with docker.
+When using an external postgres database (e.g. from [supabase](mdc:https:/supabase.com)), you can skip the step that spins up a local postgres instance with docker.
 
 Instead, you will need to modify the following environment variables:
 
@@ -154,7 +154,7 @@ Instead, you will need to modify the following environment variables:
 
 ### Working with a single package
 
-Use [`pnpm --filter=<name>`](https://pnpm.io/filtering) (where `<name>` is
+Use [`pnpm --filter=<name>`](mdc:https:/pnpm.io/filtering) (where `<name>` is
 defined in the `package.json` of each package).
 
 Example usage:
@@ -196,8 +196,8 @@ pnpm ui-add
 
 When integrating more better-auth plugins, e.g.
 
-- [admin](https://better-auth.vercel.app/docs/plugins/admin)
-- [organization](https://better-auth.vercel.app/docs/plugins/organization)
+- [admin](mdc:https:/better-auth.vercel.app/docs/plugins/admin)
+- [organization](mdc:https:/better-auth.vercel.app/docs/plugins/organization)
 
 You should
 
@@ -210,7 +210,7 @@ You should
    pnpm auth:schema:generate
    ```
 
-   Press `i` to enter interactive mode, then `y` to overwrite [packages/db/src/schemas/auth.ts](packages/db/src/schemas/auth.ts).
+   Press `i` to enter interactive mode, then `y` to overwrite [packages/db/src/schemas/auth.ts](mdc:packages/db/src/schemas/auth.ts).
 
 3. Format and fix all linting issues, e.g. with
 
@@ -234,12 +234,12 @@ You should
 
    followed by a restarting your TS Server or reloading VSCode.
 
-You can find an example in the [better-auth-admin-organization-plugins](https://github.com/nktnet1/rt-stack/tree/better-auth-admin-organization-plugins) branch.
+You can find an example in the [better-auth-admin-organization-plugins](mdc:https:/github.com/nktnet1/rt-stack/tree/better-auth-admin-organization-plugins) branch.
 
 ### Tooling Scripts
 
-All scripts are defined in [package.json](package.json) and
-[turbo.json](turbo.json):
+All scripts are defined in [package.json](mdc:package.json) and
+[turbo.json](mdc:turbo.json):
 
 ```bash
 pnpm clean                  # remove all .cache, .turbo, dist, node_modules
@@ -282,15 +282,15 @@ You can then open the web link below in your browser:
 Please note that these containers are run in production mode. For further
 details, see
 
-- [compose.yaml](compose.yaml)
-- [apps/server/Dockerfile](apps/server/Dockerfile)
-- [apps/web/Dockerfile](apps/web/Dockerfile)
-- [apps/web/nginx.conf](apps/web/nginx.conf)
+- [compose.yaml](mdc:compose.yaml)
+- [apps/server/Dockerfile](mdc:apps/server/Dockerfile)
+- [apps/web/Dockerfile](mdc:apps/web/Dockerfile)
+- [apps/web/nginx.conf](mdc:apps/web/nginx.conf)
 
 ## Deployment
 
 > [!TIP]
-> The [live demo](https://rtstack.nktnet.uk) of RT Stack is currently deployed to
+> The [live demo](mdc:https:/rtstack.nktnet.uk) of RT Stack is currently deployed to
 >
 > - vercel for the web frontend
 > - fly.io for the server backend and postgres database
@@ -299,16 +299,16 @@ details, see
 
 You can deploy applications to any services that supports docker deployment.
 
-Using docker compose (see [compose.yaml](compose.yaml)) is also an option,
+Using docker compose (see [compose.yaml](mdc:compose.yaml)) is also an option,
 although this alone may not be production-ready at scale. However, it can be
 paired with
 
 - reverse proxies and load balancers offered by tools like
-  [Traefik](https://github.com/traefik/traefik) or
-  [Caddy](https://github.com/caddyserver/caddy)
-- container orchestration platforms like [Docker Swarm](https://docs.docker.com/engine/swarm) and [Kubernetes](https://kubernetes.io)
+  [Traefik](mdc:https:/github.com/traefik/traefik) or
+  [Caddy](mdc:https:/github.com/caddyserver/caddy)
+- container orchestration platforms like [Docker Swarm](mdc:https:/docs.docker.com/engine/swarm) and [Kubernetes](mdc:https:/kubernetes.io)
 
-Personally, I recommend setting up a Virtual Private Server (e.g. on [Hetzner](https://www.hetzner.com))
+Personally, I recommend setting up a Virtual Private Server (e.g. on [Hetzner](mdc:https:/www.hetzner.com))
 and make use of self-hostable PaaS software which automatically handles the complexity of deployment
 mentioned above for you - these includes:
 
@@ -332,17 +332,17 @@ rather than referencing `http://localhost:8085` like in development.
 
 The **web** application is a simple React static site powered by Vite, which is
 easily deployed to platforms such as GitHub/GitLab pages, Vercel and Netlify.
-You can refer to the [vite documentation](https://vite.dev/guide/static-deploy)
+You can refer to the [vite documentation](mdc:https:/vite.dev/guide/static-deploy)
 for deployment guides on all major platforms.
 
-The **server** application uses the [hono](https://hono.dev) web framework with
-the [NodeJS runtime](https://hono.dev/docs/getting-started/nodejs). However,
+The **server** application uses the [hono](mdc:https:/hono.dev) web framework with
+the [NodeJS runtime](mdc:https:/hono.dev/docs/getting-started/nodejs). However,
 this can be exchanged with other runtimes before deploying to your chosen
 platforms. For example, deploying to Netlify is covered within
-[Hono's documentations](https://hono.dev/docs/getting-started/netlify#_4-deploy).
+[Hono's documentations](mdc:https:/hono.dev/docs/getting-started/netlify#_4-deploy).
 
 Note that when deploying your web frontend and server backend to two different
-domains, you will need to [tweak your better-auth configurations](https://www.better-auth.com/docs/integrations/hono#cross-domain-cookies).
+domains, you will need to [tweak your better-auth configurations](mdc:https:/www.better-auth.com/docs/integrations/hono#cross-domain-cookies).
 Apple's Safari browser also does not support third party cookies, so auth will
 not function as expected without any proxy workarounds.
 
@@ -355,7 +355,7 @@ backend hosted at `api.example.com`.
 
 ### Tanstack Router
 
-The following is configured in [vite.config.ts](apps/web/vite.config.ts) web
+The following is configured in [vite.config.ts](mdc:apps/web/vite.config.ts) web
 application:
 
 ```ts
@@ -366,7 +366,7 @@ TanStackRouterVite({
 
 This enables the use of a `layout.tsx` file in each directory similar to NextJS.
 You can read more about this
-[here](https://github.com/TanStack/router/discussions/1102#discussioncomment-10946603).
+[here](mdc:https:/github.com/TanStack/router/discussions/1102#discussioncomment-10946603).
 
 Also, it is recommended that you exclude the `routerTree.gen.ts` from your IDE.
 For example, in VSCode, you can add the following `.vscode/settings.json` at the
@@ -390,15 +390,15 @@ root of your turborepo:
 
 There is an artificial delay added in development mode to simulate API usage in
 real-world environments. You can disable this by removing the `timingMiddleware`
-in [./packages/api/src/server/trpc.ts](./packages/api/src/server/trpc.ts)
+in [./packages/api/src/server/trpc.ts](mdc:packages/api/src/server/trpc.ts)
 
 ### Environment Variables
 
 This template was made to follow the the recommendation of
 
-- @tyleralbee in [this turborepo's GitHub discussion](https://github.com/vercel/turborepo/discussions/9458#discussioncomment-11443969)
-- @cjkihl in [create-t3-turbo issue #397](https://github.com/t3-oss/create-t3-turbo/issues/397#issuecomment-1630028405)
-- turborepo official docs on [environment variables best practices](https://turbo.build/repo/docs/crafting-your-repository/using-environment-variables#best-practices)
+- @tyleralbee in [this turborepo's GitHub discussion](mdc:https:/github.com/vercel/turborepo/discussions/9458#discussioncomment-11443969)
+- @cjkihl in [create-t3-turbo issue #397](mdc:https:/github.com/t3-oss/create-t3-turbo/issues/397#issuecomment-1630028405)
+- turborepo official docs on [environment variables best practices](mdc:https:/turbo.build/repo/docs/crafting-your-repository/using-environment-variables#best-practices)
 
 In using this template, it is recommended that
 
@@ -432,4 +432,154 @@ pnpm env:copy-example
 ```
 
 It is recommended that any new apps that uses environment variables follow the
-example script set in [apps/server/package.json](apps/server/package.json).
+example script set in [apps/server/package.json](mdc:apps/server/package.json).
+
+Here is an example file tree of the rt-stack template 
+
+├── LICENSE                             # Project license file (MIT).
+├── README.md                           # Project overview, setup, and usage instructions.
+├── apps                                # Directory containing deployable applications.
+│   ├── server                          # Backend server application (Hono framework).
+│   │   ├── Dockerfile                    # Docker instructions for building the server image.
+│   │   ├── eslint.config.js            # ESLint configuration specific to the server app.
+│   │   ├── package.json                # Server app dependencies and scripts.
+│   │   ├── src                         # Server source code.
+│   │   │   ├── env.ts                  # Environment variable validation and parsing for the server.
+│   │   │   └── index.ts                # Main entry point for the Hono server application. Sets up middleware, routes, tRPC, and auth.
+│   │   ├── tsconfig.json               # TypeScript configuration for the server app.
+│   │   ├── tsup.config.ts              # Configuration for tsup (bundler for TypeScript).
+│   │   └── turbo.json                  # Turborepo configuration specific to the server app's tasks.
+│   └── web                             # Frontend web application (React with Vite).
+│       ├── Dockerfile                    # Docker instructions for building the web app image (uses Nginx).
+│       ├── eslint.config.js            # ESLint configuration specific to the web app.
+│       ├── index.html                  # Main HTML file for the Vite application.
+│       ├── nginx.conf                  # Nginx configuration for serving the production build of the web app.
+│       ├── package.json                # Web app dependencies and scripts.
+│       ├── public                      # Static assets served directly.
+│       │   ├── favicon.png             # Application icon.
+│       │   └── healthcheck             # Simple file for Docker healthcheck endpoint.
+│       ├── src                         # Web application source code.
+│       │   ├── clients                 # Client-side instances for interacting with backend services.
+│       │   │   ├── authClient.ts       # Configured client for interacting with the better-auth backend.
+│       │   │   ├── queryClient.ts      # TanStack Query client instance.
+│       │   │   └── trpcClient.ts       # Configured tRPC client for API communication.
+│       │   ├── env.ts                  # Environment variable validation and parsing for the web app (uses import.meta.env).
+│       │   ├── main.tsx                # Main entry point for the React application (renders the root component).
+│       │   ├── routeTree.gen.ts        # Auto-generated file by TanStack Router containing the route structure. **Do not edit manually.**
+│       │   ├── router.tsx              # TanStack Router setup and configuration, including tRPC integration.
+│       │   ├── routes                  # Directory containing route components based on TanStack Router's file-based routing.
+│       │   │   ├── -components           # Reusable components used across multiple routes but not specific to one.
+│       │   │   │   ├── common            # General-purpose common components.
+│       │   │   │   │   ├── form-field-info.tsx # Component to display form field errors/validation status.
+│       │   │   │   │   └── spinner.tsx   # Simple loading spinner component.
+│       │   │   │   └── layout            # Components related to the application layout.
+│       │   │   │       └── nav           # Navigation bar related components.
+│       │   │   │           └── user-avatar.tsx # Component displaying user avatar and dropdown menu (theme toggle, logout).
+│       │   │   ├── __root.tsx            # Root layout component for the entire application (includes Navbar, Toaster, Devtools).
+│       │   │   ├── _protected            # Directory group for routes requiring authentication.
+│       │   │   │   ├── layout.tsx        # Layout component for protected routes, checks for authentication session.
+│       │   │   │   └── posts             # Routes related to posts (requires authentication).
+│       │   │   │       ├── $postid       # Dynamic route for individual post details.
+│       │   │   │       │   └── index.tsx   # Component to display a single post.
+│       │   │   │       ├── -components   # Components specific to the posts routes.
+│       │   │   │       │   ├── create-post.tsx # Component with dialog/form for creating new posts.
+│       │   │   │       │   └── delete-post.tsx # Component providing a button to delete a post.
+│       │   │   │       └── index.tsx       # Component to display a list of all posts with search/sort functionality.
+│       │   │   ├── _public               # Directory group for routes accessible without authentication.
+│       │   │   │   ├── -components       # Components specific to the public routes.
+│       │   │   │   │   ├── login-form.tsx  # Form component for user login.
+│       │   │   │   │   └── register-form.tsx # Form component for user registration.
+│       │   │   │   ├── layout.tsx        # Layout component for public routes, redirects if user is already logged in.
+│       │   │   │   ├── login.tsx         # Page component for the login route.
+│       │   │   │   └── register.tsx      # Page component for the registration route.
+│       │   │   └── index.tsx             # Component for the homepage route ('/').
+│       │   ├── style.css               # Main CSS file, imports Tailwind CSS styles.
+│       │   ├── validations             # Directory for reusable validation schemas or logic.
+│       │   │   └── posts-link-options.ts # Validation schema and default options for post search/linking via TanStack Router.
+│       │   └── vite-env.d.ts           # TypeScript definitions for Vite environment variables.
+│       ├── tsconfig.app.json           # TypeScript configuration specifically for building the application source code.
+│       ├── tsconfig.json               # Root TypeScript configuration for the web app (references other tsconfig files).
+│       ├── tsconfig.node.json          # TypeScript configuration for Node.js specific files (like vite.config.ts).
+│       ├── turbo.json                  # Turborepo configuration specific to the web app's tasks.
+│       └── vite.config.ts              # Vite build tool configuration (plugins, server settings, aliases).
+├── compose.yaml                        # Docker Compose file defining services (web, server, db, drizzle) for local development/testing.
+├── package.json                        # Root package.json for the monorepo (defines workspaces, global scripts).
+├── packages                            # Directory containing shared, reusable packages used by the apps.
+│   ├── api                             # Package defining the tRPC API structure and procedures.
+│   │   ├── eslint.config.js            # ESLint configuration for the api package.
+│   │   ├── package.json                # api package dependencies and build scripts.
+│   │   ├── src                         # api package source code.
+│   │   │   ├── client                  # Code related to the tRPC client setup.
+│   │   │   │   └── index.ts            # Exports the function to create a tRPC client.
+│   │   │   └── server                  # Code related to the tRPC server setup.
+│   │   │       ├── index.ts            # Exports the main tRPC router (`appRouter`) and context creation function.
+│   │   │       ├── router              # Defines specific tRPC routers for different API areas.
+│   │   │       │   └── post.ts         # tRPC router defining procedures related to posts (CRUD).
+│   │   │       └── trpc.ts             # Core tRPC setup (initialization, context creation, middleware, procedures).
+│   │   └── tsconfig.json               # TypeScript configuration for the api package.
+│   ├── auth                            # Package handling authentication logic using better-auth.
+│   │   ├── eslint.config.js            # ESLint configuration for the auth package.
+│   │   ├── package.json                # auth package dependencies and scripts (includes better-auth CLI script).
+│   │   ├── src                         # auth package source code.
+│   │   │   ├── cli-config.ts           # Configuration specifically for the better-auth CLI (schema generation). **Internal use only.**
+│   │   │   ├── client.ts               # Exports the function to create a better-auth client (for frontend use).
+│   │   │   └── server.ts               # Exports the function to create a better-auth server instance (for backend use).
+│   │   └── tsconfig.json               # TypeScript configuration for the auth package.
+│   ├── db                              # Package managing database schema and client using Drizzle ORM.
+│   │   ├── Dockerfile                  # Dockerfile for creating a container specifically for running Drizzle migrations/studio (not for the main DB server).
+│   │   ├── drizzle.config.ts           # Configuration file for Drizzle Kit (used for migrations).
+│   │   ├── eslint.config.js            # ESLint configuration for the db package.
+│   │   ├── package.json                # db package dependencies and scripts (includes Drizzle Kit commands).
+│   │   ├── src                         # db package source code.
+│   │   │   ├── client.ts               # Exports the function to create a Drizzle database client instance.
+│   │   │   ├── index.ts                # Exports common Drizzle ORM utilities.
+│   │   │   ├── schema.ts               # Exports all combined database schemas.
+│   │   │   └── schemas                 # Directory containing individual table schema definitions.
+│   │   │       ├── auth.ts             # Drizzle schema definitions for authentication tables (generated by better-auth).
+│   │   │       └── posts.ts            # Drizzle schema definition for the 'posts' table, including insert validation schema.
+│   │   ├── tsconfig.drizzlekit.json    # TypeScript configuration specifically for Drizzle Kit.
+│   │   ├── tsconfig.json               # Root TypeScript configuration for the db package.
+│   │   ├── tsconfig.package.json       # TypeScript configuration for building the db package itself.
+│   │   └── turbo.json                  # Turborepo configuration specific to the db package's tasks.
+│   └── ui                              # Package containing shared UI components based on shadcn/ui.
+│       ├── components.json             # Configuration file for shadcn/ui CLI.
+│       ├── eslint.config.js            # ESLint configuration for the ui package.
+│       ├── package.json                # ui package dependencies and scripts (includes shadcn/ui CLI command).
+│       ├── src                         # ui package source code.
+│       │   ├── components              # Directory containing the actual UI components.
+│       │   │   ├── avatar.tsx          # Avatar component.
+│       │   │   ├── button.tsx          # Button component.
+│       │   │   ├── dialog.tsx          # Dialog/Modal component.
+│       │   │   ├── dropdown-menu.tsx   # Dropdown menu component.
+│       │   │   ├── input.tsx           # Input field component.
+│       │   │   ├── label.tsx           # Label component (for form elements).
+│       │   │   ├── sonner.tsx          # Toast notification component wrapper.
+│       │   │   ├── textarea.tsx        # Textarea component.
+│       │   │   └── tooltip.tsx         # Tooltip component.
+│       │   └── lib                     # Utility functions for the UI package.
+│       │       └── utils.ts            # Utility function `cn` for merging Tailwind classes.
+│       └── tsconfig.json               # TypeScript configuration for the ui package.
+├── pnpm-lock.yaml                      # Exact dependency versions used by pnpm.
+├── pnpm-workspace.yaml                 # Defines pnpm workspaces and the dependency catalog.
+├── tools                               # Directory containing shared development tooling configurations.
+│   ├── eslint                          # Shared ESLint configurations.
+│   │   ├── base.js                   # Base ESLint configuration (non-React specific).
+│   │   ├── package.json              # eslint tool package definition.
+│   │   ├── react.js                  # ESLint configuration specific to React projects.
+│   │   ├── tsconfig.json             # TypeScript configuration for the eslint tool package.
+│   │   └── types.d.ts                # TypeScript declaration file for ESLint plugin types.
+│   ├── prettier                        # Shared Prettier configuration.
+│   │   ├── index.js                  # The Prettier configuration file.
+│   │   ├── package.json              # prettier tool package definition.
+│   │   └── tsconfig.json             # TypeScript configuration for the prettier tool package.
+│   ├── tailwind                        # Shared Tailwind CSS configuration.
+│   │   ├── eslint.config.js          # ESLint configuration for the tailwind tool package.
+│   │   ├── package.json              # tailwind tool package definition.
+│   │   └── style.css                 # Base Tailwind CSS styles and custom theme definitions.
+│   └── typescript                      # Shared TypeScript configurations (tsconfig bases).
+│       ├── base.json                 # Base tsconfig for general TypeScript files.
+│       ├── internal-package.json     # Base tsconfig for internal packages (enables composite builds).
+│       ├── package.json              # typescript tool package definition.
+│       └── vite.json                 # Base tsconfig specifically for Vite projects.
+└── turbo.json                          # Root Turborepo configuration (defines global tasks and caching).
+

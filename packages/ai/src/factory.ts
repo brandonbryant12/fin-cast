@@ -1,6 +1,5 @@
 import type { LLMInterface } from "./llms/base";
 import { OpenAIClient } from "./llms/openai";
-// Import other LLM clients here (e.g., AnthropicClient) when added
 
 /**
  * Configuration object passed by the consuming application.
@@ -49,15 +48,11 @@ export const AIServiceFactory = {
             "Anthropic configuration (apiKey) is required but missing in the provided AIConfig.",
           );
         }
-        // return new AnthropicClient({ apiKey: config.anthropic.apiKey, baseURL: config.anthropic.baseURL });
         throw new Error("Anthropic client not yet implemented.");
 
       default:
-        // Ensure exhaustiveness check at compile time
         const _exhaustiveCheck: never = type;
         throw new Error(`Unsupported LLM type: ${_exhaustiveCheck}`);
     }
   },
-
-  // Add other factory methods if needed (e.g., for TTS)
 }; 

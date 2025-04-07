@@ -2,7 +2,7 @@ import type { ChatOptions, ChatResponse } from "../types";
 import type {
   PromptName,
   PromptParams,
-} from "../prompts"; // Import types from the registry
+} from "../prompts";
 
 /**
  * Common interface for interacting with different LLM providers.
@@ -33,7 +33,4 @@ export interface LLMInterface {
     params: PromptParams<T>,
     options?: ChatOptions,
   ): Promise<ChatResponse>;
-
-  // Methods for type-safe custom prompts will be added here
-  // (potentially via declaration merging from generated code)
 } 
