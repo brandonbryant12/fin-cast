@@ -51,6 +51,7 @@ catalog:
   radix-ui: ^1.1.3
   react: ^19.1.0
   react-dom: ^19.1.0
+  rimraf: ^5.0.7
   shx: ^0.4.0
   sonner: ^2.0.2
   superjson: ^2.2.2
@@ -65,3 +66,5 @@ catalog:
   url-join: ^5.0.0
   valibot: ^1.0.0
   vite: ^6.2.4
+  vite-tsconfig-paths: ^4.3.2
+  vitest: ^2.0.5
