@@ -16,9 +16,9 @@
     }
   },
   "scripts": {
-    "build": "rimraf dist && tsup && tsc -p tsconfig.json --emitDeclarationOnly",
-    "clean": "rimraf dist .turbo node_modules",
-    "dev": "tsup --watch",
+    "build": "tsc -p tsconfig.json",
+    "clean": "git clean -xdf dist .turbo node_modules",
+    "dev": "tsc -p tsconfig.json --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit",
@@ -36,8 +36,6 @@
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "rimraf": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

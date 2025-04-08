@@ -4,6 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      // $TURBO_DEFAULT$ includes src/** and tsconfig.json, which is correct for tsc
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["dist/**"]
     },
@@ -16,7 +17,8 @@
     },
     "lint": {
       "dependsOn": ["^lint"],
-      "inputs": ["$TURBO_DEFAULT$", ".eslintrc*", "tsconfig.json"]
+      // Ensure eslint config files are included if not covered by TURBO_DEFAULT
+      "inputs": ["$TURBO_DEFAULT$", "eslint.config.js", "tsconfig.json"]
     },
     "format": {
       "cache": true,

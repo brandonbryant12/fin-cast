@@ -12,19 +12,23 @@ export type Params = v.InferInput<typeof paramsSchema>;
 
 export const template = (params: Params): string => {
   try {
+    // Runtime validation for robustness, especially if used directly
     v.parse(paramsSchema, params);
   } catch (error) {
     console.error("Invalid parameters for example prompt:", error);
     let errorMessage = "An unknown validation error occurred";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (error instanceof v.ValiError) {
-      errorMessage = error.issues.map((issue) => issue.message).join(", ");
+    // Improved error handling to extract messages from ValiError
+    if (error instanceof v.ValiError) {
+       errorMessage = error.issues.map((issue) => issue.message).join(", ");
+    } else if (error instanceof Error) {
+       errorMessage = error.message;
     }
-    throw new Error(`Invalid parameters: ${errorMessage}`);
+    // Throw a more informative error
+    throw new Error(`Invalid parameters for example prompt: ${errorMessage}`);
   }
 
-  return `Explain the concept of "${params.topic}" in a ${params.tone} tone.`;
+  // Use validated parameters
+  return `Explain the concept of "${params.topic}" in a ${params.tone ?? 'casual'} tone.`;
 };
 
 export const description = "Generates an explanation for a given topic and tone.";
