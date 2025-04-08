@@ -1,0 +1,47 @@
+{
+  "name": "@repo/webscraper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A package for fetching web page content with proxy support.",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "bin": {
+    "scrape-cli": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "cli": "node ./dist/cli.js"
+  },
+  "dependencies": {
+    "@repo/logger": "workspace:*",
+    "axios": "^1.8.4",
+    "commander": "^12.1.0",
+    "eslint": "catalog:",
+    "pino-pretty": "^10.3.1",
+    "prettier": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "commander": "^12.1.0",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}
