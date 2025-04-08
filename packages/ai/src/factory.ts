@@ -51,8 +51,8 @@ export const AIServiceFactory = {
         throw new Error("Anthropic client not yet implemented.");
 
       default:
-        const _exhaustiveCheck: never = type;
-        throw new Error(`Unsupported LLM type: ${_exhaustiveCheck}`);
+        const exhaustiveCheck: never = type;
+        throw new Error(`Unsupported LLM type: ${exhaustiveCheck}`);
     }
   },
 }; 

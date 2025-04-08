@@ -1,8 +1,8 @@
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, type CoreMessage } from "ai";
+import * as v from "valibot";
 import type { LLMInterface } from "./base";
 import type { ChatOptions, ChatResponse } from "../types";
-import * as v from "valibot";
 import {
   prompts,
   type PromptName,

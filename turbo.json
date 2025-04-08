@@ -3,7 +3,7 @@
   "ui": "tui",
   "tasks": {
     "dev": {
-      "dependsOn": ["^dev"],
+      "dependsOn": [],
       "persistent": false,
       "cache": false
     },
@@ -54,6 +54,6 @@
       "cache": false
     }
   },
-  "globalEnv": [],
+  "globalEnv": ["LOG_LEVEL"],
   "globalPassThroughEnv": ["NODE_ENV", "CI", "npm_lifecycle_event"]
 }

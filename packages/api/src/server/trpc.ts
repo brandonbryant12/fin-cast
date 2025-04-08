@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
+import { logger } from '../config/logger';
 
 export const createTRPCContext = async ({
   auth,
@@ -32,19 +33,25 @@ export const router = t.router;
 
 const timingMiddleware = t.middleware(async ({ next, path }) => {
   const start = Date.now();
-  let waitMsDisplay = '';
+  let waitMs = 0;
   if (t._config.isDev) {
-    // artificial delay in dev 100-500ms
-    const waitMs = Math.floor(Math.random() * 400) + 100;
+    waitMs = Math.floor(Math.random() * 400) + 100;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
-    waitMsDisplay = ` (artificial delay: ${waitMs}ms)`;
   }
   const result = await next();
   const end = Date.now();
+  const durationMs = end - start;
 
-  console.log(
-    `\t[TRPC] /${path} executed after ${end - start}ms${waitMsDisplay}`,
-  );
+  const logPayload: { path: string; durationMs: number; artificialDelayMs?: number } = {
+    path,
+    durationMs,
+  };
+  if (waitMs > 0) {
+    logPayload.artificialDelayMs = waitMs;
+  }
+
+  logger.info(logPayload, `[TRPC] /${path} executed.`);
+
   return result;
 });
 

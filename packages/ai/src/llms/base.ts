@@ -1,8 +1,8 @@
-import type { ChatOptions, ChatResponse } from "../types";
 import type {
   PromptName,
   PromptParams,
 } from "../prompts";
+import type { ChatOptions, ChatResponse } from "../types";
 
 /**
  * Common interface for interacting with different LLM providers.

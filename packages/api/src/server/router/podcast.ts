@@ -2,7 +2,7 @@ import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
-
+import { logger } from '../../config/logger';
 
 import { protectedProcedure, router } from '../trpc';
 
@@ -75,7 +75,7 @@ export const podcastRouter = router({
 
         return updatedPodcast;
       } catch (error) {
-        console.error('Failed to create podcast:', error);
+        logger.error({ err: error }, 'Failed to create podcast');
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to initiate podcast creation.',
@@ -137,7 +137,7 @@ export const podcastRouter = router({
     const foundTranscript = resultObj.transcript;
 
     if (!foundPodcast) {
-        console.error(`Inconsistent state: Podcast data missing for ID '${podcastId}' despite query returning results.`);
+        logger.error({ podcastId }, `Inconsistent state: Podcast data missing for ID '${podcastId}' despite query returning results.`);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to retrieve complete podcast data.'
@@ -197,7 +197,7 @@ export const podcastRouter = router({
 
         return { success: true, deletedId: result[0].deletedId };
       } catch (error) {
-        console.error(`Failed to delete podcast ID '${podcastId}':`, error);
+        logger.error({ podcastId, err: error }, `Failed to delete podcast ID '${podcastId}'`);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to delete podcast.',
