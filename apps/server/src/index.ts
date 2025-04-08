@@ -8,7 +8,6 @@ import { createLogger, type LogLevel } from '@repo/logger';
 import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger as honoLogger } from 'hono/logger';
 import { env } from './env';
 
 const trustedOrigins = [env.PUBLIC_WEB_URL].map((url) => new URL(url).origin);
@@ -22,9 +21,10 @@ const wildcardPath = {
 
 const apiKey = env.OPENAI_API_KEY;
 if (!apiKey) {
-  throw new Error('OPENAI_API_KEY environment variable is not set. AI features will be unavailable.');
-} 
-const llm = AIServiceFactory.createLLM('openai', { openai: { apiKey } });
+  throw new Error('OPENAI_API_KEY environment variable is not set. AI features may be unavailable.');
+}
+const llm = apiKey ? AIServiceFactory.createLLM('openai', { openai: { apiKey } }) : null; 
+
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({
   authSecret: env.SERVER_AUTH_SECRET,
@@ -32,8 +32,8 @@ const auth = createAuth({
   webUrl: env.PUBLIC_WEB_URL,
 });
 
-const logger = createLogger({ 
-  level: (env.LOG_LEVEL || 'debug') as LogLevel,
+const logger = createLogger({
+  level: (env.LOG_LEVEL || (env.NODE_ENV === 'production' ? 'info' : 'debug')) as LogLevel,
   prettyPrint: env.NODE_ENV === 'development',
   serviceName: 'hono-server',
 });
@@ -48,8 +48,6 @@ const app = new Hono<{
     session: typeof auth.$Infer.Session.session | null;
   };
 }>();
-
-app.use(honoLogger());
 
 app.use(
   wildcardPath.BETTER_AUTH,
@@ -84,6 +82,7 @@ app.use(
 );
 
 app.get('/', (c) => {
+  logger.info('Root path accessed');
   return c.text('Hello Hono!');
 });
 
@@ -99,18 +98,18 @@ const server = serve(
   },
   (info) => {
     const host = info.family === 'IPv6' ? `[${info.address}]` : info.address;
-    console.log(`Hono internal server: http://${host}:${info.port}`);
+    logger.info(`Hono server listening on http://${host}:${info.port}`);
   },
 );
 
 const shutdown = () => {
   server.close((error) => {
     if (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Server failed to close gracefully');
     } else {
-      console.log('\nServer has stopped gracefully.');
+      logger.info('Server has stopped gracefully.');
     }
-    process.exit(0);
+    process.exit(error ? 1 : 0);
   });
 };
 
