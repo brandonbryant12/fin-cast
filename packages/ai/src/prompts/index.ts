@@ -29,8 +29,9 @@ export type PromptModule<T extends PromptName> = PromptRegistry[T];
  * e.g., PromptParams<"example"> -> example.Params
  */
 export type PromptParams<T extends PromptName> = PromptModule<T> extends {
-  Params: infer P;
-} ? P
+    // Infer the schema type directly from the exported value
+    paramsSchema: infer S extends v.GenericSchema;
+} ? v.InferInput<S> // Use valibot's InferInput on the schema
   : never;
 
 /**

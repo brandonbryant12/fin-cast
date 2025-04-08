@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "clean": "git clean -xdf dist .turbo node_modules",
-    "dev": "tsc -p tsconfig.json --watch",
+    "dev": "tsc -p tsconfig.json",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit",
