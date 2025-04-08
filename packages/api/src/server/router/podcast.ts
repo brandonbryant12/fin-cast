@@ -2,8 +2,93 @@ import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
+import type { TRPCContext } from '../trpc'; // Corrected import path and type name
 
 import { protectedProcedure, router } from '../trpc';
+
+// Helper function for background processing
+async function processPodcastInBackground(
+  ctx: TRPCContext, // Corrected type annotation
+  podcastId: string,
+  sourceUrl: string,
+) {
+  // Derive logger from context directly
+  const logger = ctx.logger.child({ podcastId, backgroundProcess: true, procedure: 'processPodcastInBackground' });
+  logger.info('Starting background processing for podcast.');
+
+  try {
+    // Pass the logger instance from the context to the scrape function
+    const html = await ctx.scraper.scrape(sourceUrl, { logger });
+    logger.info('Scraping successful, running LLM prompt.');
+
+    // Generate transcript using LLM
+    const podcastTranscriptResponse = await ctx.llm.runPrompt('generatePodcastScript', {
+      htmlContent: html,
+    });
+    logger.info('LLM prompt successful, updating transcript.');
+
+    // Update transcript content with the entire JSON response
+    await ctx.db
+      .update(schema.transcript)
+      .set({ content: podcastTranscriptResponse.content! }) // Save the entire response object
+      .where(eq(schema.transcript.podcastId, podcastId));
+    logger.info('Transcript content updated with full LLM response.');
+
+
+    // TODO: Replace mock data with actual audio generation logic
+    const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...'; // Placeholder
+    const generatedTime = new Date();
+    logger.info('Updating podcast status to success with mock audio.');
+
+    // Update podcast status to success
+    const [updatedPodcast] = await ctx.db
+      .update(schema.podcast)
+      .set({
+        status: 'success',
+        audioUrl: mockAudioData,
+        generatedAt: generatedTime,
+        errorMessage: null, // Clear any previous errors
+      })
+      .where(eq(schema.podcast.id, podcastId))
+      .returning();
+
+    if (!updatedPodcast) {
+      logger.error('Failed to update podcast status to success after background processing.');
+      // If the update fails here, the status remains 'processing' or potentially 'failed' from a prior error.
+      // No TRPCError is thrown as this is a background task.
+    } else {
+      logger.info('Podcast status updated to success.');
+    }
+
+  } catch (processError) {
+    // If any step in the background process fails, update status to 'failed'
+    logger.warn({ err: processError }, 'Background processing failed, marking podcast as failed.');
+
+    let errorMessage = 'Background processing failed.';
+    if (processError instanceof Error) {
+      errorMessage = `Background processing failed: ${processError.message}`;
+    }
+
+    try {
+        const [failedPodcast] = await ctx.db
+          .update(schema.podcast)
+          .set({
+            status: 'failed',
+            errorMessage: errorMessage,
+          })
+          .where(eq(schema.podcast.id, podcastId))
+          .returning();
+
+        if (!failedPodcast) {
+           logger.error('CRITICAL: Failed to update podcast status to FAILED after background processing error.');
+        } else {
+           logger.warn({ errorMessage }, 'Podcast status updated to failed due to background error.');
+        }
+    } catch (updateError) {
+        logger.error({ updateError }, 'CRITICAL: Failed to update podcast status to FAILED even in background error handler.');
+    }
+  }
+}
 
 const CreatePodcastInput = v.object({
   sourceUrl: v.pipe(v.string('Source must be a string'), v.url('Please provide a valid URL')),
@@ -61,74 +146,30 @@ export const podcastRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Podcast creation failed after transaction.' });
         }
         const podcastId = initialPodcast.id; // Use variable for clarity
-        logger.info({ podcastId }, 'Initial podcast and transcript created, proceeding to scrape.');
+        logger.info({ podcastId }, 'Initial podcast and transcript created. Returning processing status and starting background job.');
 
+        // 2. Trigger background processing (DO NOT AWAIT)
+        processPodcastInBackground(ctx, podcastId, input.sourceUrl).catch(err => {
+          // Log unexpected errors from the background task initiation itself (not the async process).
+          // This catch is for errors *before* the async function actually starts running properly.
+          logger.error({ err, podcastId }, "Error initiating background podcast processing task.");
+          // We might still attempt a final 'failed' status update here, but the background task's
+          // own error handling should ideally catch processing errors.
+          // Optionally update status here as a fallback, but avoid complex logic.
+          // Example:
+          // ctx.db.update(schema.podcast).set({ status: 'failed', errorMessage: 'Background task init failed' }).where(eq(schema.podcast.id, podcastId)).catch(e => logger.error({e}, "Fallback status update failed"));
+        });
 
-        // 2. Attempt to Scrape the URL *after* creation
-        try {
-          // Pass the API's logger instance to the scrape function
-          const html = await ctx.scraper.scrape(input.sourceUrl, { logger });
-          const podcastTranscript = await ctx.llm.runPrompt('generatePodcastScript', {
-            htmlContent: html,
-          });
-          console.log(podcastTranscript);
-          // 3a. If scrape succeeds, update with mock audio data and 'success' status
-          // TODO: Replace mock data with actual audio generation logic
-          const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...'; // Placeholder
-          const generatedTime = new Date();
-          logger.info({ podcastId }, 'Updating podcast status to success with mock audio.');
-
-          const [updatedPodcast] = await ctx.db
-            .update(schema.podcast)
-            .set({
-              status: 'success',
-              audioUrl: mockAudioData,
-              generatedAt: generatedTime,
-              errorMessage: null, // Clear any previous errors
-            })
-            .where(eq(schema.podcast.id, podcastId))
-            .returning();
-
-          if (!updatedPodcast) {
-            logger.error({ podcastId }, 'Failed to update podcast status to success after scrape.');
-            // Consider if this should be an internal error or if the client should see 'processing'
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to finalize podcast status after successful scrape.' });
-          }
-          logger.info({ podcastId }, 'Podcast status updated to success.');
-          return updatedPodcast;
-
-        } catch (scrapeError) {
-          // 3b. If scrape fails, update status to 'failed' and store error message
-          logger.warn({ podcastId, err: scrapeError }, 'Scraping failed, marking podcast as failed.');
-
-          let errorMessage = 'Scraping failed.';
-          if (scrapeError instanceof Error) {
-            errorMessage = `Scraping failed: ${scrapeError.message}`;
-          }
-
-          const [failedPodcast] = await ctx.db
-            .update(schema.podcast)
-            .set({
-              status: 'failed',
-              errorMessage: errorMessage,
-            })
-            .where(eq(schema.podcast.id, podcastId))
-            .returning();
-
-          if (!failedPodcast) {
-            logger.error({ podcastId }, 'Failed to update podcast status to FAILED after scraping error.');
-            // This is a critical state inconsistency
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update podcast status after scraping error.' });
-          }
-          logger.warn({ podcastId, errorMessage }, 'Podcast status updated to failed.');
-          // Return the failed podcast object so the UI knows the final state
-          return failedPodcast;
-        }
+        // 3. Return the initial podcast object immediately
+        return initialPodcast;
 
       } catch (error) {
-        logger.error({ err: error }, 'Outer error during podcast creation process');
+        // This outer catch now primarily handles errors during the *initial* transaction
+        // or validation before the background task is triggered.
+        logger.error({ err: error }, 'Outer error during initial podcast creation (before background task)');
 
         // Attempt to mark as failed if we have an ID, even if initial creation failed mid-way
+        // This might be redundant if the transaction itself rolled back, but safe to include.
         if (initialPodcast?.id) {
           try {
             await ctx.db

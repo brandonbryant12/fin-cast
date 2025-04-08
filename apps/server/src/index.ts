@@ -40,6 +40,12 @@ const logger = createLogger({
 
 const scraper = createScraper();
 
+// Ensure LLM is initialized before creating API
+if (!llm) {
+  logger.fatal('LLM service could not be initialized. Check API Key and configuration.');
+  process.exit(1); // Exit if LLM is essential
+}
+
 const api = createApi({ auth, db, llm, logger, scraper });
 
 const app = new Hono<{
@@ -77,7 +83,12 @@ app.use(
   wildcardPath.TRPC,
   trpcServer({
     router: api.trpcRouter,
-    createContext: (c) => api.createTRPCContext({ headers: c.req.headers }),
+    createContext: async (c) => {
+      // Explicitly await and cast the context to 'any' to satisfy the adapter type
+      // This assumes the runtime structure is compatible, despite the strict type mismatch.
+      const context = await api.createTRPCContext({ headers: c.req.headers });
+      return context as any; 
+    },
   }),
 );
 

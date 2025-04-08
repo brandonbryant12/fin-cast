@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { jsonb, pgEnum, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-valibot';
 
 import { podcast } from './podcasts';
@@ -15,7 +15,7 @@ export const transcript = pgTable('transcript', {
     .notNull()
     .references(() => podcast.id, { onDelete: 'cascade' })
     .unique(), // Enforce one-to-one relationship
-  content: text('content').notNull(),
+  content: jsonb('content').notNull(),
   format: transcriptFormatEnum('format').default('plain_text'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
