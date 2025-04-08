@@ -4,9 +4,10 @@
     "declaration": true,
     "declarationMap": true,
     "skipLibCheck": true,
-    "rootDir": "src",   // Explicitly set the root directory
-    "outDir": "dist"    // Explicitly set the output directory (matches tsup default)
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true
   },
-  "include": ["src/**/*"], // Keep the explicit include pattern
-  "exclude": ["node_modules", "dist"] // Also exclude dist to prevent issues
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

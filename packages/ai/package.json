@@ -4,13 +4,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.js",
-    "./prompts": "./dist/prompts/index.js"
-  },
-  "typesVersions": {
-    "*": {
-      ".": ["./dist/index.d.ts"],
-      "prompts": ["./dist/prompts/index.d.ts"]
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./prompts": {
+      "types": "./dist/prompts/index.d.ts",
+      "import": "./dist/prompts/index.js",
+      "default": "./dist/prompts/index.js"
     }
   },
   "scripts": {
