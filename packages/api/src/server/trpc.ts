@@ -3,19 +3,24 @@ import SuperJSON from 'superjson';
 import type { LLMInterface } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
-import { logger } from '../config/logger';
+import type { AppLogger } from '@repo/logger';
+import type { Scraper } from '@repo/webscraper';
 
 export interface CreateContextOptions {
   auth: AuthInstance;
   db: DatabaseInstance;
   headers: Headers;
   llm: LLMInterface;
+  logger: AppLogger;
+  scraper: Scraper;
 }
 
 export interface TRPCContext {
   db: DatabaseInstance;
   session: AuthInstance['$Infer']['Session'] | null;
   llm: LLMInterface;
+  logger: AppLogger;
+  scraper: Scraper;
 }
 
 export const createTRPCContext = async ({
@@ -23,6 +28,8 @@ export const createTRPCContext = async ({
   db,
   headers,
   llm,
+  logger,
+  scraper,
 }: CreateContextOptions): Promise<TRPCContext> => {
   const session = await auth.api.getSession({
     headers,
@@ -31,6 +38,8 @@ export const createTRPCContext = async ({
     db,
     session,
     llm,
+    logger,
+    scraper,
   };
 };
 
@@ -40,7 +49,7 @@ export const t = initTRPC.context<TRPCContext>().create({
 
 export const router = t.router;
 
-const timingMiddleware = t.middleware(async ({ next, path }) => {
+const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const start = Date.now();
   let waitMs = 0;
   if (t._config.isDev) {
@@ -59,7 +68,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
     logPayload.artificialDelayMs = waitMs;
   }
 
-  logger.info(logPayload, `[TRPC] /${path} executed.`);
+  ctx.logger.info(logPayload, `[TRPC] /${path} executed.`);
 
   return result;
 });

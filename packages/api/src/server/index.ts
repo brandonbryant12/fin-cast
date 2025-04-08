@@ -1,6 +1,8 @@
 import type { LLMInterface } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
+import type { AppLogger } from '@repo/logger';
+import type { Scraper } from '@repo/webscraper';
 import podcastRouter from './router/podcast';
 import postRouter from './router/post';
 import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
@@ -16,14 +18,18 @@ export const createApi = ({
   auth,
   db,
   llm,
+  logger,
+  scraper,
 }: {
   auth: AuthInstance;
   db: DatabaseInstance;
   llm: LLMInterface;
+  logger: AppLogger;
+  scraper: Scraper;
 }) => {
   return {
     trpcRouter: appRouter,
     createTRPCContext: ({ headers }: { headers: Headers }) =>
-      createTRPCContextInternal({ auth, db, headers, llm }),
+      createTRPCContextInternal({ auth, db, headers, llm, logger, scraper }),
   };
 };

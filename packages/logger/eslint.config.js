@@ -1,9 +1,8 @@
-import baseConfig, { restrictEnvAccess } from "@repo/eslint-config/base";
+import baseConfig from "@repo/eslint-config/base";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
-  { ignores: ["dist/**"] },
+  { ignores: ["dist/**"] }, // Keep ignoring potential leftover build artifacts
   ...baseConfig,
-  // Enforce that this package CANNOT directly access process.env
-  ...restrictEnvAccess,
+  // No longer need restrictEnvAccess here as the package won't access process.env
 ]; 

@@ -12,15 +12,14 @@ export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace" |
 export interface LoggerConfig {
   /**
    * The minimum log level to output.
-   * @default 'info'
+   * @default 'info' (Handled in createLogger if not provided)
    */
   level?: LogLevel;
 
   /**
    * Enable human-readable pretty printing. Recommended for development only.
-   * The consuming application should set this explicitly based on its environment (e.g., NODE_ENV).
    * Requires 'pino-pretty' to be installed as a dev dependency in the consuming app.
-   * @default false
+   * @default false (Handled in createLogger if not provided)
    */
   prettyPrint?: boolean;
 

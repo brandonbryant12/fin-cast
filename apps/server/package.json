@@ -22,6 +22,8 @@
     "@repo/ai": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@repo/webscraper": "workspace:*",
     "hono": "catalog:",
     "valibot": "catalog:"
   },

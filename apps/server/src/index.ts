@@ -4,6 +4,8 @@ import { AIServiceFactory } from '@repo/ai';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
+import { createLogger } from '@repo/logger';
+import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as honoLogger } from 'hono/logger';
@@ -29,7 +31,16 @@ const auth = createAuth({
   db,
   webUrl: env.PUBLIC_WEB_URL,
 });
-const api = createApi({ auth, db, llm });
+
+const logger = createLogger({ 
+  level: env.LOG_LEVEL,
+  prettyPrint: env.NODE_ENV === 'development',
+  serviceName: 'hono-server',
+});
+
+const scraper = createScraper();
+
+const api = createApi({ auth, db, llm, logger, scraper });
 
 const app = new Hono<{
   Variables: {

@@ -1,9 +1,7 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
-import { scrape, ScraperError } from '@repo/webscraper'; // Ensure this resolves correctly
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
-import { logger as apiLogger } from '../../config/logger'; // Import the API's logger
 
 import { protectedProcedure, router } from '../trpc';
 
@@ -25,7 +23,7 @@ export const podcastRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       let initialPodcast: typeof schema.podcast.$inferSelect | null = null;
-      const logger = apiLogger.child({ userId, sourceUrl: input.sourceUrl, procedure: 'createPodcast' }); // Create child logger for context
+      const logger = ctx.logger.child({ userId, sourceUrl: input.sourceUrl, procedure: 'createPodcast' }); // Use ctx.logger
 
       try {
         // 1. Create Initial Podcast and Transcript Entries
@@ -69,7 +67,7 @@ export const podcastRouter = router({
         // 2. Attempt to Scrape the URL *after* creation
         try {
           // Pass the API's logger instance to the scrape function
-          const html = await scrape(input.sourceUrl, { logger }); // Pass the contextual logger
+          const html = await ctx.scraper.scrape(input.sourceUrl, { logger }); // Use ctx.scraper.scrape
           logger.info({ podcastId, length: html.length }, 'Successfully scraped URL.');
 
           // 3a. If scrape succeeds, update with mock audio data and 'success' status
@@ -102,9 +100,7 @@ export const podcastRouter = router({
           logger.warn({ podcastId, err: scrapeError }, 'Scraping failed, marking podcast as failed.');
 
           let errorMessage = 'Scraping failed.';
-          if (scrapeError instanceof ScraperError) {
-            errorMessage = `Scraping failed: ${scrapeError.message}`;
-          } else if (scrapeError instanceof Error) {
+          if (scrapeError instanceof Error) {
             errorMessage = `Scraping failed: ${scrapeError.message}`;
           }
 
@@ -158,7 +154,7 @@ export const podcastRouter = router({
 
   myPodcasts: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    const logger = apiLogger.child({ userId, procedure: 'myPodcasts' });
+    const logger = ctx.logger.child({ userId, procedure: 'myPodcasts' }); // Use ctx.logger
     logger.info('Fetching podcasts for user');
 
     try {
@@ -196,7 +192,7 @@ export const podcastRouter = router({
   byId: protectedProcedure.input(GetPodcastByIdInput).query(async ({ ctx, input }) => {
     const userId = ctx.session.user.id;
     const podcastId = input.id;
-    const logger = apiLogger.child({ userId, podcastId, procedure: 'byId' });
+    const logger = ctx.logger.child({ userId, podcastId, procedure: 'byId' }); // Use ctx.logger
     logger.info('Fetching podcast by ID');
 
     try {
@@ -255,7 +251,7 @@ export const podcastRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       const podcastId = input.id;
-      const logger = apiLogger.child({ userId, podcastId, procedure: 'delete' });
+      const logger = ctx.logger.child({ userId, podcastId, procedure: 'delete' }); // Use ctx.logger
       logger.info('Attempting to delete podcast');
 
       // 1. Verify ownership first

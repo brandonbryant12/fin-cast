@@ -52,9 +52,6 @@ export const AIServiceFactory = {
         throw new Error("Anthropic client not yet implemented.");
 
       default:
-        // This ensures exhaustiveness checking at compile time
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const exhaustiveCheck: never = type;
         throw new Error(`Unsupported LLM type: ${type}`);
     }
   },

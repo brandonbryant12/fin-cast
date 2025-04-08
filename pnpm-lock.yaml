@@ -150,9 +150,6 @@ catalogs:
     react-dom:
       specifier: ^19.1.0
       version: 19.1.0
-    rimraf:
-      specifier: ^5.0.7
-      version: 5.0.10
     shx:
       specifier: ^0.4.0
       version: 0.4.0
@@ -237,6 +234,12 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@repo/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@repo/webscraper':
+        specifier: workspace:*
+        version: link:../../packages/webscraper
       hono:
         specifier: 'catalog:'
         version: 4.7.5
@@ -568,18 +571,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.24.0(jiti@2.4.2)
-      pino-pretty:
-        specifier: ^10.3.1
-        version: 10.3.1
       prettier:
         specifier: 'catalog:'
         version: 3.5.3
-      rimraf:
-        specifier: 'catalog:'
-        version: 5.0.10
-      tsup:
-        specifier: 'catalog:'
-        version: 8.4.0(@swc/core@1.11.18)(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.3)(typescript@5.8.3)
       typescript:
         specifier: 'catalog:'
         version: 5.8.3
@@ -4169,10 +4163,6 @@ packages:
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
-
-  rimraf@5.0.10:
-    resolution: {integrity: sha512-l0OE8wL34P4nJH/H2ffoaniAokM2qSmrtXHmlpvYr5AVVX8msAyW0l8NVJFDxlSK4u3Uh/f41cQheDVdnYijwQ==}
-    hasBin: true
 
   rollup@4.39.0:
     resolution: {integrity: sha512-thI8kNc02yNvnmJp8dr3fNWJ9tCONDhp6TV35X6HkKGGs9E6q7YWCHbe5vKiTa7TAiNcFEmXKj3X/pG2b3ci0g==}
@@ -8344,10 +8334,6 @@ snapshots:
       supports-preserve-symlinks-flag: 1.0.0
 
   reusify@1.1.0: {}
-
-  rimraf@5.0.10:
-    dependencies:
-      glob: 10.4.5
 
   rollup@4.39.0:
     dependencies:
