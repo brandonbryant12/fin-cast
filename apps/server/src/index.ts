@@ -4,7 +4,7 @@ import { AIServiceFactory } from '@repo/ai';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
-import { createLogger } from '@repo/logger';
+import { createLogger, type LogLevel } from '@repo/logger';
 import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -33,7 +33,7 @@ const auth = createAuth({
 });
 
 const logger = createLogger({ 
-  level: env.LOG_LEVEL,
+  level: (env.LOG_LEVEL || 'debug') as LogLevel,
   prettyPrint: env.NODE_ENV === 'development',
   serviceName: 'hono-server',
 });

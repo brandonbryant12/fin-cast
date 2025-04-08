@@ -2,6 +2,7 @@ import * as v from 'valibot';
 
 const DEFAULT_SERVER_PORT = 3035;
 const DEFAULT_SERVER_HOST = 'localhost';
+const DEFAULT_DB_URL = 'postgres://postgres:postgres@localhost:5432/postgres';
 
 const createPortSchema = ({ defaultPort }: { defaultPort: number }) =>
   v.pipe(
@@ -19,7 +20,7 @@ export const envSchema = v.object({
     v.minLength(1),
   ),
   SERVER_AUTH_SECRET: v.pipe(v.string(), v.minLength(1)),
-  SERVER_POSTGRES_URL: v.string(),
+  SERVER_POSTGRES_URL: v.optional(v.string(), DEFAULT_DB_URL),
 
   // Frontend URL, used to configure trusted origin (CORS)
   PUBLIC_WEB_URL: v.pipe(v.string(), v.url()),
