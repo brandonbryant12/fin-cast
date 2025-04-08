@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { scrape, ScraperError } from './scraper';
+import { createScraper, ScraperError } from './scraper';
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error({ err: reason, promise }, 'Unhandled Rejection at Promise');
@@ -49,8 +49,10 @@ program
 
     console.info({ url, timeout: effectiveTimeout }, 'Starting scrape via CLI');
 
+    const scraper = createScraper();
+
     try {
-      const html = await scrape(url, {
+      const html = await scraper.scrape(url, {
         timeout: effectiveTimeout,
         // proxy: proxyConfig
       });

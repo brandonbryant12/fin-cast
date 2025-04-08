@@ -8,9 +8,12 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "clean": "git clean -xdf .cache .turbo node_modules",
-    "lint": "eslint . --fix",
+    "build": "tsc",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsc",
     "format": "prettier --check . --ignore-path ../../.gitignore",
+    "auth:schema:generate": "pnpx @better-auth/cli generate --config ./src/cli-config.ts --output ../db/src/schemas/auth.ts",
+    "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

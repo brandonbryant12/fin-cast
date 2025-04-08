@@ -58,8 +58,9 @@ export class OpenAIClient implements LLMInterface {
         system: systemPrompt,
         temperature: options?.temperature,
         maxTokens: options?.maxTokens,
-        messages: typeof promptOrMessages === 'string' ? [] : promptOrMessages,
-        prompt: typeof promptOrMessages === 'string' ? promptOrMessages : undefined,
+        ...(typeof promptOrMessages === 'string'
+          ? { prompt: promptOrMessages }
+          : { messages: promptOrMessages }),
       };
 
       // Specify the generic types for GenerateTextResult

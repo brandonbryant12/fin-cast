@@ -1,13 +1,9 @@
 {
-  "extends": "@repo/typescript-config/internal-package.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "skipLibCheck": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "composite": true
+    // No outDir or declaration needed as apps will consume TS directly
+    "noEmit": true // Enforce no emit from this package's tsc runs
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"] // Keep dist in exclude for cleanup safety
+} 

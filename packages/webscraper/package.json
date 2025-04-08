@@ -24,11 +24,13 @@
     }
   },
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --check .",
-    "format:fix": "prettier --write .",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsc",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "auth:schema:generate": "pnpx @better-auth/cli generate --config ./src/cli-config.ts --output ../db/src/schemas/auth.ts",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "cli": "tsx ./src/cli.ts"
   },
   "dependencies": {
