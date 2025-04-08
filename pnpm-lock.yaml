@@ -225,6 +225,9 @@ importers:
       '@hono/trpc-server':
         specifier: 'catalog:'
         version: 0.3.4(@trpc/server@11.0.2(typescript@5.8.3))(hono@4.7.5)
+      '@repo/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@repo/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -420,6 +423,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@repo/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@repo/auth':
         specifier: workspace:*
         version: link:../auth
@@ -429,6 +435,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../logger
+      '@repo/webscraper':
+        specifier: workspace:*
+        version: link:../webscraper
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.0.2(@trpc/server@11.0.2(typescript@5.8.3))(typescript@5.8.3)

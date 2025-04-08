@@ -19,6 +19,7 @@
     "@hono/node-server": "catalog:",
     "@hono/trpc-server": "catalog:",
     "@repo/api": "workspace:*",
+    "@repo/ai": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
     "hono": "catalog:",

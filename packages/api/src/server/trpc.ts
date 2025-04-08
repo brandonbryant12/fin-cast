@@ -1,31 +1,40 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
+import type { LLMInterface } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import { logger } from '../config/logger';
+
+export interface CreateContextOptions {
+  auth: AuthInstance;
+  db: DatabaseInstance;
+  headers: Headers;
+  llm: LLMInterface;
+}
+
+export interface TRPCContext {
+  db: DatabaseInstance;
+  session: AuthInstance['$Infer']['Session'] | null;
+  llm: LLMInterface;
+}
 
 export const createTRPCContext = async ({
   auth,
   db,
   headers,
-}: {
-  auth: AuthInstance;
-  db: DatabaseInstance;
-  headers: Headers;
-}): Promise<{
-  db: DatabaseInstance;
-  session: AuthInstance['$Infer']['Session'] | null;
-}> => {
+  llm,
+}: CreateContextOptions): Promise<TRPCContext> => {
   const session = await auth.api.getSession({
     headers,
   });
   return {
     db,
     session,
+    llm,
   };
 };
 
-export const t = initTRPC.context<typeof createTRPCContext>().create({
+export const t = initTRPC.context<TRPCContext>().create({
   transformer: SuperJSON,
 });
 

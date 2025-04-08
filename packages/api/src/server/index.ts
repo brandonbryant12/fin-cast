@@ -1,3 +1,4 @@
+import type { LLMInterface } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import podcastRouter from './router/podcast';
@@ -14,13 +15,15 @@ export type AppRouter = typeof appRouter;
 export const createApi = ({
   auth,
   db,
+  llm,
 }: {
   auth: AuthInstance;
   db: DatabaseInstance;
+  llm: LLMInterface;
 }) => {
   return {
     trpcRouter: appRouter,
     createTRPCContext: ({ headers }: { headers: Headers }) =>
-      createTRPCContextInternal({ auth, db, headers }),
+      createTRPCContextInternal({ auth, db, headers, llm }),
   };
 };

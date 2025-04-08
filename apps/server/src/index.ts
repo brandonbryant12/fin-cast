@@ -1,11 +1,12 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
+import { AIServiceFactory } from '@repo/ai';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+import { logger as honoLogger } from 'hono/logger';
 import { env } from './env';
 
 const trustedOrigins = [env.PUBLIC_WEB_URL].map((url) => new URL(url).origin);
@@ -16,13 +17,19 @@ const wildcardPath = {
   TRPC: '/trpc/*',
 } as const;
 
+
+const apiKey = env.OPENAI_API_KEY;
+if (!apiKey) {
+  throw new Error('OPENAI_API_KEY environment variable is not set. AI features will be unavailable.');
+} 
+const llm = AIServiceFactory.createLLM('openai', { openai: { apiKey } });
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({
   authSecret: env.SERVER_AUTH_SECRET,
   db,
   webUrl: env.PUBLIC_WEB_URL,
 });
-const api = createApi({ auth, db });
+const api = createApi({ auth, db, llm });
 
 const app = new Hono<{
   Variables: {
@@ -31,7 +38,7 @@ const app = new Hono<{
   };
 }>();
 
-app.use(logger());
+app.use(honoLogger());
 
 app.use(
   wildcardPath.BETTER_AUTH,

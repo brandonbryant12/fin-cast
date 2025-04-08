@@ -1,23 +1,12 @@
 {
   "extends": "@repo/typescript-config/internal-package.json",
   "compilerOptions": {
-    // --- Settings for tsc declaration generation ---
-    "outDir": "dist", // Specify output directory for tsc
-    "declaration": true, // Generate .d.ts files
-    "declarationMap": true, // Generate sourcemaps for .d.ts files
-    "emitDeclarationOnly": true, // Only emit .d.ts files during the tsc build step
-
-    // --- Ensure other necessary options are present (might be inherited) ---
-    // "module": "ESNext", // Assuming Node.js ESM environment
-    // "target": "ES2022", // Match tsup target
-    // "moduleResolution": "Bundler", // Recommended for modern setups
-    "isolatedModules": false // Required when 'emitDeclarationOnly' is not true on its own, but okay here. Set to false explicitly if base sets it true.
+    "declaration": true,
+    "declarationMap": true,
+    "skipLibCheck": true,
+    "rootDir": "src",   // Explicitly set the root directory
+    "outDir": "dist"    // Explicitly set the output directory (matches tsup default)
   },
-  "include": ["src"], // Include the entire src directory for tsc processing
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts", // Exclude test files from declaration output
-    "src/tests"     // Exclude tests directory
-  ]
-} 
+  "include": ["src/**/*"], // Keep the explicit include pattern
+  "exclude": ["node_modules", "dist"] // Also exclude dist to prevent issues
+}

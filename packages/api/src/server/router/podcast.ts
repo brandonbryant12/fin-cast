@@ -1,5 +1,6 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
+import { scrape, ScraperError } from '@repo/webscraper';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 import { logger } from '../../config/logger';
@@ -20,12 +21,14 @@ const DeletePodcastInput = v.object({
 
 export const podcastRouter = router({
   create: protectedProcedure
-
     .input(CreatePodcastInput)
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
+      let initialPodcast: typeof schema.podcast.$inferSelect | null = null;
+
       try {
-        const [initialPodcast] = await ctx.db.transaction(async (tx) => {
+        // 1. Create Initial Podcast and Transcript Entries
+        [initialPodcast] = await ctx.db.transaction(async (tx) => {
           const [createdPodcast] = await tx
             .insert(schema.podcast)
             .values({
@@ -41,7 +44,6 @@ export const podcastRouter = router({
             throw new Error('Failed to create podcast entry.');
           }
 
-          // 2. Create the associated transcript entry (initially empty)
           await tx.insert(schema.transcript).values({
             podcastId: createdPodcast.id,
             content: '[Transcript processing...]',
@@ -55,30 +57,78 @@ export const podcastRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Podcast creation failed during transaction.' });
         }
 
-        // 3. Add mock base64 audio encoded url to the podcast and set as successful.
-        const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...';
-        const generatedTime = new Date();
+        // 2. Attempt to Scrape the URL *after* creation
+        try {
+          const html = await scrape(input.sourceUrl);
+          logger.info({ podcastId: initialPodcast.id, url: input.sourceUrl }, 'Successfully scraped URL after podcast creation');
 
-        const [updatedPodcast] = await ctx.db
-          .update(schema.podcast)
-          .set({
-            status: 'success',
-            audioUrl: mockAudioData,
-            generatedAt: generatedTime,
-          })
-          .where(eq(schema.podcast.id, initialPodcast.id))
-          .returning();
-        
-        if (!updatedPodcast) {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to finalize podcast status.' });
+          // 3a. If scrape succeeds, update with mock audio data and 'success' status
+          const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...';
+          const generatedTime = new Date();
+
+          const [updatedPodcast] = await ctx.db
+            .update(schema.podcast)
+            .set({
+              status: 'success',
+              audioUrl: mockAudioData,
+              generatedAt: generatedTime,
+            })
+            .where(eq(schema.podcast.id, initialPodcast.id))
+            .returning();
+
+          if (!updatedPodcast) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to finalize podcast status after successful scrape.' });
+          }
+          return updatedPodcast;
+
+        } catch (scrapeError) {
+          // 3b. If scrape fails, update status to 'failed' and store error message
+          logger.warn({ podcastId: initialPodcast.id, url: input.sourceUrl, err: scrapeError }, 'Scraping failed after podcast creation, marking as failed.');
+
+          let errorMessage = 'Scraping failed.';
+          if (scrapeError instanceof ScraperError) {
+            errorMessage = `Scraping failed: ${scrapeError.message}`;
+          } else if (scrapeError instanceof Error) {
+            errorMessage = `Scraping failed: ${scrapeError.message}`;
+          }
+
+          const [failedPodcast] = await ctx.db
+            .update(schema.podcast)
+            .set({
+              status: 'failed',
+              errorMessage: errorMessage,
+            })
+            .where(eq(schema.podcast.id, initialPodcast.id))
+            .returning();
+
+          if (!failedPodcast) {
+            logger.error({ podcastId: initialPodcast.id }, 'Failed to update podcast status to FAILED after scraping error.');
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update podcast status after scraping error.' });
+          }
+          return failedPodcast;
         }
 
-        return updatedPodcast;
       } catch (error) {
-        logger.error({ err: error }, 'Failed to create podcast');
+        logger.error({ err: error, sourceUrl: input.sourceUrl }, 'Failed during podcast creation process');
+
+        if (initialPodcast && initialPodcast.id) {
+          try {
+            await ctx.db
+              .update(schema.podcast)
+              .set({
+                status: 'failed',
+                errorMessage: error instanceof Error ? error.message : 'Unknown creation error',
+              })
+              .where(eq(schema.podcast.id, initialPodcast.id));
+            logger.info({ podcastId: initialPodcast.id }, 'Marked podcast as failed due to outer catch block error.');
+          } catch (updateError) {
+            logger.error({ podcastId: initialPodcast.id, updateError }, 'Failed to mark podcast as failed even in the outer catch block.');
+          }
+        }
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to initiate podcast creation.',
+          message: error instanceof Error ? error.message : 'Failed to process podcast creation.',
           cause: error instanceof Error ? error : undefined,
         });
       }

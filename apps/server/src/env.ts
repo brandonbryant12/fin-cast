@@ -23,6 +23,9 @@ export const envSchema = v.object({
 
   // Frontend URL, used to configure trusted origin (CORS)
   PUBLIC_WEB_URL: v.pipe(v.string(), v.url()),
+
+  // AI Provider API Key (Optional)
+  OPENAI_API_KEY: v.optional(v.string()),
 });
 
 export const env = v.parse(envSchema, process.env);

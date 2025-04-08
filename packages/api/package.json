@@ -24,9 +24,11 @@
   },
   "prettier": "@repo/prettier-config",
   "dependencies": {
+    "@repo/ai": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@repo/webscraper": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "superjson": "catalog:",

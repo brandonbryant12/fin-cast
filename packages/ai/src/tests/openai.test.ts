@@ -1,9 +1,9 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import { generateText, type CoreMessage } from "ai";
+import { parse } from "valibot";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { CoreMessage } from "ai";
 import { OpenAIClient } from "../llms/openai";
 import { prompts, type PromptParams } from "../prompts";
-
 
 vi.mock("@ai-sdk/openai", () => ({
     createOpenAI: vi.fn(() => mockOpenAIProvider),
@@ -15,35 +15,22 @@ const mockOpenAIProvider = vi.fn().mockImplementation((modelId) => ({
 
 vi.mock("ai", async (importOriginal: () => Promise<typeof import("ai")>) => {
     const actual = await importOriginal();
-    const mockGenerateTextFn = vi.fn();
     return {
         ...actual,
-        generateText: mockGenerateTextFn,
-        __mockGenerateTextFn: mockGenerateTextFn,
+        generateText: vi.fn(),
     };
 });
 
-// eslint-disable-next-line import/order
-import { __mockGenerateTextFn as mockGenerateText } from 'ai';
-const typedMockGenerateText = mockGenerateText as ReturnType<typeof vi.fn>;
-// --- End Refactored 'ai' Mock ---
-
-
-// Valibot mock (using the same working pattern)
 vi.mock("valibot", async (importOriginal: () => Promise<typeof import("valibot")>) => {
     const actual = await importOriginal();
-    const mockParseFn = vi.fn();
     return {
         ...actual,
-        parse: mockParseFn,
-        __mockParseFn: mockParseFn,
+        parse: vi.fn(),
     };
 });
 
-// eslint-disable-next-line import/order
-import { __mockParseFn as mockValibotParseFn } from 'valibot';
-const typedMockValibotParseFn = mockValibotParseFn as ReturnType<typeof vi.fn>;
-
+const typedMockGenerateText = vi.mocked(generateText);
+const typedMockValibotParseFn = vi.mocked(parse);
 
 // --- Tests ---
 describe("OpenAIClient", () => {
@@ -53,11 +40,12 @@ describe("OpenAIClient", () => {
 
     beforeEach(() => {
         vi.restoreAllMocks();
-        vi.clearAllMocks();
-
+        
         typedMockValibotParseFn.mockImplementation(() => {});
-        typedMockGenerateText.mockResolvedValue({ text: "Mock response", usage: {} });
-        mockOpenAIProvider.mockImplementation((modelId) => ({ modelId: modelId }));
+        // @ts-expect-error - Ignoring complex GenerateTextResult type for mock simplicity
+        typedMockGenerateText.mockResolvedValue({
+            text: "Mock response",
+        });
 
         client = new OpenAIClient(validOptions);
     });
@@ -93,7 +81,7 @@ describe("OpenAIClient", () => {
         it("should call generateText with correct parameters using prompt string", async () => {
             const response = await client.chatCompletion(prompt);
             expect(typedMockGenerateText).toHaveBeenCalledTimes(1);
-            const generateTextArgs = typedMockGenerateText.mock.calls[0][0];
+            const generateTextArgs = typedMockGenerateText.mock.calls[0]![0];
             expect(generateTextArgs.model).toBeDefined();
             expect(generateTextArgs.model).toHaveProperty("modelId", "gpt-4o-mini");
             expect(generateTextArgs.prompt).toBe(prompt);
@@ -105,7 +93,7 @@ describe("OpenAIClient", () => {
         it("should call generateText with correct parameters using messages array", async () => {
             await client.chatCompletion(messages);
             expect(typedMockGenerateText).toHaveBeenCalledTimes(1);
-            const generateTextArgs = typedMockGenerateText.mock.calls[0][0];
+            const generateTextArgs = typedMockGenerateText.mock.calls[0]![0];
             expect(generateTextArgs.model).toBeDefined();
             expect(generateTextArgs.model).toHaveProperty("modelId", "gpt-4o-mini");
             expect(generateTextArgs.prompt).toBeUndefined();
@@ -119,7 +107,7 @@ describe("OpenAIClient", () => {
                 systemPrompt: "Be concise",
             });
             expect(typedMockGenerateText).toHaveBeenCalledTimes(1);
-            const generateTextArgs = typedMockGenerateText.mock.calls[0][0];
+            const generateTextArgs = typedMockGenerateText.mock.calls[0]![0];
             expect(generateTextArgs.model).toBeDefined();
             expect(generateTextArgs.model).toHaveProperty("modelId", "gpt-4");
             expect(generateTextArgs.system).toBe("Be concise");
@@ -148,7 +136,7 @@ describe("OpenAIClient", () => {
                 exampleParams,
             );
             expect(typedMockGenerateText).toHaveBeenCalledTimes(1);
-            const generateTextArgs = typedMockGenerateText.mock.calls[0][0];
+            const generateTextArgs = typedMockGenerateText.mock.calls[0]![0];
             expect(generateTextArgs.model).toBeDefined();
             expect(generateTextArgs.model).toHaveProperty("modelId", "gpt-4o-mini");
             expect(generateTextArgs.prompt).toBe(
@@ -170,7 +158,7 @@ describe("OpenAIClient", () => {
                 },
             );
             expect(typedMockGenerateText).toHaveBeenCalledTimes(1);
-            const generateTextArgs = typedMockGenerateText.mock.calls[0][0];
+            const generateTextArgs = typedMockGenerateText.mock.calls[0]![0];
             expect(generateTextArgs.model).toBeDefined();
             expect(generateTextArgs.model).toHaveProperty("modelId", "gpt-3.5-turbo");
             expect(generateTextArgs.temperature).toBe(0.9);

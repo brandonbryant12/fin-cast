@@ -1,9 +1,10 @@
-
 import * as v from "valibot";
 import * as example from "./example.prompt";
+import * as generatePodcastScript from "./generate-podcast-script.prompt";
 
 export const prompts = {
-  example, 
+  example,
+  generatePodcastScript,
 } as const;
 
 /**
@@ -60,5 +61,5 @@ export type PromptDefaultOptions<T extends PromptName> =
     ? O extends Partial<import("../types").ChatOptions> ? O : never
     : undefined;
 
-
 export * as example from "./example.prompt";
+export * as generatePodcastScript from "./generate-podcast-script.prompt";
