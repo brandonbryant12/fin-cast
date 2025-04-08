@@ -1,13 +1,12 @@
 import { Command } from 'commander';
-import { logger } from './config/logger';
 import { scrape, ScraperError } from './scraper';
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.fatal({ err: reason, promise }, 'Unhandled Rejection at Promise');
+  console.error({ err: reason, promise }, 'Unhandled Rejection at Promise');
   process.exit(1);
 });
 process.on('uncaughtException', (error) => {
-  logger.fatal({ err: error }, 'Uncaught Exception thrown');
+  console.error({ err: error }, 'Uncaught Exception thrown');
   process.exit(1);
 });
 
@@ -21,23 +20,45 @@ program
 program
   .argument('<url>', 'The URL to scrape')
   .option('-t, --timeout <milliseconds>', 'Request timeout in milliseconds', '15000')
-  .action(async (url: string, options: { timeout: string }) => {
+  // Add options for proxy if needed by the CLI, reading from env vars or flags
+  // .option('-p, --proxy <proxy_url>', 'HTTP/HTTPS proxy URL')
+  .action(async (url: string, options: { timeout: string /*, proxy?: string */ }) => {
     const timeoutMs = parseInt(options.timeout, 10);
     if (isNaN(timeoutMs)) {
-      logger.error({ providedTimeout: options.timeout }, 'Invalid timeout value provided. Using default.');
+      console.error({ providedTimeout: options.timeout }, 'Invalid timeout value provided. Using default.');
     }
+    const effectiveTimeout = isNaN(timeoutMs) ? 15000 : timeoutMs;
 
-    logger.info({ url, timeout: isNaN(timeoutMs) ? 15000 : timeoutMs }, 'Starting scrape via CLI');
+    // Basic proxy parsing example (improve as needed)
+    // let proxyConfig: ScraperOptions['proxy'];
+    // if (options.proxy) {
+    //   try {
+    //     const proxyUrl = new URL(options.proxy);
+    //     proxyConfig = {
+    //       protocol: proxyUrl.protocol.slice(0, -1), // remove ':'
+    //       host: proxyUrl.hostname,
+    //       port: parseInt(proxyUrl.port, 10),
+    //       // Add auth parsing if necessary
+    //     };
+    //     logger.info({ proxy: { host: proxyUrl.hostname, port: proxyUrl.port } }, 'Using proxy via CLI option');
+    //   } catch (e) {
+    //     logger.error({ proxyInput: options.proxy, err: e }, 'Invalid proxy URL provided via CLI');
+    //     process.exit(1);
+    //   }
+    // }
+
+    console.info({ url, timeout: effectiveTimeout }, 'Starting scrape via CLI');
 
     try {
-      const html = await scrape(url, { timeout: isNaN(timeoutMs) ? undefined : timeoutMs });
-      // Log the first 500 characters as info, or consider logging to a file for full content
-      logger.info({ url, length: html.length, preview: html.substring(0, 500) + '...' }, 'Scrape successful');
-      // Alternatively, print directly to stdout if that's the desired behavior:
-      // console.log(html);
+      const html = await scrape(url, {
+        timeout: effectiveTimeout,
+        // proxy: proxyConfig
+      });
+      console.info({ url, length: html.length, preview: html.substring(0, 500) + '...' }, 'Scrape successful');
+      console.log(html);
     } catch (error) {
       if (error instanceof ScraperError) {
-        logger.error({
+        console.error({
           msg: 'Scraping failed',
           url: error.url,
           statusCode: error.statusCode,
@@ -45,9 +66,9 @@ program
           err: error
         }, error.message);
       } else {
-        logger.error({ url, err: error }, 'An unexpected error occurred during CLI scrape');
+        console.error({ url, err: error }, 'An unexpected error occurred during CLI scrape');
       }
-      process.exitCode = 1; // Indicate failure
+      process.exitCode = 1;
     }
   });
 

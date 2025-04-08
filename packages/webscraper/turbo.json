@@ -4,11 +4,18 @@
   "tasks": {
     "lint": {
       "dependsOn": [],
-      "outputs": []
+      "outputs": [".cache/.eslintcache"] // Keep lint cache
     },
     "typecheck": {
       "dependsOn": [],
-      "outputs": []
+      "outputs": [".cache/tsbuildinfo.json"] // Keep typecheck cache
+    },
+    "clean": {
+      "cache": false
+    },
+    "cli": { // Task for running the CLI via turbo
+        "cache": false,
+        "persistent": true // Or false depending if it's long-running
     }
   }
 } 
