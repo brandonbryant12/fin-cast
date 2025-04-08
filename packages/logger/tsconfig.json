@@ -1,9 +1,5 @@
 {
-  "extends": "@repo/typescript-config/base.json",
-  "compilerOptions": {
-    // No outDir or declaration needed as apps will consume TS directly
-    "noEmit": true // Enforce no emit from this package's tsc runs
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"] // Keep dist in exclude for cleanup safety
-} 
+  "extends": "@repo/typescript-config/internal-package.json",
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
