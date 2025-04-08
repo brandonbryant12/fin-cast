@@ -68,9 +68,10 @@ export const podcastRouter = router({
         try {
           // Pass the API's logger instance to the scrape function
           const html = await ctx.scraper.scrape(input.sourceUrl, { logger });
-          console.log({ html });
-          logger.info({ podcastId, length: html.length }, 'Successfully scraped URL.');
-
+          const podcastTranscript = await ctx.llm.runPrompt('generatePodcastScript', {
+            htmlContent: html
+          });
+          console.log(podcastTranscript);
           // 3a. If scrape succeeds, update with mock audio data and 'success' status
           // TODO: Replace mock data with actual audio generation logic
           const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...'; // Placeholder
