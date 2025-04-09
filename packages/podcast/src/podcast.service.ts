@@ -7,7 +7,6 @@ import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';
 import { generatePodcastScriptPrompt, type GeneratePodcastScriptOutput } from './generate-podcast-script-prompt';
 
-// Correct type alias for inferred select types
 type SelectPodcast = typeof schema.podcast.$inferSelect;
 type SelectTranscript = typeof schema.transcript.$inferSelect;
 

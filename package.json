@@ -9,7 +9,7 @@
     "clean": "turbo run clean",
     "db:push": "turbo -F @repo/db push",
     "db:studio": "turbo -F @repo/db studio",
-    "dev": "turbo watch dev --continue",
+    "dev": "turbo watch dev --continue --concurrency=15",
     "env:copy-example": "turbo run env:copy-example",
     "env:remove": "turbo run env:remove",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
