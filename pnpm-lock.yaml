@@ -237,6 +237,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@repo/podcast':
+        specifier: workspace:*
+        version: link:../../packages/podcast
       '@repo/webscraper':
         specifier: workspace:*
         version: link:../../packages/webscraper
@@ -432,6 +435,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../logger
+      '@repo/podcast':
+        specifier: workspace:*
+        version: link:../podcast
       '@repo/webscraper':
         specifier: workspace:*
         version: link:../webscraper
@@ -574,6 +580,52 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.5.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+
+  packages/podcast:
+    dependencies:
+      '@repo/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
+      '@repo/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@repo/webscraper':
+        specifier: workspace:*
+        version: link:../webscraper
+      '@trpc/server':
+        specifier: 'catalog:'
+        version: 11.0.2(typescript@5.8.3)
+      valibot:
+        specifier: 'catalog:'
+        version: 1.0.0(typescript@5.8.3)
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tools/eslint
+      '@repo/prettier-config':
+        specifier: workspace:*
+        version: link:../../tools/prettier
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../tools/typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.14.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.24.0(jiti@2.4.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.19.3
       typescript:
         specifier: 'catalog:'
         version: 5.8.3

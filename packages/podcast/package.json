@@ -1,0 +1,42 @@
+{
+  "name": "@repo/podcast",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A package for creating podcasts",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsc",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "auth:schema:generate": "pnpx @better-auth/cli generate --config ./src/cli-config.ts --output ../db/src/schemas/auth.ts",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/logger": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/ai": "workspace:*",
+    "@repo/webscraper": "workspace:*",
+    "@trpc/server": "catalog:",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -6,6 +6,7 @@ import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { createLogger, type LogLevel } from '@repo/logger';
 import { createScraper } from '@repo/webscraper';
+import { createPodcast } from '@repo/podcast';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { env } from './env';
@@ -46,8 +47,11 @@ if (!llm) {
   process.exit(1); // Exit if LLM is essential
 }
 
-const api = createApi({ auth, db, llm, logger, scraper });
+// Create the podcast service
+const podcast = createPodcast({ db, llm, logger, scraper });
 
+// Pass the podcast service to createApi
+const api = createApi({ auth, db, llm, logger, scraper, podcast });
 const app = new Hono<{
   Variables: {
     user: typeof auth.$Infer.Session.user | null;

@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { PromptDefinition } from '@repo/ai/prompts'; // Use the definition type from @repo/ai
+import type { PromptDefinition } from '@repo/ai/prompts';
 
 // --- Input Schema ---
 const paramsSchema = v.object({
@@ -22,7 +22,6 @@ const outputSchema = v.object({
 export type GeneratePodcastScriptOutput = v.InferInput<typeof outputSchema>;
 
 // --- Prompt Definition Object ---
-// Create an object adhering to the PromptDefinition interface
 export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodcastScriptOutput> = {
     paramsSchema: paramsSchema,
     outputSchema: outputSchema,
@@ -30,11 +29,9 @@ export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodca
     defaultOptions: {
         temperature: 0.7,
         maxTokens: 2500,
-        // Consider adding specific model recommendation if needed
         // model: 'gpt-4o-mini' // Example
     },
     template: (params: Params): string => {
-        // Optional runtime validation (good practice)
         try {
             v.parse(paramsSchema, params);
         } catch (error) {
@@ -49,7 +46,6 @@ export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodca
 
         const { htmlContent } = params;
 
-        // IMPORTANT: Instructions for the LLM to output ONLY JSON.
         return `
 You are an expert podcast script writer. Your task is to create an engaging podcast script based *only* on the essential information extracted from the following HTML document.
 
@@ -60,10 +56,10 @@ Your entire response MUST be a single, valid JSON object. Do NOT include any tex
 {
   "title": "string", // A concise title for the podcast segment
   "intro": "string", // Opening line(s) introducing the topic, spoken by Alex.
-  "dialogue": [      // An array of dialogue objects
+  "dialogue": [      // An array of dialogue objects
     {
       "speaker": "Alex" | "Ben", // The speaker of the line
-      "line": "string"          // The dialogue content
+      "line": "string"          // The dialogue content
     }
     // ... more dialogue objects
   ],
@@ -85,14 +81,14 @@ ${htmlContent}
 \`\`\`
 
 **Script Generation Steps (for your internal process):**
-1.  **Analyze HTML:** Extract the core topic, main points, and key details.
-2.  **Structure JSON:** Create the JSON object according to the required schema.
-3.  **Write Intro:** Populate the "intro" field (Alex speaking).
-4.  **Write Dialogue:** Populate the "dialogue" array with back-and-forth conversation between Alex and Ben, discussing the extracted points. Use natural transitions and incorporate commentary.
-5.  **Write Outro:** Populate the "outro" field (Ben speaking).
-6.  **Validate JSON:** Ensure the final output is a single, valid JSON object matching the schema exactly.
+1.  **Analyze HTML:** Extract the core topic, main points, and key details.
+2.  **Structure JSON:** Create the JSON object according to the required schema.
+3.  **Write Intro:** Populate the "intro" field (Alex speaking).
+4.  **Write Dialogue:** Populate the "dialogue" array with back-and-forth conversation between Alex and Ben, discussing the extracted points. Use natural transitions and incorporate commentary.
+5.  **Write Outro:** Populate the "outro" field (Ben speaking).
+6.  **Validate JSON:** Ensure the final output is a single, valid JSON object matching the schema exactly.
 
 **REMEMBER: Output ONLY the JSON object.**
 `;
     },
-};
+}; 

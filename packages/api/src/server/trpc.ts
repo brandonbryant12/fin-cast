@@ -5,6 +5,7 @@ import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';
+import type { PodcastService } from '@repo/podcast';
 
 export interface CreateContextOptions {
   auth: AuthInstance;
@@ -13,6 +14,7 @@ export interface CreateContextOptions {
   llm: LLMInterface;
   logger: AppLogger;
   scraper: Scraper;
+  podcast: PodcastService;
 }
 
 export interface TRPCContext {
@@ -21,6 +23,7 @@ export interface TRPCContext {
   llm: LLMInterface;
   logger: AppLogger;
   scraper: Scraper;
+  podcast: PodcastService
 }
 
 export const createTRPCContext = async ({
@@ -30,6 +33,7 @@ export const createTRPCContext = async ({
   llm,
   logger,
   scraper,
+  podcast,
 }: CreateContextOptions): Promise<TRPCContext> => {
   const session = await auth.api.getSession({
     headers,
@@ -40,6 +44,7 @@ export const createTRPCContext = async ({
     llm,
     logger,
     scraper,
+    podcast,
   };
 };
 
