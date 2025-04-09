@@ -1,9 +1,6 @@
-import type {
-  PromptName,
-  PromptParams,
-  PromptOutputType, // Import the new helper type
-} from "../prompts";
-import type { ChatOptions, ChatResponse } from "../types";
+import type { CoreMessage } from 'ai';
+import type { ChatOptions, ChatResponse, PromptDefinition } from "../types";
+import type * as v from 'valibot';
 
 /**
  * Common interface for interacting with different LLM providers.
@@ -17,23 +14,33 @@ export interface LLMInterface {
    * @returns A promise resolving to the chat response containing string content.
    */
   chatCompletion(
-    promptOrMessages: string | import("ai").CoreMessage[], // Explicitly type CoreMessage
+    promptOrMessages: string | CoreMessage[],
     options?: ChatOptions,
-  ): Promise<ChatResponse<string | null>>; // Specify string output type
+  ): Promise<ChatResponse<string | null>>;
 
   /**
-   * Runs a registered custom prompt with type-safe parameters.
-   * If the prompt defines an `outputSchema`, this attempts to parse and validate
-   * the LLM response against that schema, returning the structured data.
+   * Runs a prompt based on the provided definition and parameters.
+   * If the prompt definition includes an `outputSchema`, this method attempts
+   * to parse and validate the LLM response against that schema, returning
+   * the structured data in `structuredOutput`.
    *
-   * @param name The name of the prompt registered in `src/prompts/index.ts`.
-   * @param params The parameters object matching the specific prompt's input schema.
-   * @param options Optional chat configuration, potentially overriding prompt defaults.
-   * @returns A promise resolving to the chat response, potentially containing structured output.
+   * @template TInputParams The expected type of the input parameters object.
+   * @template TOutputSchema The type of the output schema itself (or unknown if none).
+   * @template O The inferred output type (parsed schema output or string | null).
+   * @param promptDef The prompt definition object containing schema, template, etc.
+   * @param params The parameters object matching the prompt definition's input requirements.
+   * @param options Optional chat configuration, overriding prompt definition and client defaults.
+   * @returns A promise resolving to the chat response. `structuredOutput` will contain
+   * the parsed and validated output if `outputSchema` was provided and processing succeeded.
    */
-  runPrompt<T extends PromptName>(
-    name: T,
-    params: PromptParams<T>,
-    options?: ChatOptions,
-  ): Promise<ChatResponse<PromptOutputType<T>>>; // Use inferred output type
+  runPrompt<
+      TInputParams extends Record<string, any>,
+      TOutputSchema = unknown, // Input: the schema type or unknown
+      // Output: inferred type O
+      O = TOutputSchema extends v.GenericSchema<infer P> ? P : string | null
+  >(
+      promptDef: PromptDefinition<TInputParams, TOutputSchema>, // Definition uses schema type
+      params: TInputParams,
+      options?: ChatOptions,
+  ): Promise<ChatResponse<O>>; // Return type uses inferred type O
 } 
