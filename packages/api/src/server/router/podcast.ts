@@ -27,13 +27,19 @@ async function processPodcastInBackground(
     });
     logger.info('LLM prompt successful, updating transcript.');
 
-    // Update transcript content with the entire JSON response
+    // Update transcript content with the entire structured JSON response from the LLM
     await ctx.db
       .update(schema.transcript)
-      .set({ content: podcastTranscriptResponse.content! }) // Save the entire response object
+      .set({ content: podcastTranscriptResponse.structuredOutput?.dialogue }) // Save the entire structured output object
       .where(eq(schema.transcript.podcastId, podcastId));
-    logger.info('Transcript content updated with full LLM response.');
+    logger.info('Transcript content updated with full structured LLM response.');
 
+    // Update the podcast title using the title from the LLM response
+    await ctx.db
+      .update(schema.podcast)
+      .set({ title: podcastTranscriptResponse.structuredOutput?.title })
+      .where(eq(schema.podcast.id, podcastId)); // Correctly reference podcast.id
+    logger.info('Podcast title updated from LLM response.');
 
     // TODO: Replace mock data with actual audio generation logic
     const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...'; // Placeholder

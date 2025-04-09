@@ -1,5 +1,7 @@
 import * as v from 'valibot';
 
+// --- Input Schema ---
+
 /**
  * Schema for the parameters required by the podcast script generation prompt.
  */
@@ -12,99 +14,115 @@ export const paramsSchema = v.object({
  */
 export type Params = v.InferInput<typeof paramsSchema>;
 
+
+// --- Output Schema ---
+
+/**
+ * Defines the structure of a single dialogue segment in the podcast script.
+ */
+const dialogueSegmentSchema = v.object({
+    speaker: v.picklist(["Alex", "Ben"], "Speaker must be either 'Alex' or 'Ben'."),
+    line: v.pipe(v.string(), v.minLength(1, "Dialogue line cannot be empty.")),
+});
+
+/**
+ * Schema for the structured JSON output expected from the LLM.
+ */
+export const outputSchema = v.object({
+    title: v.pipe(v.string(), v.minLength(1, "Title cannot be empty.")),
+    intro: v.pipe(v.string(), v.minLength(1, "Intro cannot be empty.")),
+    dialogue: v.pipe(v.array(dialogueSegmentSchema), v.minLength(1, "Dialogue must contain at least one segment.")),
+    outro: v.pipe(v.string(), v.minLength(1, "Outro cannot be empty.")),
+});
+
+/**
+ * Type alias for the inferred output type of the outputSchema.
+ */
+export type Output = v.InferInput<typeof outputSchema>;
+
+
+// --- Prompt Configuration ---
+
 /**
  * Optional description for this prompt template.
  */
-export const description = 'Generates a conversational podcast script between two hosts based on the provided HTML content.';
+export const description = 'Generates a conversational podcast script as a JSON object based on HTML content.';
 
 /**
  * Optional default LLM options for this prompt.
  */
 export const defaultOptions = {
   temperature: 0.7,
-  maxTokens: 2000, // Increased token limit for potentially longer content
+  maxTokens: 2500, // Adjusted for potentially larger JSON output
 };
 
 /**
- * Creates the prompt string for generating a podcast script.
+ * Creates the prompt string for generating a podcast script as JSON.
  *
  * @param params - The parameters object containing the HTML content.
  * @returns The formatted prompt string.
  * @throws {Error} If the params object does not match the schema.
  */
 export function template(params: Params): string {
-  // Runtime validation for robustness
+  // Runtime validation for input parameters
   try {
     v.parse(paramsSchema, params);
   } catch (error) {
     console.error('Invalid parameters for generate-podcast-script prompt:', error);
      let errorMessage = "An unknown validation error occurred";
      if (error instanceof v.ValiError) {
-        errorMessage = error.issues.map((issue) => issue.message).join(", ");
+       errorMessage = error.issues.map((issue) => issue.message).join(", ");
      } else if (error instanceof Error) {
-        errorMessage = error.message;
+       errorMessage = error.message;
      }
     throw new Error(`Invalid parameters provided to generate-podcast-script prompt: ${errorMessage}`);
   }
 
   const { htmlContent } = params;
 
-  // Enhanced prompt instructions for clarity and better output control
+  // IMPORTANT: Instructions for the LLM to output ONLY JSON.
   return `
-You are an expert podcast script writer. Your task is to create an engaging and informative podcast script based *only* on the essential information extracted from the following HTML document.
+You are an expert podcast script writer. Your task is to create an engaging podcast script based *only* on the essential information extracted from the following HTML document.
 
-**Podcast Details:**
+**CRITICAL OUTPUT REQUIREMENT:**
+Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanation, markdown formatting, or anything else before or after the JSON object. The JSON object must strictly adhere to the following structure:
+
+\`\`\`json
+{
+  "title": "string", // A concise title for the podcast segment
+  "intro": "string", // Opening line(s) introducing the topic, spoken by Alex.
+  "dialogue": [      // An array of dialogue objects
+    {
+      "speaker": "Alex" | "Ben", // The speaker of the line
+      "line": "string"          // The dialogue content
+    }
+    // ... more dialogue objects
+  ],
+  "outro": "string" // Closing line(s) summarizing or concluding, spoken by Ben.
+}
+\`\`\`
+
+**Podcast Details to Incorporate into the JSON:**
 - **Hosts:** Alex and Ben
-- **Format:** Conversational dialogue.
-- **Goal:** Summarize key information, discuss main points insightfully, and provide context or commentary. Avoid just reading the source text.
-- **Tone:** Engaging, informative, and natural.
-- **Target Length:** Suitable for a 5-10 minute podcast segment.
+- **Format:** Conversational dialogue within the "dialogue" array.
+- **Goal:** Summarize key information from the HTML, discuss main points insightfully, provide context. Avoid just reading the source. Generate natural back-and-forth.
+- **Tone:** Engaging, informative.
+- **Target Length:** Suitable for a 5-10 minute podcast segment (reflected in the number of dialogue entries).
 
 **Source HTML Content:**
-(Focus on the main article/content body. Ignore headers, footers, navigation, ads, sidebars, and irrelevant boilerplate.)
+(Focus only on the main article/content. Ignore headers, footers, navigation, ads, sidebars.)
 \`\`\`html
 ${htmlContent}
 \`\`\`
 
-**Script Generation Instructions:**
-1.  **Analyze:** Carefully read the HTML content to identify the core topic, main arguments, key findings, or narrative points. Disregard non-essential elements.
-2.  **Introduction:** Start with a brief intro setting the stage (e.g., "Welcome back to... Today we're discussing...").
-3.  **Dialogue:** Write a back-and-forth conversation between Alex and Ben:
-    * Introduce and discuss the main points sequentially.
-    * Use transition phrases naturally.
-    * Incorporate questions to guide the conversation (e.g., "Alex, what was your take on...?").
-    * Add brief commentary, opinions, or relevant context to make it more than just a summary.
-4.  **Conclusion:** End with a concise summary of the key takeaways and a standard outro.
-5.  **Formatting:** Use the example format below for clarity.
+**Script Generation Steps (for your internal process):**
+1.  **Analyze HTML:** Extract the core topic, main points, and key details.
+2.  **Structure JSON:** Create the JSON object according to the required schema.
+3.  **Write Intro:** Populate the "intro" field (Alex speaking).
+4.  **Write Dialogue:** Populate the "dialogue" array with back-and-forth conversation between Alex and Ben, discussing the extracted points. Use natural transitions and incorporate commentary.
+5.  **Write Outro:** Populate the "outro" field (Ben speaking).
+6.  **Validate JSON:** Ensure the final output is a single, valid JSON object matching the schema exactly.
 
-**Example Output Format:**
-
-[Intro Music fades in and then fades slightly to background]
-
-Alex: Welcome back to "FinCast Insights"! I'm Alex.
-
-Ben: And I'm Ben. Today, we're dissecting an article about [Mention Topic Clearly].
-
-Alex: Right, Ben. The central theme revolves around [Summarize Main Point 1 concisely]. What struck you most about this aspect?
-
-Ben: Well, Alex, the author emphasized [Discuss Key Detail/Evidence for Point 1]. I found that particularly interesting because [Offer Brief Insight/Connection/Opinion].
-
-Alex: That's a great point. The article also delves into [Summarize Main Point 2 concisely].
-
-Ben: Yes, and the data presented regarding [Discuss Key Detail/Evidence for Point 2] really highlights [Offer Brief Insight/Connection/Opinion]. How did you interpret that?
-
-Alex: I thought... [Alex responds and potentially transitions to the next point].
-
-[...]
-
-Ben: So, wrapping up our discussion on [Mention Topic Clearly], the core takeaways seem to be [Summarize 2-3 key points briefly].
-
-Alex: Absolutely. A thought-provoking read. That's all for this segment of "FinCast Insights".
-
-Ben: Thanks for listening!
-
-[Outro Music fades in]
-
-**--- START SCRIPT ---**
+**REMEMBER: Output ONLY the JSON object.**
 `;
 } 

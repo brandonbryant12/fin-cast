@@ -42,7 +42,7 @@ const formatDate = (dateInput: Date | string | null): string => {
     try {
         const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
+    } catch {
         return 'Invalid Date';
     }
 };
@@ -202,12 +202,16 @@ export function PodcastListItem({ podcast, onPlay, onDelete }: PodcastListItemPr
                     {podcastByIdQuery.data && (
                         <>
                             <h4 className="font-semibold text-gray-200 mb-1">Transcript:</h4>
-                            {podcastByIdQuery.data.transcript?.content ? (
-                                <pre className="whitespace-pre-wrap font-sans"> {/* Use pre for formatting, override font if needed */}
-                                    {podcastByIdQuery.data.transcript.content}
-                                 </pre>
+                            {Array.isArray(podcastByIdQuery.data.transcript?.content) && podcastByIdQuery.data.transcript.content.length > 0 ? (
+                                <div className="space-y-2">
+                                    {podcastByIdQuery.data.transcript.content.map((segment: { speaker: string; line: string }, index: number) => (
+                                        <div key={index}>
+                                            <span className="font-semibold text-teal-400">{segment.speaker}:</span>
+                                            <p className="ml-2 text-gray-300 inline"> {segment.line}</p> {/* Keep inline for wrapping */}                                        </div>
+                                    ))}
+                                </div>
                             ) : (
-                                <p className="text-gray-500">No transcript available for this podcast.</p>
+                                <p className="text-gray-500">No transcript dialogue available for this podcast.</p>
                             )}
                         </>
                     )}

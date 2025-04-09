@@ -13,7 +13,7 @@ export const prompts = {
 export type PromptRegistry = typeof prompts;
 
 /**
- * A union type of all available prompt names (e.g., "example" | "summarize").
+ * A union type of all available prompt names (e.g., "example" | "generatePodcastScript").
  */
 export type PromptName = keyof PromptRegistry;
 
@@ -25,7 +25,7 @@ export type PromptModule<T extends PromptName> = PromptRegistry[T];
 
 /**
  * A helper type to get the **input parameters type** for a given prompt name.
- * Requires the prompt module to export a `Params` type (usually inferred from a schema).
+ * Requires the prompt module to export a `Params` type (usually inferred from `paramsSchema`).
  * e.g., PromptParams<"example"> -> example.Params
  */
 export type PromptParams<T extends PromptName> = PromptModule<T> extends {
@@ -45,6 +45,29 @@ export type PromptSchema<T extends PromptName> = PromptModule<T> extends {
   : never;
 
 /**
+ * A helper type to get the **output schema** for a given prompt name.
+ * Requires the prompt module to export an `outputSchema` (Valibot schema).
+ * e.g., PromptOutputSchema<"generatePodcastScript"> -> typeof generatePodcastScript.outputSchema
+ */
+export type PromptOutputSchema<T extends PromptName> = PromptModule<T> extends {
+  outputSchema: infer S;
+} ? S extends v.GenericSchema ? S : never // Ensure it's a Valibot schema
+  : never;
+
+
+/**
+ * A helper type to get the **inferred output type** from a prompt's `outputSchema`.
+ * Requires the prompt module to export an `outputSchema`.
+ * e.g., PromptOutputType<"generatePodcastScript"> -> generatePodcastScript.Output
+ * Defaults to `never` if no outputSchema is found.
+ */
+export type PromptOutputType<T extends PromptName> = PromptModule<T> extends {
+    outputSchema: infer S extends v.GenericSchema;
+} ? v.InferOutput<S> // Use valibot's InferOutput on the schema
+  : never; // Return never if the prompt doesn't define an outputSchema
+
+
+/**
  * A helper type to get the **template function** for a given prompt name.
  * Requires the prompt module to export a `template` function.
  */
@@ -62,5 +85,7 @@ export type PromptDefaultOptions<T extends PromptName> =
     ? O extends Partial<import("../types").ChatOptions> ? O : never
     : undefined;
 
+
+// Re-export individual prompt modules for direct access if needed
 export * as example from "./example.prompt";
 export * as generatePodcastScript from "./generate-podcast-script.prompt";
