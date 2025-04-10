@@ -39,7 +39,7 @@ export interface VoiceInfo {
 /**
  * Interface for a Text-to-Speech service.
  */
-export interface ITtsService {
+export interface TTSService {
   /**
    * Synthesizes text into speech.
    *
@@ -72,5 +72,5 @@ export interface TtsFactoryConfig {
    * For OpenAI, this could include apiKey, model, etc.
    * TODO: Define a more specific type that maps provider names to their option types.
    */
-  providerOptions?: Record<string, any>;
+  options?: Record<string, any>;
 } 

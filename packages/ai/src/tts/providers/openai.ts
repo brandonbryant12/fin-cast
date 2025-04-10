@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { ITtsService, TtsOptions, VoiceInfo } from '../types';
+import type { TTSService, TtsOptions, VoiceInfo } from '../types';
 
 /**
  * Configuration options specifically for the OpenAI TTS provider.
@@ -26,14 +26,16 @@ const OPENAI_VOICES: VoiceInfo[] = [
 /**
  * Implementation of the ITtsService interface for OpenAI's Text-to-Speech API.
  */
-export class OpenAITtsService implements ITtsService {
+export class OpenAITtsService implements TTSService {
   private openai: OpenAI;
   private defaultModel: 'tts-1' | 'tts-1-hd';
 
   constructor(options?: OpenAITtsOptions) {
-    const apiKey = options?.apiKey ?? process.env.OPENAI_API_KEY;
+    // API key MUST be provided in options.
+    const apiKey = options?.apiKey;
     if (!apiKey) {
-      throw new Error('OpenAI API key is required. Provide it via OPENAI_API_KEY environment variable or in options.');
+      // throw new Error('OpenAI API key is required. Provide it via OPENAI_API_KEY environment variable or in options.');
+      throw new Error('OpenAI API key is required. Provide it in the options object.');
     }
     this.openai = new OpenAI({ apiKey });
     this.defaultModel = options?.model ?? 'tts-1'; // Default to standard model

@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
-import { createLLMService } from '@repo/ai';
+import { createLLMService, createTtsService } from '@repo/ai';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
@@ -20,12 +20,18 @@ const wildcardPath = {
 } as const;
 
 
-const apiKey = env.GEMINI_API_KEY;
-if (!apiKey) {
+const llmAPIKey = env.GEMINI_API_KEY;
+if (!llmAPIKey) {
   throw new Error('GEMINI_API_KEY environment variable is not set. AI features may be unavailable.');
 }
-const llm = apiKey ? createLLMService({ provider: 'gemini', options: { apiKey: apiKey } }) : null;
 
+const ttsAPIKey = env.OPENAI_API_KEY;
+if (!ttsAPIKey) {
+  throw new Error('OPENAI_API_KEY environment variable is not set. AI features may be unavailable.');
+}
+
+const llm = createLLMService({ provider: 'gemini', options: { apiKey: llmAPIKey } });
+const tts = createTtsService({ provider: 'openai', options: { apiKey: ttsAPIKey } });
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({
   authSecret: env.SERVER_AUTH_SECRET,
@@ -48,7 +54,7 @@ if (!llm) {
 }
 
 // Create the podcast service
-const podcast = createPodcast({ db, llm, logger, scraper });
+const podcast = createPodcast({ db, llm, logger, scraper, tts });
 
 // Pass the podcast service to createApi
 const api = createApi({ auth, db, llm, logger, scraper, podcast });

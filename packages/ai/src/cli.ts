@@ -49,14 +49,20 @@ ttsCommand
   .option('--speed <speed>', 'Speech speed (0.25 to 4.0)', '1.0')
   .option('-o, --output <file>', 'Save audio to file instead of playing')
   .action(async (text: string, options: TtsSynthesizeOptions) => {
-    ensureApiKey();
+    const ttsApiKey = ensureApiKey();
     const player = playSound({});
     let tempFilePath: string | null = null;
 
     console.log(options.output ? `Synthesizing text to ${options.output}...` : 'Synthesizing text for playback...');
 
     try {
-      const ttsService = createTtsService({ provider: 'openai' }); 
+      const ttsService = createTtsService({ 
+        provider: 'openai', 
+        options: { 
+          apiKey: ttsApiKey, 
+          model: options.model 
+        }
+      }); 
       const speed = parseFloat(options.speed);
       const format = options.format || 'mp3';
 
@@ -107,10 +113,13 @@ ttsCommand
   .command('list-voices')
   .description('List available voices for the TTS provider')
   .action(async () => {
-    ensureApiKey();
+    const ttsApiKey = ensureApiKey();
     console.log('Fetching available voices...');
     try {
-      const ttsService = createTtsService({ provider: 'openai' });
+      const ttsService = createTtsService({ 
+        provider: 'openai', 
+        options: { apiKey: ttsApiKey } 
+      });
       const voices = await ttsService.getVoices();
       if (voices.length === 0) {
         console.log('No voices found for the provider.');

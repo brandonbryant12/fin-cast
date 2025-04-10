@@ -1,7 +1,7 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import * as v from 'valibot';
-import type { LLMInterface, ChatResponse } from '@repo/ai';
+import type { LLMInterface, ChatResponse, TTSService } from '@repo/ai';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';
@@ -15,6 +15,7 @@ interface PodcastServiceDependencies {
     llm: LLMInterface;
     scraper: Scraper;
     logger: AppLogger;
+    tts: TTSService;
 }
 
 export class PodcastService {
@@ -22,16 +23,17 @@ export class PodcastService {
     private readonly llm: LLMInterface;
     private readonly scraper: Scraper;
     private readonly logger: AppLogger;
+    private readonly tts: TTSService;
 
-    constructor({ db, llm, scraper, logger }: PodcastServiceDependencies) {
+    constructor({ db, llm, scraper, logger, tts }: PodcastServiceDependencies) {
         this.db = db;
         this.llm = llm;
         this.scraper = scraper;
+        this.tts = tts;
         this.logger = logger.child({ service: 'PodcastService' });
         this.logger.info('PodcastService initialized');
     }
 
-    // --- Private Background Processing Method ---
     private async _processPodcastInBackground(
         podcastId: string,
         sourceUrl: string,
