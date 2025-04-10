@@ -18,6 +18,7 @@ import { Route as PublicRegisterImport } from './routes/_public/register'
 import { Route as PublicLoginImport } from './routes/_public/login'
 import { Route as ProtectedPostsIndexImport } from './routes/_protected/posts/index'
 import { Route as ProtectedPodcastsIndexImport } from './routes/_protected/podcasts/index'
+import { Route as ProtectedNewsFeedIndexImport } from './routes/_protected/news-feed.index'
 import { Route as ProtectedHomeIndexImport } from './routes/_protected/home/index'
 import { Route as ProtectedPostsPostidIndexImport } from './routes/_protected/posts/$postid/index'
 
@@ -60,6 +61,12 @@ const ProtectedPostsIndexRoute = ProtectedPostsIndexImport.update({
 const ProtectedPodcastsIndexRoute = ProtectedPodcastsIndexImport.update({
   id: '/podcasts/',
   path: '/podcasts/',
+  getParentRoute: () => ProtectedLayoutRoute,
+} as any)
+
+const ProtectedNewsFeedIndexRoute = ProtectedNewsFeedIndexImport.update({
+  id: '/news-feed/',
+  path: '/news-feed/',
   getParentRoute: () => ProtectedLayoutRoute,
 } as any)
 
@@ -121,6 +128,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedHomeIndexImport
       parentRoute: typeof ProtectedLayoutImport
     }
+    '/_protected/news-feed/': {
+      id: '/_protected/news-feed/'
+      path: '/news-feed'
+      fullPath: '/news-feed'
+      preLoaderRoute: typeof ProtectedNewsFeedIndexImport
+      parentRoute: typeof ProtectedLayoutImport
+    }
     '/_protected/podcasts/': {
       id: '/_protected/podcasts/'
       path: '/podcasts'
@@ -149,6 +163,7 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedLayoutRouteChildren {
   ProtectedHomeIndexRoute: typeof ProtectedHomeIndexRoute
+  ProtectedNewsFeedIndexRoute: typeof ProtectedNewsFeedIndexRoute
   ProtectedPodcastsIndexRoute: typeof ProtectedPodcastsIndexRoute
   ProtectedPostsIndexRoute: typeof ProtectedPostsIndexRoute
   ProtectedPostsPostidIndexRoute: typeof ProtectedPostsPostidIndexRoute
@@ -156,6 +171,7 @@ interface ProtectedLayoutRouteChildren {
 
 const ProtectedLayoutRouteChildren: ProtectedLayoutRouteChildren = {
   ProtectedHomeIndexRoute: ProtectedHomeIndexRoute,
+  ProtectedNewsFeedIndexRoute: ProtectedNewsFeedIndexRoute,
   ProtectedPodcastsIndexRoute: ProtectedPodcastsIndexRoute,
   ProtectedPostsIndexRoute: ProtectedPostsIndexRoute,
   ProtectedPostsPostidIndexRoute: ProtectedPostsPostidIndexRoute,
@@ -185,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
   '/home': typeof ProtectedHomeIndexRoute
+  '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
@@ -196,6 +213,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
   '/home': typeof ProtectedHomeIndexRoute
+  '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
@@ -209,6 +227,7 @@ export interface FileRoutesById {
   '/_public/login': typeof PublicLoginRoute
   '/_public/register': typeof PublicRegisterRoute
   '/_protected/home/': typeof ProtectedHomeIndexRoute
+  '/_protected/news-feed/': typeof ProtectedNewsFeedIndexRoute
   '/_protected/podcasts/': typeof ProtectedPodcastsIndexRoute
   '/_protected/posts/': typeof ProtectedPostsIndexRoute
   '/_protected/posts/$postid/': typeof ProtectedPostsPostidIndexRoute
@@ -222,6 +241,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/home'
+    | '/news-feed'
     | '/podcasts'
     | '/posts'
     | '/posts/$postid'
@@ -232,6 +252,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/home'
+    | '/news-feed'
     | '/podcasts'
     | '/posts'
     | '/posts/$postid'
@@ -243,6 +264,7 @@ export interface FileRouteTypes {
     | '/_public/login'
     | '/_public/register'
     | '/_protected/home/'
+    | '/_protected/news-feed/'
     | '/_protected/podcasts/'
     | '/_protected/posts/'
     | '/_protected/posts/$postid/'
@@ -283,6 +305,7 @@ export const routeTree = rootRoute
       "filePath": "_protected/layout.tsx",
       "children": [
         "/_protected/home/",
+        "/_protected/news-feed/",
         "/_protected/podcasts/",
         "/_protected/posts/",
         "/_protected/posts/$postid/"
@@ -305,6 +328,10 @@ export const routeTree = rootRoute
     },
     "/_protected/home/": {
       "filePath": "_protected/home/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/news-feed/": {
+      "filePath": "_protected/news-feed.index.tsx",
       "parent": "/_protected"
     },
     "/_protected/podcasts/": {

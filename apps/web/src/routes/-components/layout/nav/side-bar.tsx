@@ -3,9 +3,8 @@ import { Link } from '@tanstack/react-router';
 import {
     LayoutDashboard,
     Podcast,
-    Link as LinkIcon,
-    Settings,
     Minus,
+    Newspaper,
     type LucideIcon,
 } from 'lucide-react';
 import type { AuthSession } from '@/clients/authClient';
@@ -31,6 +30,7 @@ type NavItem = NavLinkItem | NavSeparatorItem;
 const navItems: NavItem[] = [
     { to: '/home', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/podcasts', label: 'My Podcasts', icon: Podcast },
+    { to: '/news-feed', label: 'News Feed', icon: Newspaper },
     { type: 'separator' },
     // Links to /accounts and /settings can be added back here if needed
     // { to: '/accounts', label: 'Connected Accounts', icon: LinkIcon },
