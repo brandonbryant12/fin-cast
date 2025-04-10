@@ -622,6 +622,9 @@ importers:
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.0.2(typescript@5.8.3)
+      fluent-ffmpeg:
+        specifier: 2.1.3
+        version: 2.1.3
       valibot:
         specifier: 'catalog:'
         version: 1.0.0(typescript@5.8.3)
@@ -635,6 +638,9 @@ importers:
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../tools/typescript
+      '@types/fluent-ffmpeg':
+        specifier: 2.1.3
+        version: 2.1.3
       '@types/node':
         specifier: 'catalog:'
         version: 22.14.0
@@ -2593,6 +2599,9 @@ packages:
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
 
+  '@types/fluent-ffmpeg@2.1.3':
+    resolution: {integrity: sha512-KAOj3UTNj73SEhrjU/A/Kp+H802NiXfMI7qFT94FhgepqOdS/bHZTyiik0caLiqjMMs9YJ1M4pCcmt0DrzuwaA==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -2821,6 +2830,9 @@ packages:
   async-function@1.0.0:
     resolution: {integrity: sha512-hsU18Ae8CDTR6Kgu9DYf0EbCr/a5iGL0rytQDobUcdpYOKokk8LEjVphnXkDkgpi0wYVsqrXuP0bZxJaTqdgoA==}
     engines: {node: '>= 0.4'}
+
+  async@0.2.10:
+    resolution: {integrity: sha512-eAkdoKxU6/LkKDBzLpT+t6Ff5EtfSF4wx1WfJiPEEV7WNLnDaRXk0oVysiEPm262roaachGexwUv94WhSgN5TQ==}
 
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
@@ -3502,6 +3514,10 @@ packages:
 
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
+
+  fluent-ffmpeg@2.1.3:
+    resolution: {integrity: sha512-Be3narBNt2s6bsaqP6Jzq91heDgOEaDCJAXcE3qcma/EJBSy5FB4cvO31XBInuAuKBx8Kptf8dkhjK0IOru39Q==}
+    engines: {node: '>=18'}
 
   follow-redirects@1.15.9:
     resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
@@ -6909,6 +6925,10 @@ snapshots:
 
   '@types/estree@1.0.7': {}
 
+  '@types/fluent-ffmpeg@2.1.3':
+    dependencies:
+      '@types/node': 22.14.0
+
   '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
@@ -7207,6 +7227,8 @@ snapshots:
   assertion-error@2.0.1: {}
 
   async-function@1.0.0: {}
+
+  async@0.2.10: {}
 
   asynckit@0.4.0: {}
 
@@ -7971,6 +7993,11 @@ snapshots:
       keyv: 4.5.4
 
   flatted@3.3.3: {}
+
+  fluent-ffmpeg@2.1.3:
+    dependencies:
+      async: 0.2.10
+      which: 1.3.1
 
   follow-redirects@1.15.9: {}
 

@@ -57,7 +57,7 @@ if (!llm) {
 const podcast = createPodcast({ db, llm, logger, scraper, tts });
 
 // Pass the podcast service to createApi
-const api = createApi({ auth, db, llm, logger, scraper, podcast });
+const api = createApi({ auth, db, logger, podcast, tts });
 const app = new Hono<{
   Variables: {
     user: typeof auth.$Infer.Session.user | null;

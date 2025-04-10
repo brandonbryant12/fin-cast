@@ -43,6 +43,8 @@ FROM base AS production
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 hono
 
+RUN apk add --no-cache ffmpeg
+
 COPY --from=installer --chown=hono:nodejs /app/apps/server/dist /app/dist
 
 USER hono

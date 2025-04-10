@@ -1,7 +1,12 @@
+import * as crypto from 'crypto';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
+import ffmpeg from 'fluent-ffmpeg';
 import * as v from 'valibot';
-import type { LLMInterface, ChatResponse, TTSService } from '@repo/ai';
+import type { LLMInterface, ChatResponse, TTSService, TtsOptions } from '@repo/ai';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';
@@ -17,6 +22,10 @@ interface PodcastServiceDependencies {
     logger: AppLogger;
     tts: TTSService;
 }
+
+const DEFAULT_VOICE_A = 'onyx'; // Define default voices
+const DEFAULT_VOICE_B = 'echo';
+const AUDIO_FORMAT: NonNullable<TtsOptions['format']> = 'mp3'; // Define audio format
 
 export class PodcastService {
     private readonly db: DatabaseInstance;
@@ -43,6 +52,7 @@ export class PodcastService {
         logger.info('Starting background processing for podcast.');
 
         let llmResponse: ChatResponse<GeneratePodcastScriptOutput> | null = null;
+        const tempAudioFiles: string[] = []; // Keep track of temporary audio files
 
         try {
             // 1. Scrape Content
@@ -58,49 +68,165 @@ export class PodcastService {
             );
             logger.info('LLM prompt execution finished.');
 
-            // 3. Process LLM Response
-            if (llmResponse.structuredOutput && !llmResponse.error) {
-                const scriptData: GeneratePodcastScriptOutput = llmResponse.structuredOutput;
-                logger.info('LLM returned valid structured output. Updating database.');
+            // 3. Process LLM Response & Generate Audio
+            let scriptData: GeneratePodcastScriptOutput | undefined;
+            let finalAudioBase64: string | undefined;
+            let durationSeconds = 0; // Default duration
 
+            if (llmResponse.structuredOutput && !llmResponse.error) {
+                scriptData = llmResponse.structuredOutput;
+                logger.info('LLM returned valid structured output. Processing script for audio.');
+
+                // Assign voices to speakers
+                const speakerVoices: Record<string, string> = {};
+                let voiceToggle = true;
+                for (const segment of scriptData.dialogue) {
+                    if (!speakerVoices[segment.speaker]) {
+                        speakerVoices[segment.speaker] = voiceToggle ? DEFAULT_VOICE_A : DEFAULT_VOICE_B;
+                        voiceToggle = !voiceToggle;
+                    }
+                }
+                logger.info({ speakerVoices }, 'Assigned voices to speakers.');
+
+                // Generate audio for each segment
+                logger.info('Starting TTS synthesis for dialogue segments...');
+                const audioBuffers: Buffer[] = [];
+                for (let i = 0; i < scriptData.dialogue.length; i++) {
+                    const segment = scriptData.dialogue[i];
+                    if (!segment) {
+                        logger.warn(`Skipping undefined segment at index ${i}`);
+                        continue;
+                    }
+                    const voiceId = speakerVoices[segment.speaker];
+                    logger.info(`Synthesizing segment ${i + 1}/${scriptData.dialogue.length} for speaker ${segment.speaker} with voice ${voiceId}`);
+                    try {
+                        const audioBuffer = await this.tts.synthesize(segment.line, { voice: voiceId, format: AUDIO_FORMAT });
+                        audioBuffers.push(audioBuffer);
+                    } catch (ttsError) {
+                        logger.error({ err: ttsError, segmentIndex: i, speaker: segment.speaker, voiceId }, 'TTS synthesis failed for a segment.');
+                        throw new Error(`TTS synthesis failed for segment ${i + 1}: ${ttsError instanceof Error ? ttsError.message : String(ttsError)}`);
+                    }
+                }
+                logger.info('TTS synthesis for all segments completed.');
+
+                // Stitch audio segments using fluent-ffmpeg
+                logger.info('Stitching audio segments...');
+                if (audioBuffers.length === 0) {
+                    logger.warn('No audio buffers generated, skipping audio stitching.');
+                    finalAudioBase64 = `data:audio/${AUDIO_FORMAT};base64,`; // Empty audio
+                } else {
+                    // Write buffers to temporary files
+                    for (let i = 0; i < audioBuffers.length; i++) {
+                        const bufferToWrite = audioBuffers[i];
+                        if (!bufferToWrite) {
+                             logger.warn(`Skipping undefined audio buffer at index ${i}`);
+                             continue;
+                        }
+                        const tempFileName = `podcast-${podcastId}-segment-${i}-${crypto.randomBytes(4).toString('hex')}.${AUDIO_FORMAT}`;
+                        const tempFilePath = path.join(os.tmpdir(), tempFileName);
+                        await fs.writeFile(tempFilePath, bufferToWrite);
+                        tempAudioFiles.push(tempFilePath);
+                        logger.debug(`Written temporary audio file: ${tempFilePath}`);
+                    }
+                    logger.info(`Created ${tempAudioFiles.length} temporary audio files.`);
+
+                    // Use fluent-ffmpeg to concatenate
+                    const finalOutputFileName = `podcast-${podcastId}-final-${crypto.randomBytes(4).toString('hex')}.${AUDIO_FORMAT}`;
+                    const finalOutputPath = path.join(os.tmpdir(), finalOutputFileName);
+                    tempAudioFiles.push(finalOutputPath); // Add final output to cleanup list
+
+                    await new Promise<void>((resolve, reject) => {
+                        const command = ffmpeg();
+                        tempAudioFiles.forEach(file => {
+                            // Only add segment files as input, not the final output path
+                            if (file !== finalOutputPath) {
+                                command.input(file);
+                            }
+                        });
+
+                        command
+                            .on('start', (commandLine: string) => {
+                                logger.info(`ffmpeg process started with command: ${commandLine}`);
+                            })
+                            .on('error', (err: Error, stdout: string, stderr: string) => {
+                                logger.error({ err: err.message, ffmpeg_stdout: stdout, ffmpeg_stderr: stderr }, 'ffmpeg concatenation failed.');
+                                reject(new Error(`ffmpeg concatenation failed: ${err.message}`));
+                            })
+                            .on('end', (stdout: string, stderr: string) => {
+                                logger.info({ ffmpeg_stdout: stdout, ffmpeg_stderr: stderr }, 'ffmpeg concatenation finished successfully.');
+                                resolve();
+                            })
+                            .mergeToFile(finalOutputPath);
+                    });
+
+                    logger.info(`Successfully concatenated audio to ${finalOutputPath}`);
+
+                    // Get audio duration using ffprobe
+                    try {
+                        durationSeconds = await new Promise<number>((resolveProbe, rejectProbe) => {
+                            // Call ffprobe on an ffmpeg instance targeting the file
+                            ffmpeg(finalOutputPath).ffprobe((err: Error, metadata: ffmpeg.FfprobeData) => {
+                                if (err) {
+                                    logger.warn({ err: err.message, file: finalOutputPath }, 'ffprobe failed to get audio duration.');
+                                    rejectProbe(err); // Reject the promise
+                                } else {
+                                    const duration = metadata?.format?.duration;
+                                    if (typeof duration === 'number') {
+                                        logger.info({ duration }, `Got duration from ffprobe: ${duration} seconds.`);
+                                        resolveProbe(Math.round(duration)); // Resolve with rounded duration
+                                    } else {
+                                        logger.warn({ metadata }, 'Could not find duration in ffprobe metadata.');
+                                        resolveProbe(0); // Resolve with 0 if duration not found
+                                    }
+                                }
+                            });
+                        });
+                    } catch (probeError) {
+                        logger.warn({ err: probeError }, 'Error during ffprobe execution, duration will be set to 0.');
+                        durationSeconds = 0; // Ensure duration is 0 on error
+                    }
+
+                    // Read the final file and encode to base64
+                    const finalAudioBuffer = await fs.readFile(finalOutputPath);
+                    finalAudioBase64 = `data:audio/${AUDIO_FORMAT};base64,${finalAudioBuffer.toString('base64')}`;
+                    logger.info('Encoded final audio to base64.');
+                }
+
+                // Update database transcript and title within a transaction
+                logger.info('Updating database with transcript content and title...');
                 await this.db.transaction(async (tx: DatabaseInstance) => {
-                    // Update transcript content
                     await tx
                         .update(schema.transcript)
-                        .set({ content: scriptData.dialogue })
+                        .set({ content: scriptData?.dialogue ?? [] }) // Use optional chaining just in case
                         .where(eq(schema.transcript.podcastId, podcastId));
                     logger.info('Transcript content updated in transaction.');
 
-                    // Update the podcast title
                     await tx
                         .update(schema.podcast)
-                        .set({ title: scriptData.title })
+                        .set({ title: scriptData?.title ?? `Podcast ${podcastId}` }) // Fallback title
                         .where(eq(schema.podcast.id, podcastId));
                     logger.info('Podcast title updated in transaction.');
-                }); // Transaction commits here
-
+                });
                 logger.info('Database updates for transcript and title successful.');
 
-
             } else {
-                const errorMsg = llmResponse.error ?? 'LLM did not return valid structured output.';
+                const errorMsg = llmResponse?.error ?? 'LLM did not return valid structured output.';
                 logger.error({ llmError: errorMsg, llmResponse }, 'Failed to get valid structured output from LLM.');
                 throw new Error(`Podcast script generation failed: ${errorMsg}`);
             }
 
-            // 4. TODO: Generate Actual Audio (Replace Mock)
-            const mockAudioData = 'data:audio/mpeg;base64,SUQzBAAAAAAB...'; // Placeholder
+            // 4. Update Podcast Status to Success with generated audio
             const generatedTime = new Date();
-            logger.info('Updating podcast status to success with mock audio.');
+            logger.info('Updating podcast status to success with generated audio.');
 
-            // 5. Update Podcast Status to Success
             const [updatedPodcast] = await this.db
                 .update(schema.podcast)
                 .set({
                     status: 'success',
-                    audioUrl: mockAudioData,
+                    audioUrl: finalAudioBase64, // Use the generated base64 audio
                     generatedAt: generatedTime,
                     errorMessage: null,
+                    durationSeconds: durationSeconds // Use the calculated or default duration
                 })
                 .where(eq(schema.podcast.id, podcastId))
                 .returning();
@@ -131,6 +257,8 @@ export class PodcastService {
                     .set({
                         status: 'failed',
                         errorMessage: errorMessage,
+                        // Optionally clear audioUrl if it was partially generated?
+                        // audioUrl: null,
                     })
                     .where(eq(schema.podcast.id, podcastId))
                     .returning({ id: schema.podcast.id });
@@ -142,6 +270,21 @@ export class PodcastService {
                 }
             } catch (updateError) {
                 logger.fatal({ initialError: processError, updateError }, 'CRITICAL FAILURE: Could not update podcast status to FAILED in background error handler.');
+            }
+        } finally {
+            // Clean up temporary audio files
+            if (tempAudioFiles.length > 0) {
+                logger.info(`Cleaning up ${tempAudioFiles.length} temporary audio files...`);
+                for (const tempFile of tempAudioFiles) {
+                    try {
+                        await fs.unlink(tempFile);
+                        logger.debug(`Deleted temporary file: ${tempFile}`);
+                    } catch (cleanupError) {
+                        // Log an error but don't let cleanup failure stop the process or throw again
+                        logger.error({ err: cleanupError, file: tempFile }, 'Failed to delete temporary audio file.');
+                    }
+                }
+                logger.info('Temporary file cleanup finished.');
             }
         }
     }

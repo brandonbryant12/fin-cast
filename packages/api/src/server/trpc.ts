@@ -1,28 +1,25 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
-import type { LLMInterface } from '@repo/ai';
+import type { TTSService } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
-import type { Scraper } from '@repo/webscraper';
 import type { PodcastService } from '@repo/podcast';
 
 export interface CreateContextOptions {
   auth: AuthInstance;
   db: DatabaseInstance;
   headers: Headers;
-  llm: LLMInterface;
+  tts: TTSService;
   logger: AppLogger;
-  scraper: Scraper;
   podcast: PodcastService;
 }
 
 export interface TRPCContext {
   db: DatabaseInstance;
   session: AuthInstance['$Infer']['Session'] | null;
-  llm: LLMInterface;
+  tts: TTSService;
   logger: AppLogger;
-  scraper: Scraper;
   podcast: PodcastService
 }
 
@@ -30,9 +27,8 @@ export const createTRPCContext = async ({
   auth,
   db,
   headers,
-  llm,
   logger,
-  scraper,
+  tts,
   podcast,
 }: CreateContextOptions): Promise<TRPCContext> => {
   const session = await auth.api.getSession({
@@ -41,9 +37,8 @@ export const createTRPCContext = async ({
   return {
     db,
     session,
-    llm,
+    tts,
     logger,
-    scraper,
     podcast,
   };
 };

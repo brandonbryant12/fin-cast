@@ -5,6 +5,7 @@ import {
     Loader2, // Spinner Icon
     AlertTriangle, // Warning Icon
     Play, // Play Icon
+    Pause, // Pause Icon
     Trash2, // Delete/Trash Icon
     ChevronDown, // Icon for expand
     ChevronUp,   // Icon for collapse
@@ -34,6 +35,7 @@ interface PodcastListItemProps {
     podcast: Podcast;
     onPlay: (id: string) => void;
     onDelete: (id: string) => void;
+    isPlaying: boolean; // Add isPlaying prop
 }
 
 // Helper function to format date (basic example)
@@ -55,7 +57,7 @@ const formatDuration = (seconds: number | null): string | null => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export function PodcastListItem({ podcast, onPlay, onDelete }: PodcastListItemProps) {
+export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: PodcastListItemProps) {
     const [isExpanded, setIsExpanded] = useState(false); // Add state for expansion
 
     const {
@@ -158,10 +160,12 @@ export function PodcastListItem({ podcast, onPlay, onDelete }: PodcastListItemPr
                 {/* Action Buttons + Expand/Collapse */}
                 <div className="flex items-center space-x-1 ml-2"> {/* Reduced space for tighter buttons */}
                      {status === 'success' && (
-                        <Button /* Play Button */
+                        <Button /* Play/Pause Button */
                             variant="ghost" size="icon" onClick={() => onPlay(id)}
-                            className="text-gray-300 hover:text-white hover:bg-slate-700" aria-label="Play Podcast" >
-                            <Play className="h-4 w-4" />
+                            className="text-gray-300 hover:text-white hover:bg-slate-700"
+                            aria-label={isPlaying ? 'Pause Podcast' : 'Play Podcast'} // Dynamic aria-label
+                        >
+                            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {/* Conditional Icon */}
                         </Button>
                     )}
                     {/* Expand/Collapse Toggle - Show if status is success */}

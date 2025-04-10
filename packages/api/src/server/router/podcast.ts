@@ -1,7 +1,7 @@
+import * as schema from '@repo/db/schema';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 import { protectedProcedure, router } from '../trpc';
-import * as schema from '@repo/db/schema';
 
 // Define the select type alias
 type SelectPodcast = typeof schema.podcast.$inferSelect;

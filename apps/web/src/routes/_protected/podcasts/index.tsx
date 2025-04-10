@@ -3,7 +3,7 @@ import { Dialog, DialogTrigger } from '@repo/ui/components/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
@@ -16,14 +16,27 @@ export const Route = createFileRoute('/_protected/podcasts/')({
 
 function PodcastsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [nowPlaying, setNowPlaying] = useState<{ id: string; audio: HTMLAudioElement } | null>(null);
     const queryClient = useQueryClient();
 
     const podcastsQuery = useQuery(trpc.podcasts.myPodcasts.queryOptions());
+
+    useEffect(() => {
+        return () => {
+            if (nowPlaying) {
+                nowPlaying.audio.pause();
+            }
+        };
+    }, [nowPlaying]);
 
     const deletePodcastMutation = useMutation({
         ...(trpc.podcasts.delete.mutationOptions()),
         onSuccess: () => {
             toast.success('Podcast deleted successfully.');
+            if (nowPlaying?.id === deletePodcastMutation.variables?.id) {
+                nowPlaying.audio.pause();
+                setNowPlaying(null);
+            }
             queryClient.invalidateQueries({
                 queryKey: trpc.podcasts.myPodcasts.queryOptions().queryKey,
             });
@@ -36,12 +49,58 @@ function PodcastsPage() {
     });
 
     const handleDelete = (id: string) => {
+        if (nowPlaying?.id === id) {
+            toast.error("Cannot delete a podcast while it's playing.");
+            return;
+        }
         deletePodcastMutation.mutate({ id });
     };
 
     const handlePlay = (id: string) => {
-        console.log('Play clicked for', id);
-        toast.info('Playback functionality not yet implemented.');
+        if (nowPlaying?.id === id) {
+            nowPlaying.audio.pause();
+            setNowPlaying(null);
+            return;
+        }
+
+        if (nowPlaying) {
+            nowPlaying.audio.pause();
+            setNowPlaying(null);
+        }
+
+        const podcast = podcastsQuery.data?.find(p => p.id === id);
+
+        if (podcast?.audioUrl && podcast.audioUrl.startsWith('data:audio/')) {
+            try {
+                const audio = new Audio(podcast.audioUrl);
+
+                audio.addEventListener('ended', () => {
+                    setNowPlaying(null);
+                });
+
+                audio.addEventListener('error', (e) => {
+                    console.error('Audio playback error:', e);
+                    toast.error('Error playing audio.');
+                    setNowPlaying(null);
+                });
+
+                audio.play().catch(err => {
+                    console.error('Error starting playback:', err);
+                    toast.error('Could not start audio playback.');
+                    setNowPlaying(null);
+                });
+
+                setNowPlaying({ id, audio });
+            } catch (error) {
+                console.error('Error creating Audio object:', error);
+                toast.error('Failed to load audio data.');
+                setNowPlaying(null);
+            }
+        } else {
+            toast.error('No audio available for this podcast or invalid format.');
+            console.warn('Attempted to play podcast with missing or invalid audioUrl:', podcast);
+            setNowPlaying(null);
+        }
     };
 
     const handleGenerationSuccess = () => {
@@ -92,9 +151,10 @@ function PodcastsPage() {
                         {podcastsQuery.data?.map((podcast) => (
                             <PodcastListItem
                                 key={podcast.id}
-                                podcast={podcast as any}
+                                podcast={podcast}
                                 onPlay={handlePlay}
                                 onDelete={handleDelete}
+                                isPlaying={nowPlaying?.id === podcast.id}
                             />
                         ))}
                     </div>
