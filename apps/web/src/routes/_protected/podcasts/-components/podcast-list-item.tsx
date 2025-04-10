@@ -1,16 +1,17 @@
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { useQuery } from '@tanstack/react-query';
 import {
-    Loader2, // Spinner Icon
-    AlertTriangle, // Warning Icon
-    Play, // Play Icon
-    Pause, // Pause Icon
-    Trash2, // Delete/Trash Icon
-    ChevronDown, // Icon for expand
-    ChevronUp,   // Icon for collapse
+    Loader2,
+    AlertTriangle,
+    Play,
+    Pause,
+    Trash2,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react';
-import { useState } from 'react'; // Import useState
+import { useState } from 'react';
+import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { trpc } from '@/router';
 
 export type PodcastStatus = 'processing' | 'failed' | 'success';
@@ -27,15 +28,13 @@ export interface Podcast {
     durationSeconds: number | null;
     errorMessage: string | null;
     generatedAt: Date | string | null;
-    createdAt: Date | string; // Might be Date or string
-    updatedAt?: Date | string; // Optional, might not be selected in query
+    createdAt: Date | string;
+    updatedAt?: Date | string;
 }
 
 interface PodcastListItemProps {
     podcast: Podcast;
-    onPlay: (id: string) => void;
     onDelete: (id: string) => void;
-    isPlaying: boolean; // Add isPlaying prop
 }
 
 // Helper function to format date (basic example)
@@ -57,8 +56,16 @@ const formatDuration = (seconds: number | null): string | null => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: PodcastListItemProps) {
-    const [isExpanded, setIsExpanded] = useState(false); // Add state for expansion
+export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const {
+        activePodcast,
+        isPlaying: isContextPlaying,
+        loadTrack,
+        play,
+        pause
+    } = useAudioPlayer();
 
     const {
         id,
@@ -68,17 +75,20 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
         sourceType,
         sourceDetail,
         createdAt,
+        audioUrl,
         durationSeconds,
         errorMessage,
     } = podcast;
 
-    // Fetch podcast details including transcript when expanded
+    const isActive = activePodcast?.id === id;
+    const shouldShowPauseIcon = isActive && isContextPlaying;
+
     const podcastByIdQuery = useQuery(trpc.podcasts.byId.queryOptions(
         { id: id },
         {
-            enabled: isExpanded, // Only fetch when the item is expanded
-            staleTime: Infinity, // Data likely won't change unless page is refreshed
-            refetchOnWindowFocus: false, // Don't refetch just because window focus changes
+            enabled: isExpanded,
+            staleTime: Infinity,
+            refetchOnWindowFocus: false,
         }
     ));
 
@@ -98,11 +108,10 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
                 );
             case 'success':
             default:
-                return null;
+                return <div className="h-5 w-5" />;
         }
     };
 
-    // Determine the secondary content (link or text)
     const renderSecondaryContent = () => {
         if (sourceType === 'url' && sourceDetail) {
             const looksLikeUrl = sourceDetail.startsWith('http://') || sourceDetail.startsWith('https://');
@@ -114,9 +123,9 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
                         rel="noopener noreferrer"
                         className="text-sky-400 hover:text-sky-300 hover:underline truncate"
                         title={`Open source URL: ${sourceDetail}`}
-                        onClick={(e) => e.stopPropagation()} // Prevent card click if nested
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        {sourceDetail} {/* Display the URL directly */}
+                        {sourceDetail}
                     </a>
                 );
             } else {
@@ -131,17 +140,36 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
         }
     };
 
+    const handlePlayPauseClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (status !== 'success' || !audioUrl) {
+            console.warn('Cannot play podcast: Invalid status or missing audioUrl');
+            return;
+        }
+
+        if (isActive) {
+            if (isContextPlaying) {
+                pause();
+            } else {
+                play();
+            }
+        } else {
+            loadTrack({ id, title: title || 'Untitled Podcast', audioUrl });
+        }
+    };
+
     return (
         <div
             className={cn(
-                'flex flex-col p-4 rounded-md border', // Use flex-col
-                status === 'failed' ? 'border-red-500/30 bg-red-900/10' : 'border-slate-700 bg-slate-800/50',
+                'flex flex-col p-4 rounded-md border transition-colors duration-150',
+                status === 'failed' ? 'border-red-500/30 bg-red-900/10' : 'border-slate-700',
+                isActive ? 'bg-slate-700/70' : 'bg-slate-800/50'
             )}
         >
-            {/* Main row: Icon, Details, Actions */}
             <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-4 flex-1 min-w-0">
-                    <div className="flex-shrink-0 w-5">{getStatusIndicator()}</div>
+                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">{getStatusIndicator()}</div>
                     <div className="flex-1 min-w-0">
                         <p className="text-base font-medium text-white truncate" title={title || 'Untitled Podcast'}>
                             {title || 'Untitled Podcast'}
@@ -157,40 +185,47 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
                         )}
                     </div>
                 </div>
-                {/* Action Buttons + Expand/Collapse */}
-                <div className="flex items-center space-x-1 ml-2"> {/* Reduced space for tighter buttons */}
+                <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
                      {status === 'success' && (
-                        <Button /* Play/Pause Button */
-                            variant="ghost" size="icon" onClick={() => onPlay(id)}
-                            className="text-gray-300 hover:text-white hover:bg-slate-700"
-                            aria-label={isPlaying ? 'Pause Podcast' : 'Play Podcast'} // Dynamic aria-label
+                        <Button
+                            variant="ghost" size="icon"
+                            onClick={handlePlayPauseClick}
+                            className={cn(
+                                'text-gray-300 hover:text-white hover:bg-slate-700',
+                            )}
+                            aria-label={shouldShowPauseIcon ? 'Pause Podcast' : 'Play Podcast'}
                         >
-                            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {/* Conditional Icon */}
+                            {shouldShowPauseIcon ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         </Button>
                     )}
-                    {/* Expand/Collapse Toggle - Show if status is success */}
-                    {status === 'success' && ( // Only show expand if podcast generation succeeded
+                    {status === 'success' && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setIsExpanded(!isExpanded)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsExpanded(!isExpanded);
+                             }}
                             className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
                             aria-label={isExpanded ? "Collapse details" : "Expand details"}
                         >
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     )}
-                    <Button /* Delete Button */
-                         variant="ghost" size="icon" onClick={() => onDelete(id)}
+                    <Button
+                         variant="ghost" size="icon"
+                         onClick={(e) => {
+                            e.stopPropagation();
+                             onDelete(id);
+                         }}
                          className="text-red-500 hover:text-red-400 hover:bg-red-900/30" aria-label="Delete Podcast">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
 
-            {/* Expanded Content Area - Fetches data on demand */}
             {isExpanded && (
-                <div className="mt-3 pt-3 border-t border-slate-700 text-sm text-gray-300">
+                <div className="mt-3 pt-3 pl-9 border-t border-slate-700 text-sm text-gray-300">
                     {podcastByIdQuery.isLoading && (
                         <div className="flex items-center space-x-2 text-gray-400">
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -211,7 +246,8 @@ export function PodcastListItem({ podcast, onPlay, onDelete, isPlaying }: Podcas
                                     {podcastByIdQuery.data.transcript.content.map((segment: { speaker: string; line: string }, index: number) => (
                                         <div key={index}>
                                             <span className="font-semibold text-teal-400">{segment.speaker}:</span>
-                                            <p className="ml-2 text-gray-300 inline"> {segment.line}</p> {/* Keep inline for wrapping */}                                        </div>
+                                            <p className="ml-2 text-gray-300 inline"> {segment.line}</p>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (

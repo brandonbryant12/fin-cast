@@ -3,8 +3,9 @@ import { Dialog, DialogTrigger } from '@repo/ui/components/dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
 import { GeneratePodcastModal } from '@/routes/_protected/podcasts/-components/generate-podcast-modal';
@@ -16,26 +17,25 @@ export const Route = createFileRoute('/_protected/podcasts/')({
 
 function PodcastsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [nowPlaying, setNowPlaying] = useState<{ id: string; audio: HTMLAudioElement } | null>(null);
     const queryClient = useQueryClient();
+
+    const {
+        activePodcast,
+        isPlaying,
+        loadTrack,
+        play,
+        pause,
+        closePlayer
+    } = useAudioPlayer();
 
     const podcastsQuery = useQuery(trpc.podcasts.myPodcasts.queryOptions());
 
-    useEffect(() => {
-        return () => {
-            if (nowPlaying) {
-                nowPlaying.audio.pause();
-            }
-        };
-    }, [nowPlaying]);
-
     const deletePodcastMutation = useMutation({
         ...(trpc.podcasts.delete.mutationOptions()),
-        onSuccess: () => {
+        onSuccess: async (_data, variables) => {
             toast.success('Podcast deleted successfully.');
-            if (nowPlaying?.id === deletePodcastMutation.variables?.id) {
-                nowPlaying.audio.pause();
-                setNowPlaying(null);
+            if (activePodcast?.id === variables.id) {
+                await closePlayer();
             }
             queryClient.invalidateQueries({
                 queryKey: trpc.podcasts.myPodcasts.queryOptions().queryKey,
@@ -49,57 +49,44 @@ function PodcastsPage() {
     });
 
     const handleDelete = (id: string) => {
-        if (nowPlaying?.id === id) {
-            toast.error("Cannot delete a podcast while it's playing.");
-            return;
-        }
         deletePodcastMutation.mutate({ id });
     };
 
     const handlePlay = (id: string) => {
-        if (nowPlaying?.id === id) {
-            nowPlaying.audio.pause();
-            setNowPlaying(null);
+        const podcast = podcastsQuery.data?.find(p => p.id === id);
+
+        if (!podcast || podcast.status !== 'success' || !podcast.audioUrl) {
+            let description = 'Audio is unavailable or data is missing.';
+            if (podcast?.status === 'processing') {
+                description = 'Podcast is still processing.';
+            } else if (podcast?.status === 'failed') {
+                description = 'Podcast generation failed.';
+            }
+            toast.error('Cannot play podcast', { description });
+            console.warn('Attempted to play invalid podcast:', podcast);
             return;
         }
 
-        if (nowPlaying) {
-            nowPlaying.audio.pause();
-            setNowPlaying(null);
+        if (!podcast.audioUrl.startsWith('data:audio/')) {
+            toast.error('Invalid audio format.', {
+                description: 'The audio data for this podcast is not in a playable format.',
+            });
+            console.warn('Attempted to play podcast with non-data URL:', podcast);
+            return;
         }
 
-        const podcast = podcastsQuery.data?.find(p => p.id === id);
-
-        if (podcast?.audioUrl && podcast.audioUrl.startsWith('data:audio/')) {
-            try {
-                const audio = new Audio(podcast.audioUrl);
-
-                audio.addEventListener('ended', () => {
-                    setNowPlaying(null);
-                });
-
-                audio.addEventListener('error', (e) => {
-                    console.error('Audio playback error:', e);
-                    toast.error('Error playing audio.');
-                    setNowPlaying(null);
-                });
-
-                audio.play().catch(err => {
-                    console.error('Error starting playback:', err);
-                    toast.error('Could not start audio playback.');
-                    setNowPlaying(null);
-                });
-
-                setNowPlaying({ id, audio });
-            } catch (error) {
-                console.error('Error creating Audio object:', error);
-                toast.error('Failed to load audio data.');
-                setNowPlaying(null);
+        if (activePodcast?.id === id) {
+            if (isPlaying) {
+                pause();
+            } else {
+                play();
             }
         } else {
-            toast.error('No audio available for this podcast or invalid format.');
-            console.warn('Attempted to play podcast with missing or invalid audioUrl:', podcast);
-            setNowPlaying(null);
+            loadTrack({
+                id: podcast.id,
+                audioUrl: podcast.audioUrl,
+                title: podcast.title || 'Untitled Podcast',
+            });
         }
     };
 
@@ -108,7 +95,7 @@ function PodcastsPage() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-24">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-white">My Podcasts</h1>
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -154,7 +141,7 @@ function PodcastsPage() {
                                 podcast={podcast}
                                 onPlay={handlePlay}
                                 onDelete={handleDelete}
-                                isPlaying={nowPlaying?.id === podcast.id}
+                                isPlaying={isPlaying && activePodcast?.id === podcast.id}
                             />
                         ))}
                     </div>

@@ -1,7 +1,6 @@
 ## UI 
 - Design a audio player to match our styles, give playback controls, forward 15s and back 15s, how much time is left ect...
 
-- the podcast title is shifted over left because of the loading icon go's there.  The transcript looks weird because its full left aligned but the title is over a little consider shifting transcript
 
 ## Backend 
 - use plimit of 5 and promise.all to synth audio 
