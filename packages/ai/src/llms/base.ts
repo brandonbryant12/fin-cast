@@ -1,5 +1,5 @@
-import type { CoreMessage } from 'ai';
 import type { ChatOptions, ChatResponse, PromptDefinition } from "../types";
+import type { CoreMessage } from 'ai';
 import type * as v from 'valibot';
 
 /**
@@ -34,7 +34,7 @@ export interface LLMInterface {
    * the parsed and validated output if `outputSchema` was provided and processing succeeded.
    */
   runPrompt<
-      TInputParams extends Record<string, any>,
+      TInputParams extends Record<string, unknown>,
       TOutputSchema = unknown, // Input: the schema type or unknown
       // Output: inferred type O
       O = TOutputSchema extends v.GenericSchema<infer P> ? P : string | null

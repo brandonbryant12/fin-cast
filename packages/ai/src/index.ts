@@ -5,8 +5,9 @@ export type { ChatOptions, ChatResponse } from "./types";
 
 export type { LLMInterface } from "./llms/base";
 
-// Re-export OpenAI Client
+// Re-export Clients
 export { OpenAIClient } from "./llms/openai";
+export { GeminiClient } from "./llms/gemini";
 
 // Re-export prompts
 export * as prompts from "./prompts"; 

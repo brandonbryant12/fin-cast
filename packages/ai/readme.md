@@ -14,9 +14,9 @@ Applications or other packages within the monorepo can consume this package's ex
 
 ### 1. Environment Configuration
 
--   Define environment variable schemas for different LLM providers (like OpenAI, Anthropic) in `src/env.ts` using `valibot`.
--   These schemas (`OpenAIEnvSchema`, `AnthropicEnvSchema`, etc.) serve as a reference and for type inference.
--   **Important:** The actual *validation and parsing* of environment variables should happen in the consuming application (e.g., `apps/server/src/env.ts`) by importing the relevant schema from this package and potentially prefixing variable names (e.g., `SERVER_AI_OPENAI_API_KEY`).
+-   Define environment variable schemas for different LLM providers (like OpenAI, Anthropic, Gemini) in `src/env.ts` using `valibot`.
+-   These schemas (`OpenAIEnvSchema`, `AnthropicEnvSchema`, `GeminiEnvSchema`, etc.) serve as a reference and for type inference.
+-   **Important:** The actual *validation and parsing* of environment variables should happen in the consuming application (e.g., `apps/server/src/env.ts`) by importing the relevant schema from this package and potentially prefixing variable names (e.g., `SERVER_AI_GEMINI_API_KEY`).
 
 ### 2. Prompt Templates
 
@@ -55,13 +55,22 @@ if (!result.success) {
 ### Adding a New LLM Provider
 
 1.  **Environment Variables:**
-    *   Add a new `valibot` schema (e.g., `XYZProviderEnvSchema`) to `src/env.ts` defining the required environment variables (API keys, base URLs, etc.) for the new provider. Follow the existing patterns.
-2.  **Client Implementation (Conceptual):**
-    *   *(Assumption: Client implementations might exist or be added later, potentially in `src/clients/`)*
-    *   Create a new client or wrapper module (e.g., `src/clients/xyz-provider.ts`) to interact with the provider's SDK or API.
-    *   This client should ideally handle authentication using the defined environment variables (passed from the consuming app).
-3.  **Integration (Conceptual):**
-    *   If there's a central factory or function to get LLM clients, update it to include the new provider.
+    *   Add a new `valibot` schema (e.g., `XYZProviderEnvSchema`) to `src/env.ts` defining the required environment variables (API keys, base URLs, etc.) for the new provider. Follow the existing patterns (see `OpenAIEnvSchema`, `GeminiEnvSchema`).
+2.  **Client Implementation:**
+    *   Create a new client class (e.g., `src/llms/xyz-provider.ts`) that extends `BaseLLM` (`src/llms/base_llm.ts`).
+    *   Implement the required `_executeModel` method using the provider's SDK (e.g., `@ai-sdk/google` for Gemini, `@ai-sdk/openai` for OpenAI).
+    *   The constructor should accept an options object with necessary configurations (like `apiKey`).
+3.  **Factory Integration:**
+    *   Import the new client into `src/factory.ts`.
+    *   Add the provider's identifier (e.g., `'xyz'`) to the `SupportedLLMs` type union.
+    *   Add the necessary configuration interface to `AIConfig` (e.g., `xyz?: { apiKey: string; }`).
+    *   Add a `case` for the new provider in the `createLLM` method within `AIServiceFactory`.
+4.  **Index Export:**
+    *   Re-export the new client class from `src/index.ts`.
+5.  **Documentation:**
+    *   Update this `readme.md` to mention the new provider, its configuration requirements, and any specific usage notes.
+6.  **Dependencies:**
+    *   Add the necessary provider-specific SDK (e.g., `@ai-sdk/google`) to the `dependencies` in `package.json` and run `pnpm install` (or equivalent).
 
 ### Creating New Prompt Templates
 

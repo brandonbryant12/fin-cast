@@ -29,6 +29,7 @@ export const envSchema = v.object({
 
   // AI Provider API Key (Optional)
   OPENAI_API_KEY: v.optional(v.string()),
+  GEMINI_API_KEY: v.optional(v.string()),
 
   LOG_LEVEL: v.optional(v.string()),
   NODE_ENV: v.optional(v.string())

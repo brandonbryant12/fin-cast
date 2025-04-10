@@ -5,8 +5,8 @@ import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { createLogger, type LogLevel } from '@repo/logger';
-import { createScraper } from '@repo/webscraper';
 import { createPodcast } from '@repo/podcast';
+import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { env } from './env';
@@ -20,11 +20,11 @@ const wildcardPath = {
 } as const;
 
 
-const apiKey = env.OPENAI_API_KEY;
+const apiKey = env.GEMINI_API_KEY;
 if (!apiKey) {
-  throw new Error('OPENAI_API_KEY environment variable is not set. AI features may be unavailable.');
+  throw new Error('GEMINI_API_KEY environment variable is not set. AI features may be unavailable.');
 }
-const llm = apiKey ? AIServiceFactory.createLLM('openai', { openai: { apiKey } }) : null; 
+const llm = apiKey ? AIServiceFactory.createLLM('gemini', { gemini: { apiKey } }) : null;
 
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({
@@ -88,8 +88,6 @@ app.use(
   trpcServer({
     router: api.trpcRouter,
     createContext: async (c) => {
-      // Explicitly await and cast the context to 'any' to satisfy the adapter type
-      // This assumes the runtime structure is compatible, despite the strict type mismatch.
       const context = await api.createTRPCContext({ headers: c.req.headers });
       return context as any; 
     },

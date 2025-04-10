@@ -1,4 +1,5 @@
 import type { LLMInterface } from "./llms/base";
+import { GeminiClient } from "./llms/gemini";
 import { OpenAIClient } from "./llms/openai";
 
 /**
@@ -8,13 +9,14 @@ import { OpenAIClient } from "./llms/openai";
 export interface AIConfig {
   openai?: { apiKey: string; baseURL?: string };
   anthropic?: { apiKey: string; baseURL?: string };
+  gemini?: { apiKey: string };
   // Add configurations for other providers as needed
 }
 
 /**
  * Union type of supported LLM provider identifiers.
  */
-export type SupportedLLMs = "openai" | "anthropic"; // Add others as they are implemented
+export type SupportedLLMs = "openai" | "anthropic" | "gemini";
 
 /**
  * Factory for creating instances of LLM clients.
@@ -50,6 +52,16 @@ export const AIServiceFactory = {
         }
         // TODO: Implement Anthropic client instantiation when available
         throw new Error("Anthropic client not yet implemented.");
+
+      case "gemini":
+        if (!config.gemini?.apiKey) {
+          throw new Error(
+            "Gemini configuration (apiKey) is required but missing in the provided AIConfig."
+          );
+        }
+        return new GeminiClient({
+          apiKey: config.gemini.apiKey,
+        });
 
       default:
         throw new Error(`Unsupported LLM type: ${type}`);

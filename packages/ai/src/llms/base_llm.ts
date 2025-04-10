@@ -103,8 +103,21 @@ export abstract class BaseLLM implements LLMInterface {
         if (promptDef.outputSchema && typeof rawResponse.content === 'string') {
             let parsedJson: unknown;
             try {
-                // Attempt to parse the raw string content as JSON
-                parsedJson = JSON.parse(rawResponse.content);
+                // Strip potential markdown fences (```json ... ```)
+                let contentToParse = rawResponse.content.trim();
+                const jsonFenceRegex = /^```json\s*([\s\S]*?)\s*```$/;
+                const match = contentToParse.match(jsonFenceRegex);
+                if (match && match[1]) {
+                    contentToParse = match[1].trim();
+                    console.log(`[LLM Prompt] Extracted JSON content from within markdown fence for prompt "${promptName}".`);
+                } else if (contentToParse.startsWith('```') && contentToParse.endsWith('```')) {
+                    // Handle generic code blocks if ```json is missing
+                    contentToParse = contentToParse.substring(3, contentToParse.length - 3).trim();
+                     console.log(`[LLM Prompt] Extracted content from within generic markdown fence for prompt "${promptName}".`);
+                }
+
+                // Attempt to parse the potentially cleaned string content as JSON
+                parsedJson = JSON.parse(contentToParse);
             } catch (parseError: unknown) {
                 const message = parseError instanceof Error ? parseError.message : "Unknown JSON parsing error";
                 console.error(`[LLM Prompt Error] Failed to parse LLM output as JSON for prompt "${promptName}": ${message}`, { rawContent: rawResponse.content });
