@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
-import { AIServiceFactory } from '@repo/ai';
+import { createLLMService } from '@repo/ai';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
@@ -24,7 +24,7 @@ const apiKey = env.GEMINI_API_KEY;
 if (!apiKey) {
   throw new Error('GEMINI_API_KEY environment variable is not set. AI features may be unavailable.');
 }
-const llm = apiKey ? AIServiceFactory.createLLM('gemini', { gemini: { apiKey } }) : null;
+const llm = apiKey ? createLLMService({ provider: 'gemini', options: { apiKey: apiKey } }) : null;
 
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({

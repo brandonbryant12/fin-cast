@@ -5,8 +5,8 @@ import * as path from 'path';
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import playSound from 'play-sound';
-import type { TtsOptions } from './index';
-import { createTtsService } from './index'; 
+import type { TtsOptions, LLMServiceConfig, ChatOptions, ChatResponse } from './index';
+import { createTtsService, createLLMService } from './index';
 
 dotenv.config();
 
@@ -128,19 +128,59 @@ const llmCommand = program.command('llm')
   .description('Large Language Model operations');
 
 interface LlmChatOptions {
+  provider: 'openai' | 'gemini' | 'anthropic';
   model?: string;
 }
 
 llmCommand
   .command('chat <prompt>')
   .description('Send a prompt to the chat model')
-  .option('--model <model>', 'LLM model to use')
+  .option('--provider <provider>', 'LLM provider to use (openai, gemini, anthropic)', 'openai')
+  .option('--model <model>', 'LLM model to use (optional, provider-specific)')
   .action(async (prompt: string, options: LlmChatOptions) => {
-    ensureApiKey();
-    console.log('Sending prompt to LLM...');
-    console.log(`Prompt: ${prompt}`);
-    console.log(`Options: ${JSON.stringify(options)}`);
-    console.warn('LLM chat functionality not yet implemented.');
+    const { provider, model } = options;
+    let apiKeyEnvVar: string;
+    let llmConfig: LLMServiceConfig;
+
+    switch (provider) {
+      case 'openai':
+        apiKeyEnvVar = 'OPENAI_API_KEY';
+        const openaiApiKey = ensureApiKey(apiKeyEnvVar);
+        llmConfig = { provider: 'openai', options: { apiKey: openaiApiKey } };
+        break;
+      case 'gemini':
+        apiKeyEnvVar = 'GEMINI_API_KEY';
+        const geminiApiKey = ensureApiKey(apiKeyEnvVar);
+        llmConfig = { provider: 'gemini', options: { apiKey: geminiApiKey } };
+        break;
+      case 'anthropic':
+        apiKeyEnvVar = 'ANTHROPIC_API_KEY';
+        console.error('Anthropic provider not yet implemented in CLI.');
+        process.exit(1);
+      default:
+        console.error(`Unsupported LLM provider: ${provider}`);
+        process.exit(1);
+    }
+
+    console.log(`Sending prompt to ${provider} LLM...`);
+
+    try {
+      const llmService = createLLMService(llmConfig);
+
+      const chatOptions: ChatOptions = {};
+      if (model) {
+        chatOptions.model = model;
+      }
+
+      const response: ChatResponse = await llmService.chatCompletion(prompt, chatOptions);
+
+      console.log("\nLLM Response:");
+      console.log(response.content);
+
+    } catch (error) {
+      console.error(`Error interacting with ${provider} LLM:`, error);
+      process.exitCode = 1;
+    }
   });
 
 program.parse(process.argv); 
