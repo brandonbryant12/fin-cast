@@ -1,4 +1,4 @@
-import { PersonalityId, type PersonalityInfo } from '@repo/ai';
+import { PersonalityId } from '@repo/ai';
 import { Button } from '@repo/ui/components/button';
 import {
     Dialog,
@@ -19,8 +19,8 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Check } from 'lucide-react';
-import { useEffect } from 'react';
+import { AlertTriangle, Check, Volume2 } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 import { trpc } from '@/router';
@@ -63,7 +63,6 @@ const generatePodcastSchema = v.pipe(
     )
 );
 
-
 export function GeneratePodcastModal({
     open,
     setOpen,
@@ -73,6 +72,11 @@ export function GeneratePodcastModal({
         enabled: open,
         staleTime: Infinity,
     }));
+
+    // Use useMemo to memoize the availablePersonalities array
+    const availablePersonalities = useMemo(() => {
+        return availableVoicesQuery.data ?? [];
+    }, [availableVoicesQuery.data]);
 
     const createPodcastMutation = useMutation({
         ...(trpc.podcasts.create.mutationOptions()),
@@ -126,8 +130,6 @@ export function GeneratePodcastModal({
         },
     });
 
-    const availablePersonalities = availableVoicesQuery.data ?? [];
-
     useEffect(() => {
         if (availableVoicesQuery.isSuccess && availablePersonalities.length > 0) {
             if (!form.state.values.hostPersonalityId && availablePersonalities[0]) {
@@ -162,29 +164,27 @@ export function GeneratePodcastModal({
                         <form.Field
                             name="sourceUrl"
                             children={(field) => (
-                                <div className="grid grid-cols-4 items-center gap-x-4 gap-y-1">
-                                    <Label htmlFor={field.name} className="text-right col-span-1">
+                                <div className="space-y-1">
+                                    <Label htmlFor={field.name}>
                                         Article URL
                                     </Label>
-                                    <div className="col-span-3">
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onBlur={field.handleBlur}
-                                            onChange={(e) => field.handleChange(e.target.value)}
-                                            placeholder="https://example.com/article"
-                                            aria-describedby={field.name + '-info'}
-                                            aria-invalid={!!field.state.meta.errors?.length}
-                                        />
-                                        <FormFieldInfo field={field} />
-                                    </div>
+                                    <Input
+                                        id={field.name}
+                                        name={field.name}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        placeholder="https://example.com/article"
+                                        aria-describedby={field.name + '-info'}
+                                        aria-invalid={!!field.state.meta.errors?.length}
+                                    />
+                                    <FormFieldInfo field={field} />
                                 </div>
                             )}
                         />
 
                         <div className="space-y-2">
-                            <Label>Select Voices</Label>
+                            <Label>Select Hosts</Label>
                             <div className="rounded-md border border-border bg-input/20 p-3 max-h-60 overflow-y-auto">
                                 {availableVoicesQuery.isLoading && (
                                     <div className="flex items-center justify-center text-muted-foreground p-4">
@@ -205,68 +205,80 @@ export function GeneratePodcastModal({
                                     <div className="space-y-2">
                                         {availablePersonalities.map((p) => (
                                             <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-input/50">
-                                                <TooltipProvider delayDuration={100}>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <span className="flex-1 text-sm font-medium text-foreground cursor-default truncate pr-2" title={p.name}>
-                                                                {p.name}
-                                                            </span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent side="top" align="start">
-                                                            <p className="text-xs max-w-xs">{p.description}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                                <div className="flex space-x-2">
-                                                    <form.Subscribe
-                                                        selector={(state) => [
-                                                            state.values.hostPersonalityId,
-                                                            state.values.cohostPersonalityId,
-                                                        ]}
-                                                    >
-                                                        {([hostId, cohostId]) => (
-                                                            <>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant={hostId === p.id ? 'secondary' : 'outline'}
-                                                                    size="sm"
-                                                                    onClick={() => {
-                                                                        if (cohostId !== p.id) {
-                                                                            form.setFieldValue('hostPersonalityId', p.id);
-                                                                        }
-                                                                    }}
-                                                                    aria-checked={hostId === p.id}
-                                                                    role="radio"
-                                                                    className={cn(
-                                                                        "px-3 py-1 text-xs h-auto",
-                                                                        hostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                                                                    )}
-                                                                >
-                                                                    {hostId === p.id && <Check className="h-3 w-3 mr-1" />}
-                                                                    Host
-                                                                </Button>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant={cohostId === p.id ? 'secondary' : 'outline'}
-                                                                    size="sm"
-                                                                    onClick={() => {
-                                                                        if (hostId !== p.id) {
-                                                                            form.setFieldValue('cohostPersonalityId', p.id);
-                                                                        }
-                                                                    }}
-                                                                    aria-checked={cohostId === p.id}
-                                                                    role="radio"
-                                                                    className={cn(
-                                                                        "px-3 py-1 text-xs h-auto",
-                                                                        cohostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
-                                                                    )}
-                                                                >
-                                                                     {cohostId === p.id && <Check className="h-3 w-3 mr-1" />}
-                                                                     Co-host
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </form.Subscribe>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-muted-foreground hover:text-foreground h-8 w-8 flex-shrink-0"
+                                                    onClick={() => console.log('Preview audio for:', p.id /* p.previewAudioUrl */)}
+                                                    aria-label={`Preview voice ${p.name}`}
+                                                >
+                                                    <Volume2 className="h-4 w-4" />
+                                                </Button>
+                                                <div className="flex flex-1 items-center justify-between ml-2">
+                                                    <TooltipProvider delayDuration={100}>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <span className="flex-1 text-sm font-medium text-foreground cursor-default truncate pr-2" title={p.name}>
+                                                                    {p.name}
+                                                                </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent side="top" align="start">
+                                                                <p className="text-xs max-w-xs">{p.description}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                    <div className="flex space-x-2">
+                                                        <form.Subscribe
+                                                            selector={(state) => [
+                                                                state.values.hostPersonalityId,
+                                                                state.values.cohostPersonalityId,
+                                                            ]}
+                                                        >
+                                                            {([hostId, cohostId]) => (
+                                                                <>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={hostId === p.id ? 'secondary' : 'outline'}
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            if (cohostId !== p.id) {
+                                                                                form.setFieldValue('hostPersonalityId', p.id);
+                                                                            }
+                                                                        }}
+                                                                        aria-checked={hostId === p.id}
+                                                                        role="radio"
+                                                                        className={cn(
+                                                                            "px-3 py-1 text-xs h-auto",
+                                                                            hostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                                                        )}
+                                                                    >
+                                                                        {hostId === p.id && <Check className="h-3 w-3 mr-1" />}
+                                                                        Host
+                                                                    </Button>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={cohostId === p.id ? 'secondary' : 'outline'}
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            if (hostId !== p.id) {
+                                                                                form.setFieldValue('cohostPersonalityId', p.id);
+                                                                            }
+                                                                        }}
+                                                                        aria-checked={cohostId === p.id}
+                                                                        role="radio"
+                                                                        className={cn(
+                                                                            "px-3 py-1 text-xs h-auto",
+                                                                            cohostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                                                        )}
+                                                                    >
+                                                                         {cohostId === p.id && <Check className="h-3 w-3 mr-1" />}
+                                                                         Co-host
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                        </form.Subscribe>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
