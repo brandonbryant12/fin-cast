@@ -69,7 +69,6 @@ export class PodcastService {
             const html = await this.scraper.scrape(sourceUrl, { logger });
             logger.info('Scraping successful.');
 
-            // --- Generate Script using LLM with Personality Info ---
             logger.info('Running LLM prompt to generate podcast script with personalities...');
             llmResponse = await this.llm.runPrompt(
                 generatePodcastScriptPrompt,

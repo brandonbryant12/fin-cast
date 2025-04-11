@@ -11,14 +11,12 @@ const paramsSchema = v.object({
 type Params = v.InferInput<typeof paramsSchema>;
 
 const dialogueSegmentSchema = v.object({
-    speaker: v.picklist(["Alex", "Ben"], "Speaker must be either 'Alex' or 'Ben'."),
+    speaker: v.string(),
     line: v.pipe(v.string(), v.minLength(1, "Dialogue line cannot be empty.")),
 });
 const outputSchema = v.object({
     title: v.pipe(v.string(), v.minLength(1, "Title cannot be empty.")),
-    intro: v.pipe(v.string(), v.minLength(1, "Intro cannot be empty.")), // Keep intro/outro simple for now
     dialogue: v.pipe(v.array(dialogueSegmentSchema), v.minLength(1, "Dialogue must contain at least one segment.")),
-    outro: v.pipe(v.string(), v.minLength(1, "Outro cannot be empty.")),
 });
 export type GeneratePodcastScriptOutput = v.InferInput<typeof outputSchema>;
 
@@ -27,8 +25,8 @@ export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodca
     outputSchema: outputSchema,
     description: 'Generates a conversational podcast script as JSON based on HTML content, embodying specific host personalities.',
     defaultOptions: {
-        temperature: 0.75,
-        maxTokens: 3000,
+        temperature: 0.70,
+        maxTokens: 500,
     },
     template: (params: Params): string => {
         try {
@@ -71,9 +69,7 @@ Your entire response MUST be a single, valid JSON object. Do NOT include any tex
 1.  **Analyze HTML:** Extract the core topic, main points, and key details from the provided HTML. Focus only on the main article/content. Ignore headers, footers, navigation, ads, sidebars.
 2.  **Embody Personalities:** Write the dialogue for ${hostName} reflecting ${hostName}'s personality (${hostPersonalityDescription}) and the dialogue for ${cohostName} reflecting ${cohostName}'s personality (${cohostPersonalityDescription}). Create a natural, engaging back-and-forth conversation based on the HTML content.
 3.  **Structure JSON:** Create the JSON object according to the required schema.
-4.  **Write Intro (${hostName}):**
 5.  **Write Dialogue:** Populate the "dialogue" array, ensuring the conversation flows logically and reflects the assigned personalities discussing the HTML content.
-6.  **Write Outro ${cohostName}):** 
 7.  **Validate JSON:** Ensure the final output is a single, valid JSON object matching the schema exactly.
 
 **Source HTML Content:**

@@ -1,9 +1,8 @@
-import type { LLMInterface, TTSService } from '@repo/ai';
+import type { TTSService } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
-import type { PodcastService } from '@repo/podcast';
-import type { Scraper } from '@repo/webscraper';
+import type { PodcastService } from '@repo/podcast';;
 import podcastRouter from './router/podcast';
 import postRouter from './router/post';
 import ttsRouter from './router/tts';

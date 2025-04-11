@@ -29,7 +29,7 @@ function PodcastsPage() {
     } = useAudioPlayer();
 
     const podcastsQuery = useQuery(trpc.podcasts.myPodcasts.queryOptions());
-
+    const availableVoicesQuery = useQuery(trpc.tts.getAvailablePersonalities.queryOptions());
     const deletePodcastMutation = useMutation({
         ...(trpc.podcasts.delete.mutationOptions()),
         onSuccess: async (_data, variables) => {
@@ -112,6 +112,7 @@ function PodcastsPage() {
                         open={isModalOpen}
                         setOpen={setIsModalOpen}
                         onSuccess={handleGenerationSuccess}
+                        availableVoices={availableVoicesQuery.data}
                     />
                 </Dialog>
             </div>

@@ -1,14 +1,25 @@
+import { PersonalityId } from '@repo/ai';
 import * as schema from '@repo/db/schema';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 import { protectedProcedure, router } from '../trpc';
 
-// Define the select type alias
 type SelectPodcast = typeof schema.podcast.$inferSelect;
 
-const CreatePodcastInput = v.object({
-    sourceUrl: v.pipe(v.string('Source must be a string'), v.url('Please provide a valid URL')),
-});
+const CreatePodcastInput = v.pipe(
+    v.object({
+        sourceUrl: v.pipe(v.string('Source must be a string'), v.url('Please provide a valid URL')),
+        hostPersonalityId: v.enum(PersonalityId, 'Invalid host personality selected'),
+        cohostPersonalityId: v.enum(PersonalityId, 'Invalid co-host personality selected'),
+    }),
+    v.forward(
+        v.check(
+            (input) => input.hostPersonalityId !== input.cohostPersonalityId,
+            'Host and co-host personalities must be different.'
+        ),
+        ['cohostPersonalityId']
+    )
+);
 
 const GetPodcastByIdInput = v.object({
     id: v.pipe(v.string(), v.uuid('Invalid podcast ID format')),
@@ -30,7 +41,7 @@ export const podcastRouter = router({
             try {
                 logger.info('Calling PodcastService.createPodcast');
                 // Delegate creation and background job trigger to the service
-                const initialPodcast = await ctx.podcast.createPodcast(userId, input.sourceUrl);
+                const initialPodcast = await ctx.podcast.createPodcast(userId, input.sourceUrl, input.hostPersonalityId, input.cohostPersonalityId);
                 logger.info({ podcastId: initialPodcast.id }, 'Podcast creation initiated by service.');
                 // The service returns the initial podcast object (status: 'processing')
                 return initialPodcast;
