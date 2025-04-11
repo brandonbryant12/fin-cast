@@ -112,7 +112,6 @@ function PodcastsPage() {
                         open={isModalOpen}
                         setOpen={setIsModalOpen}
                         onSuccess={handleGenerationSuccess}
-                        availableVoices={availableVoicesQuery.data}
                     />
                 </Dialog>
             </div>
@@ -140,9 +139,7 @@ function PodcastsPage() {
                             <PodcastListItem
                                 key={podcast.id}
                                 podcast={podcast}
-                                onPlay={handlePlay}
                                 onDelete={handleDelete}
-                                isPlaying={isPlaying && activePodcast?.id === podcast.id}
                             />
                         ))}
                     </div>

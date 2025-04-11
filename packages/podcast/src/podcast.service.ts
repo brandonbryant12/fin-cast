@@ -93,7 +93,7 @@ export class PodcastService {
                     [hostInfo.name]: hostPersonalityId,
                     [cohostInfo.name]: cohostPersonalityId
                 };
-                logger.info({ speakerPersonalities }, 'Assigned personalities to speakers Alex (Host) and Ben (Cohost).');
+                logger.info({ speakerPersonalities }, 'Assigned personalities to speakers (Host) and (Cohost).');
 
 
                 logger.info('Starting TTS synthesis for dialogue segments...');

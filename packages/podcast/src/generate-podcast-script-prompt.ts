@@ -44,7 +44,7 @@ export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodca
         const { htmlContent, hostName, hostPersonalityDescription, cohostName, cohostPersonalityDescription } = params;
 
         return `
-You are an expert podcast script writer. Your task is to create an engaging podcast script based *only* on the essential information extracted from the following HTML document. The script should feature two hosts, "Alex" and "Ben", embodying specific personalities.
+You are an expert podcast script writer. Your task is to create an engaging podcast script based *only* on the essential information extracted from the following HTML document. The script should feature two hosts, "${hostName}" and "${cohostName}", embodying specific personalities.
 
 **Host Personalities:**
 * **(Host):** Name is ${hostName}. Personality: ${hostPersonalityDescription}.
