@@ -1,5 +1,8 @@
+Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
+
 ## UI 
 
+- make UI reactive, adjust the style guide
 
 ## Backend 
 - use plimit of 5 and promise.all to synth audio 
