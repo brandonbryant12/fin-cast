@@ -2,16 +2,20 @@ import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import playSound from 'play-sound';
-import type { TtsOptions, LLMServiceConfig, ChatOptions, ChatResponse } from './index';
-import { createTtsService, createLLMService, PersonalityId } from './index';
+import type { TtsOptions, ChatOptions, ChatResponse } from './index';
+import { createTtsService, createLLMService, PersonalityId, personalities as allPersonalities } from './index';
 
-dotenv.config();
+// Get directory path in ESM
+const currentFilePath = import.meta.url ? fileURLToPath(import.meta.url) : '';
+const currentDirPath = currentFilePath ? path.dirname(currentFilePath) : '';
+
+dotenv.config({ path: path.resolve(currentDirPath, '../.env') });
 
 function ensureApiKey(envVar = 'OPENAI_API_KEY'): string {
-  // eslint-disable-next-line no-restricted-properties
   const apiKey = process.env[envVar];
   if (!apiKey) {
     console.error(`Error: Environment variable ${envVar} is not set.`);
@@ -20,7 +24,40 @@ function ensureApiKey(envVar = 'OPENAI_API_KEY'): string {
   return apiKey;
 }
 
-// --- Main Program --- 
+function getProviderConfig(provider: string): { apiKeyEnvVar: string, serviceConfig: any } {
+  const providerConfigs = {
+    'openai': {
+      apiKeyEnvVar: 'OPENAI_API_KEY',
+      serviceConfig: (apiKey: string, model?: string) => ({
+        provider: 'openai',
+        options: { apiKey, ...(model ? { model } : {}) }
+      })
+    },
+    'gemini': {
+      apiKeyEnvVar: 'GEMINI_API_KEY',
+      serviceConfig: (apiKey: string) => ({
+        provider: 'gemini',
+        options: { apiKey }
+      })
+    },
+    'anthropic': {
+      apiKeyEnvVar: 'ANTHROPIC_API_KEY',
+      serviceConfig: (apiKey: string) => ({
+        provider: 'anthropic',
+        options: { apiKey }
+      })
+    }
+  };
+
+  const config = providerConfigs[provider as keyof typeof providerConfigs];
+  if (!config) {
+    console.error(`Unsupported provider: ${provider}`);
+    process.exit(1);
+  }
+  
+  return config;
+}
+
 const program = new Command();
 
 program
@@ -28,16 +65,16 @@ program
   .description('CLI tool to interact with AI services (TTS, LLM)')
   .version('0.1.0');
 
-// --- TTS Subcommand --- 
 const ttsCommand = program.command('tts')
   .description('Text-to-Speech operations');
 
 interface TtsSynthesizeOptions {
   voice: string;
-  model: 'tts-1' | 'tts-1-hd';
+  model: string;
   format: string;
   speed: string;
   output?: string;
+  provider: string;
 }
 
 ttsCommand
@@ -45,30 +82,24 @@ ttsCommand
   .description('Synthesize text and play it, or save to an audio file')
   .option('--voice <voice>', 'Voice model to use (e.g., alloy, nova)', 'alloy')
   .option('--model <model>', 'TTS model (e.g., tts-1, tts-1-hd)', 'tts-1')
-  .option('--format <format>', 'Audio format (e.g., mp3, opus)', 'mp3')
   .option('--speed <speed>', 'Speech speed (0.25 to 4.0)', '1.0')
+  .option('--provider <provider>', 'TTS provider to use', 'openai')
   .option('-o, --output <file>', 'Save audio to file instead of playing')
   .action(async (text: string, options: TtsSynthesizeOptions) => {
-    const ttsApiKey = ensureApiKey();
+    const { apiKeyEnvVar, serviceConfig } = getProviderConfig(options.provider);
+    const apiKey = ensureApiKey(apiKeyEnvVar);
     const player = playSound({});
     let tempFilePath: string | null = null;
 
     console.log(options.output ? `Synthesizing text to ${options.output}...` : 'Synthesizing text for playback...');
 
     try {
-      const ttsService = createTtsService({ 
-        provider: 'openai', 
-        options: { 
-          apiKey: ttsApiKey, 
-          model: options.model 
-        }
-      }); 
+      const ttsService = createTtsService(serviceConfig(apiKey, options.model));
       const speed = parseFloat(options.speed);
-      const format = options.format || 'mp3';
 
       const serviceOptions: TtsOptions = {
         personality: PersonalityId.Arthur,
-        format: format as any,
+        format: 'mp3',
         speed: isNaN(speed) ? 1.0 : speed,
       };
 
@@ -78,7 +109,7 @@ ttsCommand
         await fs.writeFile(options.output, audioBuffer);
         console.log(`Successfully saved audio to ${path.resolve(options.output)}`);
       } else {
-        const tempFileName = `ai-cli-tts-${crypto.randomBytes(6).toString('hex')}.${format}`;
+        const tempFileName = `ai-cli-tts-${crypto.randomBytes(6).toString('hex')}.${'mp3'}`;
         tempFilePath = path.join(os.tmpdir(), tempFileName);
         await fs.writeFile(tempFilePath, audioBuffer);
         console.log('Playing audio...');
@@ -112,20 +143,19 @@ ttsCommand
 ttsCommand
   .command('list-personalities')
   .description('List available voices for the TTS provider')
-  .action(async () => {
-    const ttsApiKey = ensureApiKey();
+  .option('--provider <provider>', 'TTS provider to use', 'openai')
+  .action(async (options: { provider: string }) => {
+    const { apiKeyEnvVar, serviceConfig } = getProviderConfig(options.provider);
+    const apiKey = ensureApiKey(apiKeyEnvVar);
     console.log('Fetching available voices...');
     try {
-      const ttsService = createTtsService({ 
-        provider: 'openai', 
-        options: { apiKey: ttsApiKey } 
-      });
+      const ttsService = createTtsService(serviceConfig(apiKey));
       const personalities = await ttsService.getAvailablePersonalities();
       if (personalities.length === 0) {
         console.log('No voices found for the provider.');
       } else {
         console.log('Available voices:');
-        personalities.forEach(v => console.log(` - ${v.name} (ID: ${v.id})`));
+        personalities.forEach(v => console.log(` - ${v.name} (ID: ${v.id}) ${v.previewPhrase ? '[Has Phrase]' : ''}`));
       }
     } catch (error) {
       console.error('Error fetching voices:', error);
@@ -133,11 +163,71 @@ ttsCommand
     }
   });
 
+ttsCommand
+  .command('generate-previews')
+  .description('Generate audio preview snippets and save as MP3 files')
+  .option('--provider <provider>', 'TTS provider to use', 'openai')
+  .option('--format <format>', 'Audio format for previews', 'mp3')
+  .action(async (options: { provider: string, format: string }) => {
+    const { provider, format } = options;
+    const { apiKeyEnvVar, serviceConfig } = getProviderConfig(provider);
+    const apiKey = ensureApiKey(apiKeyEnvVar);
+
+    const previewsDir = path.resolve(currentDirPath, `tts/${provider}/previews`);
+
+    try {
+      await fs.mkdir(previewsDir, { recursive: true });
+      console.log(`Ensured preview directory exists: ${previewsDir}`);
+    } catch (error) {
+      console.error(`Failed to create preview directory ${previewsDir}:`, error);
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log(`Starting audio preview generation for ${provider}...`);
+    console.log(`Outputting MP3 files to: ${previewsDir}`);
+
+    const ttsService = createTtsService(serviceConfig(apiKey));
+
+    let hasError = false;
+    const personalityIdsToProcess = allPersonalities.map(p => p.id);
+
+    for (const personality of allPersonalities) {
+      if (!personality.previewPhrase) {
+        console.warn(`Skipping ${personality.name} (${personality.id}): No preview phrase defined.`);
+        continue;
+      }
+
+      const outputFilePath = path.join(previewsDir, `${personality.id}.${format}`);
+      console.log(`Generating preview for ${personality.name} (${personality.id}) -> ${outputFilePath}...`);
+
+      try {
+        const audioBuffer = await ttsService.synthesize(personality.previewPhrase, {
+          personality: personality.id,
+          format: format as 'mp3',
+        });
+        await fs.writeFile(outputFilePath, audioBuffer);
+        console.log(` -> Successfully saved preview for ${personality.name} to ${outputFilePath}.`);
+      } catch (error) {
+        console.error(` -> Failed to generate or save preview for ${personality.name}:`, error instanceof Error ? error.message : error);
+        hasError = true;
+      }
+    }
+
+    console.log("\nPreview generation complete.");
+    if (hasError) {
+      console.warn("Errors occurred during generation. Check logs above for details.");
+      process.exitCode = 1;
+    } else {
+      console.log("All previews generated successfully.");
+    }
+  });
+
 const llmCommand = program.command('llm')
   .description('Large Language Model operations');
 
 interface LlmChatOptions {
-  provider: 'openai' | 'gemini' | 'anthropic';
+  provider: string;
   model?: string;
 }
 
@@ -148,48 +238,23 @@ llmCommand
   .option('--model <model>', 'LLM model to use (optional, provider-specific)')
   .action(async (prompt: string, options: LlmChatOptions) => {
     const { provider, model } = options;
-    let apiKeyEnvVar: string;
-    let llmConfig: LLMServiceConfig;
-
-    switch (provider) {
-      case 'openai':
-        apiKeyEnvVar = 'OPENAI_API_KEY';
-        const openaiApiKey = ensureApiKey(apiKeyEnvVar);
-        llmConfig = { provider: 'openai', options: { apiKey: openaiApiKey } };
-        break;
-      case 'gemini':
-        apiKeyEnvVar = 'GEMINI_API_KEY';
-        const geminiApiKey = ensureApiKey(apiKeyEnvVar);
-        llmConfig = { provider: 'gemini', options: { apiKey: geminiApiKey } };
-        break;
-      case 'anthropic':
-        apiKeyEnvVar = 'ANTHROPIC_API_KEY';
-        console.error('Anthropic provider not yet implemented in CLI.');
-        process.exit(1);
-      default:
-        console.error(`Unsupported LLM provider: ${provider}`);
-        process.exit(1);
-    }
-
-    console.log(`Sending prompt to ${provider} LLM...`);
-
+    
     try {
-      const llmService = createLLMService(llmConfig);
-
-      const chatOptions: ChatOptions = {};
-      if (model) {
-        chatOptions.model = model;
-      }
-
+      const { apiKeyEnvVar, serviceConfig } = getProviderConfig(provider);
+      const apiKey = ensureApiKey(apiKeyEnvVar);
+      
+      console.log(`Sending prompt to ${provider} LLM...`);
+      
+      const llmService = createLLMService(serviceConfig(apiKey, model));
+      const chatOptions: ChatOptions = model ? { model } : {};
       const response: ChatResponse = await llmService.chatCompletion(prompt, chatOptions);
 
       console.log("\nLLM Response:");
       console.log(response.content);
-
     } catch (error) {
       console.error(`Error interacting with ${provider} LLM:`, error);
       process.exitCode = 1;
     }
   });
 
-program.parse(process.argv); 
+program.parse(process.argv);

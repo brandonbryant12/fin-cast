@@ -1,5 +1,5 @@
 import type { TTSService, TtsFactoryConfig } from './types';
-import { OpenAITtsService } from './providers/openai';
+import { OpenAITtsService } from './openai/client';
 
 /**
  * Creates an instance of a TTS service based on the provided configuration.
@@ -11,12 +11,7 @@ import { OpenAITtsService } from './providers/openai';
 export function createTtsService(config: TtsFactoryConfig): TTSService {
   switch (config.provider) {
     case 'openai':
-      // Pass providerOptions directly to the OpenAI service constructor
-      // The OpenAITtsService constructor handles extracting relevant options
       return new OpenAITtsService(config.options);
-    // Add cases for other providers here later
-    // case 'google':
-    //   return new GoogleTtsService(config.options);
     default:
       throw new Error(`Unsupported TTS provider: ${config.provider}`);
   }

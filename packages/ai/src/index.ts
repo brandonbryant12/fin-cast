@@ -11,7 +11,7 @@ export { GeminiClient } from "./llms/gemini";
 
 
 export { createTtsService } from './tts/factory';
-export { OpenAITtsService } from './tts/providers/openai';
+export { OpenAITtsService } from './tts/openai/client';
 export type { TtsOptions, VoiceInfo, TtsFactoryConfig, TTSService } from './tts/types';
 export { PersonalityId, personalities, getPersonalityInfo } from './tts/personalities';
 export type { PersonalityInfo } from './tts/personalities';

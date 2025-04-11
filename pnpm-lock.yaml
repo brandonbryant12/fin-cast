@@ -286,9 +286,6 @@ importers:
       '@radix-ui/react-icons':
         specifier: 'catalog:'
         version: 1.3.2(react@19.1.0)
-      '@repo/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
       '@repo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
