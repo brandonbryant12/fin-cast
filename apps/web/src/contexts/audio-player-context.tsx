@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import type { Podcast } from '@/routes/_protected/podcasts/-components/podcast-list-item'; // Assuming Podcast type is exported
 import { usePersistentState } from '@/hooks/use-persistent-state';
 
-interface ActivePodcastInfo extends Pick<Podcast, 'id' | 'title' | 'audioUrl'> {}
+type ActivePodcastInfo = Pick<Podcast, 'id' | 'title' | 'audioUrl'>
 
 // Define valid playback rates
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;

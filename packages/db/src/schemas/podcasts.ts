@@ -25,18 +25,22 @@ export const podcast = pgTable('podcast', {
   title: varchar('title', { length: 256 }).notNull(),
   description: text('description'),
   status: podcastStatusEnum('status').notNull().default('processing'),
-  sourceType: text('source_type'), // e.g., 'url', 'account_summary'
-  sourceDetail: text('source_detail'), // e.g., the source URL
-  audioUrl: text('audio_url'), // Can store URL or potentially base64 string
+  sourceType: text('source_type'),
+  sourceDetail: text('source_detail'),
+  audioUrl: text('audio_url'),
   durationSeconds: integer('duration_seconds'),
   errorMessage: text('error_message'),
   generatedAt: timestamp('generated_at'),
+  hostPersonalityId: text('host_personality_id').notNull(),
+  cohostPersonalityId: text('cohost_personality_id').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .notNull()
-    .$onUpdate(() => new Date()), // Ensure this updates on modification
+    .$onUpdate(() => new Date()),
 });
 
 export const Podcast = createSelectSchema(podcast);
 export const NewPodcast = createInsertSchema(podcast); 
+
+

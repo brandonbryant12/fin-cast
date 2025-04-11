@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import playSound from 'play-sound';
 import type { TtsOptions, LLMServiceConfig, ChatOptions, ChatResponse } from './index';
-import { createTtsService, createLLMService } from './index';
+import { createTtsService, createLLMService, PersonalityId } from './index';
 
 dotenv.config();
 
@@ -67,7 +67,7 @@ ttsCommand
       const format = options.format || 'mp3';
 
       const serviceOptions: TtsOptions = {
-        voice: options.voice,
+        personality: PersonalityId.Arthur,
         format: format as any,
         speed: isNaN(speed) ? 1.0 : speed,
       };
@@ -110,7 +110,7 @@ ttsCommand
   });
 
 ttsCommand
-  .command('list-voices')
+  .command('list-personalities')
   .description('List available voices for the TTS provider')
   .action(async () => {
     const ttsApiKey = ensureApiKey();
@@ -120,12 +120,12 @@ ttsCommand
         provider: 'openai', 
         options: { apiKey: ttsApiKey } 
       });
-      const voices = await ttsService.getVoices();
-      if (voices.length === 0) {
+      const personalities = await ttsService.getAvailablePersonalities();
+      if (personalities.length === 0) {
         console.log('No voices found for the provider.');
       } else {
         console.log('Available voices:');
-        voices.forEach(v => console.log(` - ${v.name} (ID: ${v.id})`));
+        personalities.forEach(v => console.log(` - ${v.name} (ID: ${v.id})`));
       }
     } catch (error) {
       console.error('Error fetching voices:', error);
