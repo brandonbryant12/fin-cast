@@ -1,6 +1,5 @@
 ## UI 
 
-- fix generate podcast modal and selecting personalities 
 
 ## Backend 
 - use plimit of 5 and promise.all to synth audio 
