@@ -133,7 +133,7 @@ export const podcastRouter = router({
     delete: protectedProcedure
         .input(DeletePodcastInput)
         // Return type is fine as it is
-        .mutation(async ({ ctx, input }): Promise<{ success: boolean; deletedId: string }> => {
+        .mutation(async ({ ctx, input }): Promise<{ success: boolean; deletedId?: string, error?: string  }> => {
             const userId = ctx.session.user.id;
             const podcastId = input.id;
             const logger = ctx.logger.child({ userId, podcastId, procedure: 'delete' });

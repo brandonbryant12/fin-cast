@@ -16,4 +16,3 @@ Do not provide audio url on podcast when fetch all.  On play get the audio url f
 - improve the news feed, my news features 
 
 - generate avatars for the personalities
-

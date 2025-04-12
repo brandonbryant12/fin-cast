@@ -5,7 +5,7 @@ import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { createLogger, type LogLevel } from '@repo/logger';
-import { createPodcast } from '@repo/podcast';
+import { createPodcastService } from '@repo/podcast';
 import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -54,7 +54,7 @@ if (!llm) {
 }
 
 // Create the podcast service
-const podcast = createPodcast({ db, llm, logger, scraper, tts });
+const podcast = createPodcastService({ db, llm, logger, scraper, tts });
 
 // Pass the podcast service to createApi
 const api = createApi({ auth, db, logger, podcast, tts });
