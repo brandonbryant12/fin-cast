@@ -38,16 +38,12 @@ export class OpenAITtsService implements TTSService {
     this.openai = new OpenAI({ apiKey });
     this.defaultModel = options?.model ?? 'tts-1';
 
-    // Start initialization, store the promise
     this.initializationPromise = this._initializePersonalities();
-    // Handle potential initialization errors globally or let individual methods handle them
     this.initializationPromise.catch(error => {
         console.error("Failed to initialize OpenAITtsService:", error);
-        // Depending on desired behavior, you might want to re-throw or handle differently
     });
   }
 
-  // New method for async initialization
   private async _initializePersonalities(): Promise<void> {
     const supportedIds = Object.keys(this.personalityToVoiceMap) as PersonalityId[];
     const supportedBasePersonalities = allPersonalities.filter(p => supportedIds.includes(p.id));
@@ -60,7 +56,6 @@ export class OpenAITtsService implements TTSService {
       let previewUrl: string | undefined = undefined;
 
       try {
-        // Read the file content as a binary buffer
         const audioBuffer = await fs.readFile(previewFilePath);
         // Convert buffer to base64 string
         const base64String = audioBuffer.toString('base64');
@@ -68,13 +63,11 @@ export class OpenAITtsService implements TTSService {
         previewUrl = `data:audio/mp3;base64,${base64String}`;
         console.log(`Successfully loaded and encoded preview for ${p.name}`);
       } catch (error: any) {
-        // Log and re-throw specific errors for missing files or other read errors
         if (error.code === 'ENOENT') {
           console.error(`Preview file not found for ${p.name}: ${previewFilePath}`);
           throw new Error(`Preview file not found for ${p.name}: ${previewFilePath}`);
         } else {
           console.error(`Error reading preview file for ${p.name} (${previewFilePath}):`, error);
-          // Re-throw the original error or a wrapped one
           throw new Error(`Failed to read preview file for ${p.name} (${previewFilePath}): ${error.message}`);
         }
       }
@@ -132,16 +125,12 @@ export class OpenAITtsService implements TTSService {
   }
 
   async getAvailablePersonalities(): Promise<PersonalityInfo[]> {
-    // Ensure initialization is complete
     await this.initializationPromise;
 
-    // Return cached data if available and initialization succeeded
     if (this.loadedPersonalityInfo) {
       return this.loadedPersonalityInfo;
     }
 
-    // This should theoretically not be reached if initializationPromise resolved,
-    // but serves as a safeguard.
     throw new Error('TTS Personalities failed to initialize properly.');
   }
 }

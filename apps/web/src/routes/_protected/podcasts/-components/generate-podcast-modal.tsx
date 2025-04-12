@@ -17,7 +17,7 @@ import {
 } from '@repo/ui/components/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query'; // Removed useQuery
 import { AlertTriangle, Check, Volume2, Pause } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -29,21 +29,21 @@ import Spinner from '@/routes/-components/common/spinner';
 
 // tech debt - remove from ai package
 export enum PersonalityId {
-    Arthur = 'arthur',
-    Chloe = 'chloe',
-    Maya = 'maya',
-    Sam = 'sam',
-    Evelyn = 'evelyn',
-    David = 'david',
-  }
-  
-  export interface PersonalityInfo {
-    id: PersonalityId;
-    name: string;
-    description: string;
-    previewPhrase?: string;
-    previewAudioUrl?: string;
-  }
+  Arthur = 'arthur',
+  Chloe = 'chloe',
+  Maya = 'maya',
+  Sam = 'sam',
+  Evelyn = 'evelyn',
+  David = 'david',
+}
+
+export interface PersonalityInfo {
+  id: PersonalityId;
+  name: string;
+  description: string;
+  previewPhrase?: string;
+  previewAudioUrl?: string;
+}
 
 type AvailablePersonality = PersonalityInfo; // Use the imported type
 
@@ -51,7 +51,9 @@ interface GeneratePodcastModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   onSuccess: () => void;
-  availableVoices?: AvailablePersonality[]; // Allow passing prefetched voices
+  availableVoices?: AvailablePersonality[]; // Accept prefetched voices
+  isLoadingVoices?: boolean; // Accept loading state from parent
+  voicesError?: Error | null; // Accept error state from parent
 }
 
 const generatePodcastSchema = v.pipe(
@@ -86,37 +88,29 @@ const generatePodcastSchema = v.pipe(
   )
 );
 
-
 export function GeneratePodcastModal({
   open,
   setOpen,
   onSuccess,
-  availableVoices: prefetchedVoices, // Accept prefetched voices
+  availableVoices: prefetchedVoices,
+  isLoadingVoices = !prefetchedVoices,
+  voicesError = null,
 }: GeneratePodcastModalProps) {
-  console.log({ prefetchedVoices })
-  const localAvailableVoicesQuery = useQuery(trpc.tts.getAvailablePersonalities.queryOptions(undefined, {
-    enabled: open && !prefetchedVoices, // Only fetch if modal is open AND no voices were passed in
-    staleTime: Infinity,
-  }));
 
-  // Get audio player context
   const {
     loadTrack,
     pause,
     isPlaying,
     activePodcast,
-    closePlayer // Use closePlayer to stop audio when modal closes
+    closePlayer
   } = useAudioPlayer();
 
-  // Determine the source of available personalities
-  const availablePersonalities = useMemo(() => {
-    return prefetchedVoices ?? localAvailableVoicesQuery.data ?? [];
-  }, [prefetchedVoices, localAvailableVoicesQuery.data]);
 
-  // Determine loading and error states based on which query was used (or if data was passed)
-  const isLoading = !prefetchedVoices && localAvailableVoicesQuery.isLoading;
-  const isError = !prefetchedVoices && localAvailableVoicesQuery.isError;
-  const error = localAvailableVoicesQuery.error;
+  const availablePersonalities = useMemo(() => prefetchedVoices ?? [], [prefetchedVoices]);
+
+  const isLoading = isLoadingVoices;
+  const isError = !!voicesError;
+  const error = voicesError;
 
 
   const createPodcastMutation = useMutation({
@@ -141,12 +135,12 @@ export function GeneratePodcastModal({
       cohostPersonalityId: '' as PersonalityId | '',
     },
     onSubmit: async ({ value }) => {
-        // Hacky fix because valibot enum validation seems broken with tRPC/SuperJSON?
-        const submissionValue = {
-            ...value,
-            hostPersonalityId: value.hostPersonalityId || undefined,
-            cohostPersonalityId: value.cohostPersonalityId || undefined,
-        }
+      // Hacky fix because valibot enum validation seems broken with tRPC/SuperJSON?
+      const submissionValue = {
+          ...value,
+          hostPersonalityId: value.hostPersonalityId || undefined,
+          cohostPersonalityId: value.cohostPersonalityId || undefined,
+      }
       const result = v.safeParse(generatePodcastSchema, submissionValue);
 
       if (!result.success) {
@@ -171,30 +165,29 @@ export function GeneratePodcastModal({
   // Effect to set default selections once voices load
   useEffect(() => {
     if (!isLoading && !isError && availablePersonalities.length > 0) {
-        // Set default host if not already set and voices are available
-        if (!form.state.values.hostPersonalityId && availablePersonalities[0]) {
-            form.setFieldValue('hostPersonalityId', availablePersonalities[0].id);
-        }
-        // Set default co-host if not already set and at least two distinct voices are available
-        if (!form.state.values.cohostPersonalityId && availablePersonalities.length > 1) {
-             // Find the first available voice different from the selected host
-            const defaultHostId = form.state.values.hostPersonalityId || availablePersonalities[0]?.id;
-            const differentCohost = availablePersonalities.find(p => p.id !== defaultHostId);
-            if (differentCohost) {
-                 form.setFieldValue('cohostPersonalityId', differentCohost.id);
-            } else if(availablePersonalities[1] && availablePersonalities[0]?.id !== availablePersonalities[1]?.id) {
-                // Fallback if the first two are different (original logic)
-                 form.setFieldValue('cohostPersonalityId', availablePersonalities[1].id);
-            }
-        }
+      // Set default host if not already set and voices are available
+      if (!form.state.values.hostPersonalityId && availablePersonalities[0]) {
+        form.setFieldValue('hostPersonalityId', availablePersonalities[0].id);
+      }
+      // Set default co-host if not already set and at least two distinct voices are available
+      if (!form.state.values.cohostPersonalityId && availablePersonalities.length > 1) {
+          // Find the first available voice different from the selected host
+          const defaultHostId = form.state.values.hostPersonalityId || availablePersonalities[0]?.id;
+          const differentCohost = availablePersonalities.find(p => p.id !== defaultHostId);
+          if (differentCohost) {
+              form.setFieldValue('cohostPersonalityId', differentCohost.id);
+          } else if(availablePersonalities[1] && availablePersonalities[0]?.id !== availablePersonalities[1]?.id) {
+              // Fallback if the first two are different (original logic)
+              form.setFieldValue('cohostPersonalityId', availablePersonalities[1].id);
+          }
+      }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, isError, availablePersonalities]); // form dependency removed intentionally
+   
+  }, [isLoading, isError, availablePersonalities, form]); // form added back as dependency for setFieldValue
 
   // Function to handle playing audio previews using the context
   const handlePreviewClick = (personality: AvailablePersonality) => {
     const previewUrl = personality.previewAudioUrl;
-    console.log({ personality })
     if (!previewUrl) {
       toast.info(`No preview available for ${personality.name}.`);
       return;
@@ -222,7 +215,7 @@ export function GeneratePodcastModal({
             // Stop any playing audio (including previews) when modal closes
             closePlayer();
         }
-     }}>
+       }}>
       <DialogContent className="sm:max-w-lg">
         <form
           onSubmit={(e) => {
@@ -295,39 +288,39 @@ export function GeneratePodcastModal({
                     <TooltipProvider delayDuration={100}>
                       {availablePersonalities.map((p) => (
                         <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-input/50">
-                           {/* Preview Button - Use Audio Context */}
-                           {p.previewAudioUrl ? (
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button
-                                   type="button"
-                                   variant="ghost"
-                                   size="icon"
-                                   className={cn(
-                                       "text-muted-foreground hover:text-foreground h-8 w-8 flex-shrink-0 mr-1",
-                                       isPlaying && activePodcast?.id === `preview-${p.id}` && "text-primary"
-                                   )}
-                                   onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePreviewClick(p);
-                                   }}
-                                   aria-label={`Preview voice ${p.name}`}
-                                 >
-                                   {isPlaying && activePodcast?.id === `preview-${p.id}` ? (
-                                      <Pause className="h-4 w-4" />
-                                   ) : (
-                                      <Volume2 className="h-4 w-4" />
-                                   )}
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent side="top" align="start">
-                                 <p className="text-xs">Preview {p.name}</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           ) : (
-                             // Placeholder if no preview URL, maintains layout
-                             <div className="h-8 w-8 mr-1 flex-shrink-0" />
-                           )}
+                          {/* Preview Button - Use Audio Context */}
+                          {p.previewAudioUrl ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "text-muted-foreground hover:text-foreground h-8 w-8 flex-shrink-0 mr-1",
+                                    isPlaying && activePodcast?.id === `preview-${p.id}` && "text-primary"
+                                  )}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePreviewClick(p);
+                                  }}
+                                  aria-label={`Preview voice ${p.name}`}
+                                >
+                                  {isPlaying && activePodcast?.id === `preview-${p.id}` ? (
+                                    <Pause className="h-4 w-4" />
+                                  ) : (
+                                    <Volume2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" align="start">
+                                <p className="text-xs">Preview {p.name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            // Placeholder if no preview URL, maintains layout
+                            <div className="h-8 w-8 mr-1 flex-shrink-0" />
+                          )}
 
                           <div className="flex flex-1 items-center justify-between ml-1">
                             <Tooltip>
@@ -359,7 +352,7 @@ export function GeneratePodcastModal({
                                         if (cohostId !== p.id) {
                                           form.setFieldValue('hostPersonalityId', p.id);
                                         } else {
-                                            toast.error("Host and Co-host cannot be the same voice.");
+                                          toast.error("Host and Co-host cannot be the same voice.");
                                         }
                                       }}
                                       aria-checked={hostId === p.id}
@@ -380,7 +373,7 @@ export function GeneratePodcastModal({
                                         if (hostId !== p.id) {
                                           form.setFieldValue('cohostPersonalityId', p.id);
                                         } else {
-                                             toast.error("Host and Co-host cannot be the same voice.");
+                                           toast.error("Host and Co-host cannot be the same voice.");
                                         }
                                       }}
                                       aria-checked={cohostId === p.id}
@@ -410,16 +403,16 @@ export function GeneratePodcastModal({
                   state.fieldMeta['cohostPersonalityId']?.errors
               ]}>
                   {([hostErrors, cohostErrors]) => {
-                       // Combine and deduplicate errors specifically related to host/co-host selection
+                      // Combine and deduplicate errors specifically related to host/co-host selection
                       const uniqueErrors = Array.from(new Set([...(hostErrors || []), ...(cohostErrors || [])]))
-                                             .filter(error => typeof error === 'string' && error.trim() !== '');
+                                                .filter(error => typeof error === 'string' && error.trim() !== '');
 
                       return uniqueErrors.length > 0 ? (
-                          <div className="mt-1 text-sm text-destructive space-y-0.5 px-1">
-                              {uniqueErrors.map((error, i) => (
-                                  <p key={i}>{error}</p>
-                              ))}
-                          </div>
+                        <div className="mt-1 text-sm text-destructive space-y-0.5 px-1">
+                            {uniqueErrors.map((error, i) => (
+                                <p key={i}>{error}</p>
+                            ))}
+                        </div>
                       ) : null;
                   }}
               </form.Subscribe>

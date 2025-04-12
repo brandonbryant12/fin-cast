@@ -21,9 +21,10 @@ function Layout() {
   }
 
   return (
-    <AudioProvider>
+    <>
       <Outlet />
-      <AudioPlayer />
-    </AudioProvider>
+      {/* AudioPlayer UI remains, it will get context from __root.tsx */}
+      {session?.user && <AudioPlayer />}
+    </>
   );
 }

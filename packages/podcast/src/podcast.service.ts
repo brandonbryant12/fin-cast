@@ -6,6 +6,7 @@ import { PersonalityId, getPersonalityInfo } from '@repo/ai';
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import ffmpeg from 'fluent-ffmpeg';
+import pLimit from 'p-limit';
 import * as v from 'valibot';
 import type { LLMInterface, ChatResponse, TTSService, TtsOptions } from '@repo/ai';
 import type { DatabaseInstance } from '@repo/db/client';
@@ -96,33 +97,37 @@ export class PodcastService {
                 logger.info({ speakerPersonalities }, 'Assigned personalities to speakers (Host) and (Cohost).');
 
 
-                logger.info('Starting TTS synthesis for dialogue segments...');
-                const audioBuffers: Buffer[] = [];
-                for (let i = 0; i < scriptData.dialogue.length; i++) {
-                    const segment = scriptData.dialogue[i];
+                logger.info('Starting TTS synthesis for dialogue segments with parallel processing...');
+                const limit = pLimit(5);
+                const audioBufferPromises = scriptData.dialogue.map((segment, i) => {
                     if (!segment) {
                         logger.warn(`Skipping undefined segment at index ${i}`);
-                        continue;
+                        return Promise.resolve(null);
                     }
-
-                    let assignedPersonality = speakerPersonalities[segment.speaker];
-                    if (!assignedPersonality) {
-                        logger.error(`Consistency error: Speaker ${segment.speaker} found in dialogue but not assigned a personality. Defaulting.`);
-                        assignedPersonality = hostPersonalityId;
-                    }
-                    logger.info(`Synthesizing segment ${i + 1}/${scriptData.dialogue.length} for speaker ${segment.speaker} with personality ${assignedPersonality}`);
-                    try {
-                        const audioBuffer = await this.tts.synthesize(segment.line, {
-                            personality: assignedPersonality,
-                            format: AUDIO_FORMAT
-                        });
-                        audioBuffers.push(audioBuffer);
-                    } catch (ttsError) {
-                        logger.error({ err: ttsError, segmentIndex: i, speaker: segment.speaker, personality: assignedPersonality }, 'TTS synthesis failed for a segment.');
-                        throw new Error(`TTS synthesis failed for segment ${i + 1}: ${ttsError instanceof Error ? ttsError.message : String(ttsError)}`);
-                    }
-                }
-                logger.info('TTS synthesis for all segments completed.');
+                
+                    return limit(async () => {
+                        let assignedPersonality = speakerPersonalities[segment.speaker];
+                        if (!assignedPersonality) {
+                            logger.error(`Consistency error: Speaker ${segment.speaker} found in dialogue but not assigned a personality. Defaulting.`);
+                            assignedPersonality = hostPersonalityId;
+                        }
+                        logger.info(`Synthesizing segment ${i + 1}/${scriptData?.dialogue.length} for speaker ${segment.speaker} with personality ${assignedPersonality}`);
+                        
+                        try {
+                            const audioBuffer = await this.tts.synthesize(segment.line, {
+                                personality: assignedPersonality,
+                                format: AUDIO_FORMAT
+                            });
+                            return audioBuffer;
+                        } catch (ttsError) {
+                            logger.error({ err: ttsError, segmentIndex: i, speaker: segment.speaker, personality: assignedPersonality }, 'TTS synthesis failed for a segment.');
+                            throw new Error(`TTS synthesis failed for segment ${i + 1}: ${ttsError instanceof Error ? ttsError.message : String(ttsError)}`);
+                        }
+                    });
+                });
+                
+                const audioBuffers = (await Promise.all(audioBufferPromises)).filter(buffer => buffer !== null);
+                logger.info(`TTS synthesis completed for ${audioBuffers.length} segments.`);
 
                 // --- Stitch Audio ---
                 logger.info('Stitching audio segments...');

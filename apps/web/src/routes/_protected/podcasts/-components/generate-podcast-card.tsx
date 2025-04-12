@@ -12,6 +12,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { GeneratePodcastModal } from './generate-podcast-modal';
 import { trpc } from '@/router'; // Import trpc
+import Spinner from '@/routes/-components/common/spinner'; // Import Spinner
 
 export function GeneratePodcastCard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,8 +26,6 @@ export function GeneratePodcastCard() {
     ));
 
     const handleGenerationSuccess = () => {
-        console.log('Podcast generated successfully from GeneratePodcastCard! Redirecting...');
-        // Consider invalidating queries or just navigating if onSuccess handles it
         navigate({ to: '/podcasts' });
     };
 
@@ -50,16 +49,21 @@ export function GeneratePodcastCard() {
                         <Button
                             size="lg"
                             className="mt-4 w-full bg-primary px-8 py-3 text-primary-foreground hover:bg-primary-hover"
+                            // Optionally disable button while voices load/error
+                            disabled={availableVoicesQuery.isLoading || availableVoicesQuery.isError}
                         >
-                            Generate First Podcast
+                            {availableVoicesQuery.isLoading ? <Spinner className="mr-2" /> : null}
+                            {availableVoicesQuery.isError ? 'Error loading voices' : 'Generate First Podcast'}
                         </Button>
                     </DialogTrigger>
-                    {/* Pass the fetched query result down */}
+                    {/* Pass the fetched query result and loading/error states down */}
                     <GeneratePodcastModal
                         open={isModalOpen}
                         setOpen={setIsModalOpen}
                         onSuccess={handleGenerationSuccess}
                         availableVoices={availableVoicesQuery.data} // Pass the prop
+                        isLoadingVoices={availableVoicesQuery.isLoading} // Pass loading state
+                        voicesError={availableVoicesQuery.error} // Pass error state
                     />
                 </Dialog>
             </CardContent>
