@@ -1,6 +1,5 @@
 import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router';
 import { authClient } from '@/clients/authClient';
-import { VoicesProvider } from '@/contexts/voices-context';
 import Spinner from '@/routes/-components/common/spinner';
 import { AudioPlayer } from '@/routes/_protected/podcasts/-components/audio-player';
 
@@ -20,10 +19,9 @@ function Layout() {
   }
 
   return (
-    <VoicesProvider>
+    <>
       <Outlet />
-      {/* AudioPlayer UI remains, it will get context from __root.tsx */}
       {session?.user && <AudioPlayer />}
-    </VoicesProvider>
+    </>
   );
 }

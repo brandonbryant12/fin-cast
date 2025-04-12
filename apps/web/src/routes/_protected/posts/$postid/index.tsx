@@ -15,7 +15,7 @@ import { postsLinkOptions } from '@/validations/posts-link-options';
 export const Route = createFileRoute('/_protected/posts/$postid/')({
   loader: ({ params }) =>
     queryClient.ensureQueryData(
-      trpc.posts.one.queryOptions({ id: params.postid }),
+      trpc.post.one.queryOptions({ id: params.postid }),
     ),
   component: RouteComponent,
   errorComponent: ({ error, reset }) => {

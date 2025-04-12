@@ -1,4 +1,9 @@
-Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
+## Bug 
+- when playback is set to higher speed on start up it still plays at 1x.  When you change the speed it works 
+
+## feature
+
+ - Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
 
 ## UI 
 

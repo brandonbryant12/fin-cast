@@ -2,7 +2,8 @@ import { Toaster } from '@repo/ui/components/sonner';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 import React from 'react';
 import { authClient } from '@/clients/authClient';
-import { AudioProvider } from '@/contexts/audio-player-context'; // Import the provider
+import { AudioProvider } from '@/contexts/audio-player-context';
+import { VoicesProvider } from '@/contexts/voices-context.tsx';
 import Spinner from '@/routes/-components/common/spinner';
 import { Sidebar } from '@/routes/-components/layout/nav/side-bar';
 
@@ -31,18 +32,19 @@ function RootComponent() {
   }
 
   return (
-    // Wrap the entire content with AudioProvider
     <AudioProvider>
-      <div className="flex h-screen bg-slate-900 text-white">
-        <Toaster />
-        {session?.user && <Sidebar session={session} />}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10">
-          <Outlet />
-        </main>
-        <React.Suspense>
-          <TanStackRouterDevtools position="bottom-right" />
-        </React.Suspense>
-      </div>
+      <VoicesProvider>
+        <div className="flex h-screen bg-slate-900 text-white">
+          <Toaster />
+          {session?.user && <Sidebar session={session} />}
+          <main className="flex-1 overflow-y-auto p-6 md:p-10">
+            <Outlet />
+          </main>
+          <React.Suspense>
+            <TanStackRouterDevtools position="bottom-right" />
+          </React.Suspense>
+        </div>
+      </VoicesProvider>
     </AudioProvider>
   );
 }

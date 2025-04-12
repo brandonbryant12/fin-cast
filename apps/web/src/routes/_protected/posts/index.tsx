@@ -34,7 +34,7 @@ import {
 } from '@/validations/posts-link-options';
 
 export const Route = createFileRoute('/_protected/posts/')({
-  loader: () => queryClient.ensureQueryData(trpc.posts.all.queryOptions()),
+  loader: () => queryClient.ensureQueryData(trpc.post.all.queryOptions()),
   component: RouteComponent,
   validateSearch: (input: SearchSchemaInput) =>
     v.parse(postsSearchSchema, input),
@@ -54,7 +54,7 @@ function PostItem({
   post,
   disabled,
 }: Readonly<{
-  post: inferRouterOutputs<AppRouter>['posts']['all'][number];
+  post: inferRouterOutputs<AppRouter>['post']['all'][number];
   disabled: boolean;
 }>) {
   return (
@@ -77,7 +77,7 @@ function PostItem({
 }
 
 function RouteComponent() {
-  const { data: posts, isPending } = useQuery(trpc.posts.all.queryOptions());
+  const { data: posts, isPending } = useQuery(trpc.post.all.queryOptions());
   const navigate = useNavigate({ from: Route.fullPath });
   const search = Route.useSearch();
 

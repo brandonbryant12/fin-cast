@@ -36,8 +36,8 @@ const FormSchema = v.object({
 const generateTimestamp = () => +new Date();
 
 export default function CreatePostButton() {
-  const getAllPostsQuery = useQuery(trpc.posts.all.queryOptions());
-  const createPostMutation = useMutation(trpc.posts.create.mutationOptions());
+  const getAllPostsQuery = useQuery(trpc.post.all.queryOptions());
+  const createPostMutation = useMutation(trpc.post.create.mutationOptions());
   const [openDialog, setOpenDialog] = useState(false);
 
   const form = useForm({

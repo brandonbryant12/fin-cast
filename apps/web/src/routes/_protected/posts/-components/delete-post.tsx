@@ -22,10 +22,10 @@ export default function DeletePostButton({
   className?: string;
   postId: string;
 }>) {
-  const { refetch } = useQuery(trpc.posts.all.queryOptions());
+  const { refetch } = useQuery(trpc.post.all.queryOptions());
 
   const deletePostMutation = useMutation(
-    trpc.posts.delete.mutationOptions({
+    trpc.post.delete.mutationOptions({
       onError: (error) => {
         toast.error(error.message);
       },
