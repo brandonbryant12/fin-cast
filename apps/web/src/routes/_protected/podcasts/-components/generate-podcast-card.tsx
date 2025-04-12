@@ -7,23 +7,17 @@ import {
     CardTitle,
 } from '@repo/ui/components/card';
 import { Dialog, DialogTrigger } from '@repo/ui/components/dialog';
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { GeneratePodcastModal } from './generate-podcast-modal';
-import { trpc } from '@/router'; // Import trpc
-import Spinner from '@/routes/-components/common/spinner'; // Import Spinner
+import { useVoices } from '@/contexts/voices-context';
+import Spinner from '@/routes/-components/common/spinner';
 
 export function GeneratePodcastCard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    const availableVoicesQuery = useQuery(trpc.tts.getAvailablePersonalities.queryOptions(
-        undefined,
-        {
-            staleTime: Infinity, 
-        }
-    ));
+    const { isLoadingVoices, voicesError } = useVoices();
 
     const handleGenerationSuccess = () => {
         navigate({ to: '/podcasts' });
@@ -49,21 +43,16 @@ export function GeneratePodcastCard() {
                         <Button
                             size="lg"
                             className="mt-4 w-full bg-primary px-8 py-3 text-primary-foreground hover:bg-primary-hover"
-                            // Optionally disable button while voices load/error
-                            disabled={availableVoicesQuery.isLoading || availableVoicesQuery.isError}
+                            disabled={isLoadingVoices || !!voicesError}
                         >
-                            {availableVoicesQuery.isLoading ? <Spinner className="mr-2" /> : null}
-                            {availableVoicesQuery.isError ? 'Error loading voices' : 'Generate First Podcast'}
+                            {isLoadingVoices ? <Spinner className="mr-2" /> : null}
+                            {voicesError ? 'Error loading voices' : 'Generate First Podcast'}
                         </Button>
                     </DialogTrigger>
-                    {/* Pass the fetched query result and loading/error states down */}
                     <GeneratePodcastModal
                         open={isModalOpen}
                         setOpen={setIsModalOpen}
                         onSuccess={handleGenerationSuccess}
-                        availableVoices={availableVoicesQuery.data} // Pass the prop
-                        isLoadingVoices={availableVoicesQuery.isLoading} // Pass loading state
-                        voicesError={availableVoicesQuery.error} // Pass error state
                     />
                 </Dialog>
             </CardContent>

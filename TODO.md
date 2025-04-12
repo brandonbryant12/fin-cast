@@ -5,7 +5,6 @@ Do not provide audio url on podcast when fetch all.  On play get the audio url f
 - make UI reactive, adjust the style guide
 
 ## Backend 
-- use plimit of 5 and promise.all to synth audio 
 
 - think about breaking out utility functions in podcast service to make more maintainable.  Maybe a audio service inside that package would help.  Overall refactor of the code organization
 

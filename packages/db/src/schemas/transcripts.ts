@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import { jsonb, pgEnum, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-valibot';
 
@@ -23,6 +24,14 @@ export const transcript = pgTable('transcript', {
     .notNull()
     .$onUpdate(() => new Date()), // Ensure this updates on modification
 });
+
+// Define relation back to podcast
+export const transcriptRelations = relations(transcript, ({ one }) => ({
+  podcast: one(podcast, {
+    fields: [transcript.podcastId],
+    references: [podcast.id],
+  }),
+}));
 
 export const Transcript = createSelectSchema(transcript);
 export const NewTranscript = createInsertSchema(transcript); 

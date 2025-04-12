@@ -19,41 +19,20 @@ import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
 import { useMutation } from '@tanstack/react-query'; // Removed useQuery
 import { AlertTriangle, Check, Volume2, Pause } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
+import { useVoices, PersonalityId, type PersonalityInfo } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import FormFieldInfo from '@/routes/-components/common/form-field-info';
 import Spinner from '@/routes/-components/common/spinner';
 
-// tech debt - remove from ai package
-export enum PersonalityId {
-  Arthur = 'arthur',
-  Chloe = 'chloe',
-  Maya = 'maya',
-  Sam = 'sam',
-  Evelyn = 'evelyn',
-  David = 'david',
-}
-
-export interface PersonalityInfo {
-  id: PersonalityId;
-  name: string;
-  description: string;
-  previewPhrase?: string;
-  previewAudioUrl?: string;
-}
-
-type AvailablePersonality = PersonalityInfo; // Use the imported type
 
 interface GeneratePodcastModalProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   onSuccess: () => void;
-  availableVoices?: AvailablePersonality[]; // Accept prefetched voices
-  isLoadingVoices?: boolean; // Accept loading state from parent
-  voicesError?: Error | null; // Accept error state from parent
 }
 
 const generatePodcastSchema = v.pipe(
@@ -63,13 +42,11 @@ const generatePodcastSchema = v.pipe(
       v.string('Host ID must be a string.'),
       v.nonEmpty('Please select a host voice.'),
       v.custom<PersonalityId>((input) => Object.values(PersonalityId).includes(input as PersonalityId), 'Invalid host personality selected.')
-      // v.enum(PersonalityId, 'Invalid host personality selected.') // Using custom until Valibot enum works well
     ),
     cohostPersonalityId: v.pipe(
       v.string('Co-host ID must be a string.'),
       v.nonEmpty('Please select a co-host voice.'),
       v.custom<PersonalityId>((input) => Object.values(PersonalityId).includes(input as PersonalityId), 'Invalid co-host personality selected.')
-      // v.enum(PersonalityId, 'Invalid co-host personality selected.')
     ),
   }),
   v.forward(
@@ -92,9 +69,6 @@ export function GeneratePodcastModal({
   open,
   setOpen,
   onSuccess,
-  availableVoices: prefetchedVoices,
-  isLoadingVoices = !prefetchedVoices,
-  voicesError = null,
 }: GeneratePodcastModalProps) {
 
   const {
@@ -105,13 +79,7 @@ export function GeneratePodcastModal({
     closePlayer
   } = useAudioPlayer();
 
-
-  const availablePersonalities = useMemo(() => prefetchedVoices ?? [], [prefetchedVoices]);
-
-  const isLoading = isLoadingVoices;
-  const isError = !!voicesError;
-  const error = voicesError;
-
+  const { availableVoices, isLoadingVoices, voicesError } = useVoices();
 
   const createPodcastMutation = useMutation({
     ...(trpc.podcasts.create.mutationOptions()),
@@ -135,7 +103,6 @@ export function GeneratePodcastModal({
       cohostPersonalityId: '' as PersonalityId | '',
     },
     onSubmit: async ({ value }) => {
-      // Hacky fix because valibot enum validation seems broken with tRPC/SuperJSON?
       const submissionValue = {
           ...value,
           hostPersonalityId: value.hostPersonalityId || undefined,
@@ -144,16 +111,11 @@ export function GeneratePodcastModal({
       const result = v.safeParse(generatePodcastSchema, submissionValue);
 
       if (!result.success) {
-        // Simplified error handling: Log issues and show a generic toast
         console.error("Validation Issues:", result.issues);
-
-        // Display a general error toast
         toast.error("Validation Error", { description: "Please check the form for errors." });
-
-        return; // Prevent submission
+        return;
       }
 
-      // Type assertion needed here if Valibot output doesn't perfectly match expected mutation input
       await createPodcastMutation.mutateAsync({
         sourceUrl: result.output.sourceUrl,
         hostPersonalityId: result.output.hostPersonalityId as PersonalityId,
@@ -162,31 +124,28 @@ export function GeneratePodcastModal({
     },
   });
 
-  // Effect to set default selections once voices load
   useEffect(() => {
-    if (!isLoading && !isError && availablePersonalities.length > 0) {
-      // Set default host if not already set and voices are available
-      if (!form.state.values.hostPersonalityId && availablePersonalities[0]) {
-        form.setFieldValue('hostPersonalityId', availablePersonalities[0].id);
+    if (!isLoadingVoices && !voicesError && availableVoices.length > 0) {
+
+      if (!form.state.values.hostPersonalityId && availableVoices[0]) {
+        form.setFieldValue('hostPersonalityId', availableVoices[0].id);
       }
-      // Set default co-host if not already set and at least two distinct voices are available
-      if (!form.state.values.cohostPersonalityId && availablePersonalities.length > 1) {
-          // Find the first available voice different from the selected host
-          const defaultHostId = form.state.values.hostPersonalityId || availablePersonalities[0]?.id;
-          const differentCohost = availablePersonalities.find(p => p.id !== defaultHostId);
+
+      if (!form.state.values.cohostPersonalityId && availableVoices.length > 1) {
+         
+          const defaultHostId = form.state.values.hostPersonalityId || availableVoices[0]?.id;
+          const differentCohost = availableVoices.find(p => p.id !== defaultHostId);
           if (differentCohost) {
               form.setFieldValue('cohostPersonalityId', differentCohost.id);
-          } else if(availablePersonalities[1] && availablePersonalities[0]?.id !== availablePersonalities[1]?.id) {
-              // Fallback if the first two are different (original logic)
-              form.setFieldValue('cohostPersonalityId', availablePersonalities[1].id);
+          } else if(availableVoices[1] && availableVoices[0]?.id !== availableVoices[1]?.id) {
+              form.setFieldValue('cohostPersonalityId', availableVoices[1].id);
           }
       }
     }
    
-  }, [isLoading, isError, availablePersonalities, form]); // form added back as dependency for setFieldValue
+  }, [isLoadingVoices, voicesError, availableVoices, form]);
 
-  // Function to handle playing audio previews using the context
-  const handlePreviewClick = (personality: AvailablePersonality) => {
+  const handlePreviewClick = (personality: PersonalityInfo) => {
     const previewUrl = personality.previewAudioUrl;
     if (!previewUrl) {
       toast.info(`No preview available for ${personality.name}.`);
@@ -199,7 +158,6 @@ export function GeneratePodcastModal({
     if (isCurrentlyPlayingPreview) {
       pause();
     } else {
-      // Use a unique ID for previews to distinguish them from actual podcasts
       loadTrack({
         id: `preview-${personality.id}`,
         title: `Preview: ${personality.name}`,
@@ -212,7 +170,6 @@ export function GeneratePodcastModal({
     <Dialog open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen);
         if (!isOpen) {
-            // Stop any playing audio (including previews) when modal closes
             closePlayer();
         }
        }}>
@@ -234,14 +191,10 @@ export function GeneratePodcastModal({
           <div className="grid gap-4 py-4">
             <form.Field
               name="sourceUrl"
-              // Correct usage of validators prop with Valibot
               validators={{
-                // Use onChange for real-time validation, potentially add debounce later if needed
                 onChange: ({ value }) => {
-                  // Schema: Must be a non-empty string and a valid URL
                   const urlSchema = v.pipe(v.string(), v.nonEmpty('URL cannot be empty.'), v.url('Please enter a valid URL.'));
                   const result = v.safeParse(urlSchema, value);
-                  // Return the first error message if validation fails, otherwise undefined
                   return result.success ? undefined : result.issues[0]?.message;
                 }
               }}
@@ -268,25 +221,25 @@ export function GeneratePodcastModal({
             <div className="space-y-2">
               <Label>Select Hosts</Label>
               <div className="rounded-md border border-border bg-input/20 p-3 max-h-60 overflow-y-auto">
-                {isLoading && (
+                {isLoadingVoices && (
                   <div className="flex items-center justify-center text-muted-foreground p-4">
                     <Spinner className="mr-2" /> Loading voices...
                   </div>
                 )}
-                {isError && (
+                {voicesError && (
                   <div className="flex items-center justify-center text-destructive p-4">
-                    <AlertTriangle className="mr-2 h-4 w-4" /> Error loading voices: {error?.message}
+                    <AlertTriangle className="mr-2 h-4 w-4" /> Error loading voices: {voicesError.message}
                   </div>
                 )}
-                {!isLoading && !isError && availablePersonalities.length === 0 && (
+                {!isLoadingVoices && !voicesError && availableVoices.length === 0 && (
                   <div className="text-center text-muted-foreground p-4">
                     No voice personalities available.
                   </div>
                 )}
-                {!isLoading && !isError && availablePersonalities.length > 0 && (
+                {!isLoadingVoices && !voicesError && availableVoices.length > 0 && (
                   <div className="space-y-2">
                     <TooltipProvider delayDuration={100}>
-                      {availablePersonalities.map((p) => (
+                      {availableVoices.map((p) => (
                         <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-input/50">
                           {/* Preview Button - Use Audio Context */}
                           {p.previewAudioUrl ? (
@@ -428,7 +381,13 @@ export function GeneratePodcastModal({
               children={([canSubmit, isSubmitting]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || isSubmitting || createPodcastMutation.isPending || isLoading}
+                  disabled={
+                    !canSubmit ||
+                    isSubmitting ||
+                    createPodcastMutation.isPending ||
+                    isLoadingVoices ||
+                    availableVoices.length === 0
+                  }
                 >
                   {createPodcastMutation.isPending || isSubmitting ? (
                     <><Spinner className="mr-2" /> Generating...</>
