@@ -6,8 +6,6 @@ Do not provide audio url on podcast when fetch all.  On play get the audio url f
 
 ## Backend 
 
-- think about breaking out utility functions in podcast service to make more maintainable.  Maybe a audio service inside that package would help.  Overall refactor of the code organization
-
 - Think if we are doing dependency injection following the rt-stack methodelogy.  Im concerned adding podcast, logger, ect... to the ctx is not the intended use
 
 ## new feature
