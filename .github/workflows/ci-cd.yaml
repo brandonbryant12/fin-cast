@@ -14,21 +14,19 @@ jobs:
     name: Build, Test & Push Docker Images
     runs-on: ubuntu-latest
 
-    # *** Add this section to link the job to your environment ***
     environment:
       name: ci-cd
-      # url: <Optional: URL if this environment deploys somewhere specific>
 
     permissions:
       contents: read
-      packages: write # Still needed if pushing to Docker Hub/GHCR
+      packages: write
 
     steps:
       # 1. Checkout Repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Set up Node.js and pnpm (Steps remain the same)
+      # 2. Set up Node.js and pnpm
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -39,25 +37,24 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      # 3. Install Dependencies (Step remains the same)
+      # 3. Install Dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 4. Run Lint Check (Step remains the same)
-      - name: Run lint check
-        run: pnpm lint
-
-      # 5. Run Build (Step remains the same)
+      # 4. Run Lint Check
+      # NOTE: You were missing the actual build step before linting/pushing
+      # Lint dependsOn build in your turbo.json, but build wasn't explicitly run here.
+      # Let's add the build step explicitly before the docker steps.
       - name: Run build
         run: pnpm build
 
-      # --- Docker Steps - Now potentially controlled by 'cicd' environment rules ---
-      # These steps will now use secrets/variables from the 'cicd' environment first,
-      # then fall back to repository secrets/variables if not found in the environment.
+      - name: Run lint check
+        run: pnpm lint
+
+      # --- Docker Steps ---
 
       # 6. Set up Docker Buildx
       - name: Set up Docker Buildx
-        # Conditional execution remains the same
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/setup-buildx-action@v3
 
@@ -66,41 +63,40 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
-          # These will now read from 'cicd' environment secrets if they exist there
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 8. Extract Docker metadata for server image (Step remains the same)
+      # 8. Extract Docker metadata for server image
       - name: Extract metadata for server image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta_server
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-server # Ensure DOCKERHUB_USERNAME is available either in repo or cicd env secrets
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-server
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
 
-      # 9. Build and push server image (Step remains the same)
+      # 9. Build and push server image
       - name: Build and push server image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: ./apps/server/Dockerfile
+          file: ./apps/server/Dockerfile
           push: true
           tags: ${{ steps.meta_server.outputs.tags }}
           labels: ${{ steps.meta_server.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 10. Extract Docker metadata for web image (Step remains the same)
+      # 10. Extract Docker metadata for web image
       - name: Extract metadata for web image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta_web
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-web # Ensure DOCKERHUB_USERNAME is available
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-web
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
@@ -111,13 +107,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: ./apps/web/Dockerfile
+          file: ./apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta_web.outputs.tags }}
           labels: ${{ steps.meta_web.outputs.labels }}
           build-args: |
-            # This will now read from the 'cicd' environment variable if it exists there
-            # Ensure you created PUBLIC_SERVER_URL as a VARIABLE (not secret) in the environment
             PUBLIC_SERVER_URL=${{ vars.PUBLIC_SERVER_URL || 'http://fallback.example.com' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
