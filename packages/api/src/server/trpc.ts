@@ -1,26 +1,20 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
-import type { TTSService } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
-import type { PodcastService } from '@repo/podcast';
 
 export interface CreateContextOptions {
   auth: AuthInstance;
   db: DatabaseInstance;
   headers: Headers;
-  tts: TTSService;
   logger: AppLogger;
-  podcast: PodcastService;
 }
 
 export interface TRPCContext {
   db: DatabaseInstance;
   session: AuthInstance['$Infer']['Session'] | null;
-  tts: TTSService;
   logger: AppLogger;
-  podcast: PodcastService
 }
 
 export const createTRPCContext = async ({
@@ -28,8 +22,6 @@ export const createTRPCContext = async ({
   db,
   headers,
   logger,
-  tts,
-  podcast,
 }: CreateContextOptions): Promise<TRPCContext> => {
   const session = await auth.api.getSession({
     headers,
@@ -37,9 +29,7 @@ export const createTRPCContext = async ({
   return {
     db,
     session,
-    tts,
     logger,
-    podcast,
   };
 };
 
@@ -81,6 +71,7 @@ export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
   }
   return next({
     ctx: {
+      ...ctx,
       session: { ...ctx.session },
     },
   });

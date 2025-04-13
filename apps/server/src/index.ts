@@ -47,16 +47,13 @@ const logger = createLogger({
 
 const scraper = createScraper();
 
-// Ensure LLM is initialized before creating API
 if (!llm) {
   logger.fatal('LLM service could not be initialized. Check API Key and configuration.');
-  process.exit(1); // Exit if LLM is essential
+  process.exit(1);
 }
 
-// Create the podcast service
 const podcast = createPodcastService({ db, llm, logger, scraper, tts });
 
-// Pass the podcast service to createApi
 const api = createApi({ auth, db, logger, podcast, tts });
 const app = new Hono<{
   Variables: {
