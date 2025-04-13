@@ -4,7 +4,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 
-// Define the source data structure
 interface Source {
   name: string;
   url: string;
@@ -15,7 +14,6 @@ interface SourceCategory {
   sources: Source[];
 }
 
-// Hardcoded source data
 const sourceCategories: SourceCategory[] = [
   {
     title: 'Financial Institutions',
@@ -67,17 +65,14 @@ const sourceCategories: SourceCategory[] = [
   },
 ];
 
-// Define the route component
 export const Route = createFileRoute('/_protected/news-feed/')({
   component: NewsFeedPage,
 });
 
 function NewsFeedPage() {
-  // Set the initial selected category, defaulting to the first one or an empty string
   const initialCategory = sourceCategories[0]?.title ?? '';
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
 
-  // Find the sources for the currently selected category
   const selectedSources = sourceCategories.find(cat => cat.title === selectedCategory)?.sources ?? [];
 
   return (
@@ -86,27 +81,24 @@ function NewsFeedPage() {
         Suggested Article Sources
       </h1>
 
-      {/* Segmented Control / Pills */}
-      <div className="mb-8 flex justify-center">
+      <div className="mb-8 w-full overflow-x-auto pb-2">
         <ToggleGroup
           type="single"
           defaultValue={initialCategory}
           value={selectedCategory}
           onValueChange={(value: string) => {
-            // Prevent unselecting all items - if the user clicks the active one, keep it selected
             if (value) {
               setSelectedCategory(value);
             }
           }}
-          className="flex-wrap justify-center" // Allow wrapping on smaller screens
+          className="inline-flex items-center space-x-2 w-max mx-auto"
         >
           {sourceCategories.map((category) => (
             <ToggleGroupItem
               key={category.title}
               value={category.title}
               aria-label={`Select ${category.title}`}
-              // Add some margin for better spacing when wrapped
-              className="mx-2 px-6 py-2"
+              className="px-6 py-2 whitespace-nowrap flex-shrink-0"
             >
               {category.title}
             </ToggleGroupItem>
@@ -114,7 +106,6 @@ function NewsFeedPage() {
         </ToggleGroup>
       </div>
 
-      {/* Content Grid */}
       {selectedSources.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
           {selectedSources.map((source) => (
@@ -149,4 +140,4 @@ function NewsFeedPage() {
       )}
     </div>
   );
-} 
+}

@@ -108,19 +108,19 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sky-400 hover:text-sky-300 hover:underline truncate"
-                        title={`Open source URL: ${sourceDetail}`}
+                        title={sourceDetail}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {sourceDetail}
                     </a>
                 );
             } else {
-                 return <span className="truncate" title={sourceDetail}>{sourceDetail}</span>;
+                return <span className="block truncate" title={sourceDetail}>{sourceDetail}</span>;
             }
         } else if (description) {
-            return <span className="truncate" title={description}>{description}</span>;
+            return <span className="block truncate" title={description}>{description}</span>;
         } else if (sourceType) {
-             return <span className="truncate" title={sourceType}>{`${sourceType}${sourceDetail ? `: ${sourceDetail}` : ''}`}</span>;
+             return <span className="block truncate" title={sourceType}>{`${sourceType}${sourceDetail ? `: ${sourceDetail}` : ''}`}</span>;
         } else {
             return <span className="text-gray-500">No details</span>;
         }
@@ -160,7 +160,7 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                         <p className="text-base font-medium text-white truncate" title={title || 'Untitled Podcast'}>
                             {title || 'Untitled Podcast'}
                         </p>
-                        <p className="text-sm text-gray-400 min-w-0">
+                        <p className="text-sm text-gray-400 min-w-0 overflow-hidden">
                            {renderSecondaryContent()}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">

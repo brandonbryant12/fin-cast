@@ -39,9 +39,10 @@ const navItems: NavItem[] = [
 
 interface SidebarProps {
     session: AuthSession;
+    onLinkClick?: () => void;
 }
 
-export function Sidebar({ session }: SidebarProps) {
+export function Sidebar({ session, onLinkClick }: SidebarProps) {
     const activeLinkClass = 'bg-sidebar-accent text-primary border-l-4 border-primary';
     const defaultLinkClass =
         'flex items-center px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors duration-200 border-l-4 border-transparent';
@@ -55,7 +56,7 @@ export function Sidebar({ session }: SidebarProps) {
     const user = session.user;
 
     return (
-        <aside className="w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
+        <aside className="w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col h-full">
             <div>
                 <div className="p-4 h-16 flex items-center gap-2 border-b border-sidebar-border">
                     {/* <img src='/logo.png' alt="FinCast Logo" className="h-8 w-auto" /> */}
@@ -77,6 +78,7 @@ export function Sidebar({ session }: SidebarProps) {
                                         activeProps={{
                                             className: cn(defaultLinkClass, activeLinkClass),
                                         }}
+                                        onClick={onLinkClick}
                                     >
                                         <item.icon className={iconClass} aria-hidden="true" />
                                         {item.label}
@@ -93,7 +95,7 @@ export function Sidebar({ session }: SidebarProps) {
                     <span className="text-sm text-sidebar-foreground truncate mr-2" title={user.name ?? user.email ?? ''}>
                         Welcome, {user.name?.split(' ')[0] ?? 'User'}
                     </span>
-                    <UserAvatar user={user} />
+                    <UserAvatar user={user} onLinkClick={onLinkClick} />
                 </div>
             </div>
         </aside>

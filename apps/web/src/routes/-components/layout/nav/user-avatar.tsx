@@ -13,11 +13,14 @@ import {
 import { useTheme } from 'next-themes';
 import { authClient } from '@/clients/authClient';
 
-export default function UserAvatar({
-    user,
-}: Readonly<{
+// Define props interface
+interface UserAvatarProps {
     user: typeof authClient.$Infer.Session.user;
-}>) {
+    onLinkClick?: () => void; // Add optional prop
+}
+
+// Use the interface
+export default function UserAvatar({ user, onLinkClick }: Readonly<UserAvatarProps>) {
     const { resolvedTheme, setTheme } = useTheme();
 
     return (
@@ -51,6 +54,7 @@ export default function UserAvatar({
                 <DropdownMenuItem
                     onClick={async () => {
                         await authClient.signOut();
+                        onLinkClick?.(); // Call the function on logout
                     }}
                     className="cursor-pointer"
                 >
