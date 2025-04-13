@@ -8,12 +8,9 @@ import {
 } from "@repo/ui/components/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/popover';
 import { Slider } from '@repo/ui/components/slider';
-import { cn } from '@repo/ui/lib/utils';
 import { Play, Pause, Rewind, FastForward, X, Volume2, Volume1, VolumeX } from 'lucide-react';
-import React from 'react';
 import { useAudioPlayer, PLAYBACK_RATES } from '@/contexts/audio-player-context';
 
-// Helper to format time in MM:SS
 const formatTime = (timeInSeconds: number): string => {
     if (isNaN(timeInSeconds) || timeInSeconds < 0) {
         return '00:00';

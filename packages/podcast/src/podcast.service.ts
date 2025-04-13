@@ -72,8 +72,9 @@ export class PodcastService {
             sourceUrl,
             hostPersonalityId,
             cohostPersonalityId
-        ).catch(err => {
+        ).catch(async (err)=> {
             logger.error({ err, podcastId }, "Background podcast generation task promise rejected or initiation failed.");
+            await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', err);
         });
 
         return initialPodcastSummary;

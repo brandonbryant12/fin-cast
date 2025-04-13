@@ -1,11 +1,10 @@
 import React, { createContext, useState, useRef, useEffect, useCallback, useContext, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import type { Podcast } from '@/routes/_protected/podcasts/-components/podcast-list-item'; // Assuming Podcast type is exported
+import type { Podcast } from '@/routes/_protected/podcasts/-components/podcast-list-item';
 import { usePersistentState } from '@/hooks/use-persistent-state';
 
 type ActivePodcastInfo = Pick<Podcast, 'id' | 'title' | 'audioUrl'>
 
-// Define valid playback rates
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 type PlaybackRate = typeof PLAYBACK_RATES[number];
 
@@ -16,7 +15,7 @@ interface AudioPlayerState {
     duration: number;
     isLoading: boolean;
     volume: number;
-    playbackRate: PlaybackRate; // Added playbackRate state
+    playbackRate: PlaybackRate;
 }
 
 interface AudioPlayerActions {
@@ -26,7 +25,7 @@ interface AudioPlayerActions {
     seek: (time: number) => void;
     closePlayer: () => void;
     setVolume: (volume: number) => void;
-    setPlaybackRate: (rate: PlaybackRate) => void; // Added playbackRate action
+    setPlaybackRate: (rate: PlaybackRate) => void;
 }
 
 type AudioPlayerContextType = AudioPlayerState & AudioPlayerActions;
@@ -38,7 +37,7 @@ interface AudioProviderProps {
 }
 
 const LOCAL_STORAGE_VOLUME_KEY = 'fin_cast_audio_volume';
-const LOCAL_STORAGE_RATE_KEY = 'fin_cast_audio_rate'; // Key for playback rate
+const LOCAL_STORAGE_RATE_KEY = 'fin_cast_audio_rate';
 
 export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -50,27 +49,27 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
     const [volume, setVolumeState] = usePersistentState<number>(LOCAL_STORAGE_VOLUME_KEY, 1);
     const [playbackRate, setPlaybackRateState] = usePersistentState<PlaybackRate>(LOCAL_STORAGE_RATE_KEY, 1);
 
-    // Create audio element and set initial volume/rate
     useEffect(() => {
         if (!audioRef.current) {
             audioRef.current = new Audio();
             audioRef.current.volume = volume;
-            audioRef.current.playbackRate = playbackRate; // Set initial playback rate
+            audioRef.current.playbackRate = playbackRate;
             audioRef.current.addEventListener('error', () => {
                 console.error('Audio Element Error');
                 toast.error('Error playing audio');
                 setIsPlaying(false);
                 setIsLoading(false);
             });
-             // Add listeners for volume/rate changes? Maybe not necessary if controlled via context
         }
-        // Ensure rate is updated if it changes (e.g., loaded from storage after mount)
         else {
+            if (audioRef.current.volume !== volume) {
+                 audioRef.current.volume = volume;
+            }
             if (audioRef.current.playbackRate !== playbackRate) {
                 audioRef.current.playbackRate = playbackRate;
             }
         }
-    }, [volume, playbackRate]); // Add playbackRate to dependency array
+    }, [volume, playbackRate]);
 
     const handleTimeUpdate = useCallback(() => {
         if (audioRef.current) {
@@ -81,15 +80,16 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
     const handleLoadedMetadata = useCallback(() => {
         if (audioRef.current) {
             setDuration(audioRef.current.duration || 0);
+            audioRef.current.playbackRate = playbackRate; // Apply rate here
             setIsLoading(false);
         }
-    }, []);
+    }, [playbackRate]); // Added playbackRate dependency
 
     const handleAudioEnded = useCallback(() => {
         setIsPlaying(false);
+        // Optionally: Load next track here?
     }, []);
 
-    // Effect to manage audio source and listeners based on activePodcast
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -97,15 +97,18 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
         audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
         audio.removeEventListener('ended', handleAudioEnded);
+        // Remove any existing 'canplay' or 'error' listeners added by loadTrack
+        // This requires careful management if handlers aren't memoized or defined outside
+        // For simplicity, assuming no stale listeners for now, but could be improved.
 
         if (activePodcast?.audioUrl) {
-            setIsLoading(true);
-            setCurrentTime(0);
-            setDuration(0);
-
+            // Don't reset loading/time/duration if src isn't actually changing
             if (audio.src !== activePodcast.audioUrl) {
-                audio.src = activePodcast.audioUrl;
-                audio.load();
+                 setIsLoading(true);
+                 setCurrentTime(0);
+                 setDuration(0);
+                 audio.src = activePodcast.audioUrl;
+                 audio.load();
             }
 
             audio.addEventListener('timeupdate', handleTimeUpdate);
@@ -113,45 +116,31 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
             audio.addEventListener('ended', handleAudioEnded);
 
         } else {
-            audio.removeAttribute('src');
-            audio.load();
+            if (audio.src) {
+                audio.removeAttribute('src');
+                audio.load(); // Important to clear the buffer
+            }
             setIsPlaying(false);
             setCurrentTime(0);
             setDuration(0);
             setIsLoading(false);
+            setActivePodcast(null); // Ensure state consistency
         }
 
+        // Cleanup function
         return () => {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
             audio.removeEventListener('ended', handleAudioEnded);
+            // Consider removing 'canplay'/'error' listeners here too if added dynamically
         };
     }, [activePodcast, handleAudioEnded, handleLoadedMetadata, handleTimeUpdate]);
 
-    const loadTrack = useCallback((podcast: ActivePodcastInfo, autoPlay = true) => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        setActivePodcast(podcast);
-
-        if (autoPlay) {
-            setTimeout(() => {
-                audio.play()
-                    .then(() => setIsPlaying(true))
-                    .catch(e => {
-                        console.warn("Autoplay failed:", e);
-                        setIsPlaying(false);
-                    });
-            }, 50);
-        } else {
-            setIsPlaying(false);
-        }
-
-    }, []);
 
     const play = useCallback(() => {
         const audio = audioRef.current;
         if (audio && activePodcast) {
+            audio.playbackRate = playbackRate; // Set rate before playing
             audio.play()
                 .then(() => setIsPlaying(true))
                 .catch(e => {
@@ -160,9 +149,9 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
                     setIsPlaying(false);
                 });
         }
-    }, [activePodcast]);
+    }, [activePodcast, playbackRate]); // Added playbackRate dependency
 
-    const pause = useCallback(() => {
+     const pause = useCallback(() => {
         const audio = audioRef.current;
         if (audio) {
             audio.pause();
@@ -170,20 +159,75 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
         }
     }, []);
 
+
+    const loadTrack = useCallback((podcast: ActivePodcastInfo, autoPlay = true) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        if (activePodcast?.id === podcast.id) {
+             if (autoPlay && !isPlaying) {
+                 play();
+             } else if (!autoPlay && isPlaying) {
+                 pause();
+             }
+             return;
+        }
+
+        setActivePodcast(podcast);
+        // State updates like setIsLoading, setCurrentTime, setDuration
+        // and setting audio.src + audio.load() are handled by the useEffect watching activePodcast
+
+        if (autoPlay) {
+            let canPlayHandler: () => void;
+            let loadErrorHandler: () => void;
+
+             canPlayHandler = () => {
+                audio.playbackRate = playbackRate; // Set rate before auto-playing
+                audio.play()
+                    .then(() => setIsPlaying(true))
+                    .catch(e => {
+                        console.warn("Autoplay failed:", e);
+                        setIsPlaying(false);
+                    })
+                    .finally(() => {
+                       audio.removeEventListener('canplay', canPlayHandler);
+                       audio.removeEventListener('error', loadErrorHandler); // Also remove error handler
+                    });
+            };
+
+            loadErrorHandler = () => {
+                toast.error('Error loading audio track.');
+                setIsLoading(false);
+                setActivePodcast(null);
+                audio.removeEventListener('canplay', canPlayHandler);
+                audio.removeEventListener('error', loadErrorHandler);
+            }
+
+            audio.addEventListener('canplay', canPlayHandler, { once: true }); // Use { once: true } for auto-cleanup
+            audio.addEventListener('error', loadErrorHandler, { once: true }); // Use { once: true } for auto-cleanup
+
+        } else {
+            setIsPlaying(false);
+        }
+
+    }, [activePodcast?.id, isPlaying, playbackRate, play, pause]); // Added dependencies
+
+
     const seek = useCallback((time: number) => {
         const audio = audioRef.current;
         if (audio && isFinite(time)) {
             const newTime = Math.max(0, Math.min(time, duration || 0));
-            audio.currentTime = newTime;
+            // Only update if the time actually changes significantly to avoid choppy seeking
+            if (Math.abs(audio.currentTime - newTime) > 0.1) {
+                 audio.currentTime = newTime;
+            }
+            // Optimistically update state, timeupdate event will correct it
             setCurrentTime(newTime);
         }
     }, [duration]);
 
     const closePlayer = useCallback(() => {
-        const audio = audioRef.current;
-        if (audio) {
-            audio.pause();
-        }
+        // setActivePodcast(null) triggers the useEffect cleanup
         setActivePodcast(null);
     }, []);
 
@@ -196,15 +240,13 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
         setVolumeState(clampedVolume);
     }, [setVolumeState]);
 
-    // New setPlaybackRate action
     const setPlaybackRate = useCallback((newRate: PlaybackRate) => {
         const audio = audioRef.current;
-        // Ensure the rate is one of the allowed values
         if (PLAYBACK_RATES.includes(newRate)) {
             if (audio) {
                 audio.playbackRate = newRate;
             }
-            setPlaybackRateState(newRate); // Update state and localStorage via hook
+            setPlaybackRateState(newRate);
         } else {
             console.warn(`Attempted to set invalid playback rate: ${newRate}`);
         }
@@ -217,20 +259,19 @@ export const AudioProvider: React.FC<AudioProviderProps> = ({ children }) => {
         duration,
         isLoading,
         volume,
-        playbackRate, // Provide playbackRate state
+        playbackRate,
         loadTrack,
         play,
         pause,
         seek,
         closePlayer,
         setVolume,
-        setPlaybackRate, // Provide playbackRate action
+        setPlaybackRate,
     };
 
     return (
         <AudioPlayerContext.Provider value={value}>
             {children}
-            {/* The actual audio element is managed here, but not rendered visibly */}
         </AudioPlayerContext.Provider>
     );
 };
@@ -241,4 +282,4 @@ export const useAudioPlayer = (): AudioPlayerContextType => {
         throw new Error('useAudioPlayer must be used within an AudioProvider');
     }
     return context;
-}; 
+};
