@@ -24,17 +24,20 @@ export class PodcastService {
     private readonly podcastGenerationService: PodcastGenerationService;
     private readonly ttsService: TTSService;
     private enrichedPersonalitiesCache = new Map<TTSProvider, Promise<PersonalityInfo[]>>();
+    private readonly isRunningInDocker: boolean;
 
     constructor(
         logger: AppLogger,
         podcastRepository: PodcastRepository,
         podcastGenerationService: PodcastGenerationService,
-        ttsService: TTSService
+        ttsService: TTSService,
+        isRunningInDocker: boolean
     ) {
         this.logger = logger.child({ service: 'PodcastService (Facade)' });
         this.podcastRepository = podcastRepository;
         this.podcastGenerationService = podcastGenerationService;
         this.ttsService = ttsService;
+        this.isRunningInDocker = isRunningInDocker;
         this.logger.info('PodcastService (Facade) initialized');
     }
 
@@ -100,7 +103,7 @@ export class PodcastService {
             return this.enrichedPersonalitiesCache.get(providerName)!;
         }
         this.logger.info({ providerName }, 'Enriching and caching personalities');
-        const enrichmentPromise = enrichPersonalities(providerName)
+        const enrichmentPromise = enrichPersonalities(providerName, this.isRunningInDocker)
             .catch(error => {
                 this.logger.error({ error, providerName }, 'Failed to enrich personalities');
                 this.enrichedPersonalitiesCache.delete(providerName); 
@@ -132,7 +135,8 @@ export function createPodcastService(dependencies: PodcastFactoryDependencies): 
         mainLogger,
         podcastRepository,
         podcastGenerationService,
-        dependencies.tts
+        dependencies.tts,
+        dependencies.isRunningInDocker,
     );
 
     return podcastService;

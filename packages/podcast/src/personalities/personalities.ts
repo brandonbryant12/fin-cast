@@ -94,9 +94,12 @@ export function getPersonalityInfo(name: PersonalityId, ttsProvider: TTSProvider
  * @param providerName The TTS provider to use for enrichment (e.g., 'openai')
  * @returns A Promise resolving to an array of enriched PersonalityInfo objects.
  */
-export async function enrichPersonalities(providerName: TTSProvider): Promise<PersonalityInfo[]> {
+export async function enrichPersonalities(providerName: TTSProvider, isRunningInDocker=false): Promise<PersonalityInfo[]> {
   const voiceMap = getVoiceMap(providerName);
   const previewFileFormat = 'mp3';
+  const basePreviewPath = isRunningInDocker
+      ? path.resolve(process.cwd(), 'dist', 'personalities')
+      : currentDirPath;
 
   const enrichedList = await Promise.all(personalities.map(async (p) => {
     const enrichedP: PersonalityInfo = { ...p };
@@ -109,7 +112,7 @@ export async function enrichPersonalities(providerName: TTSProvider): Promise<Pe
     // 2. Add previewAudioUrl
     if (p.previewPhrase) {
       const previewFileName = `${p.name}.${previewFileFormat}`;
-      const previewFilePath = path.resolve(currentDirPath, providerName, previewFileName);
+      const previewFilePath = path.resolve(basePreviewPath, providerName, previewFileName);
       
       try {
         const audioBuffer = await fs.readFile(previewFilePath);
@@ -118,7 +121,7 @@ export async function enrichPersonalities(providerName: TTSProvider): Promise<Pe
       } catch (error: any) {
         if (error.code === 'ENOENT') {
           // Expected error if file doesn't exist (preview not generated yet)
-          // console.warn(`Preview audio file not found for ${p.name} at ${previewFilePath}. Run generate-previews?`);
+          console.warn(`Preview audio file not found for ${p.name} at ${previewFilePath}. Run generate-previews?`);
         } else {
           // Unexpected error reading the file
           console.error(`Error reading preview audio file for ${p.name} at ${previewFilePath}:`, error);

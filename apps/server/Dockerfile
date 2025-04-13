@@ -49,6 +49,8 @@ ENV IS_RUNNING_IN_DOCKER=true
 
 COPY --from=installer --chown=hono:nodejs /app/apps/server/dist /app/dist
 
+COPY --from=installer --chown=hono:nodejs /app/packages/podcast/src/personalities /app/dist/personalities
+
 USER hono
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
