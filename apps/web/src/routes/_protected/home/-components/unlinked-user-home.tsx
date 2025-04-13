@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/components/dialog';
-import { GeneratePodcastCard } from '@/routes/_protected/podcasts/-components/generate-podcast-card';
+import { GeneratePodcastCard } from './generate-podcast-card';
 
 
 export function UnlinkedUserHome() {

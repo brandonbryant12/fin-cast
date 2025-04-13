@@ -22,11 +22,13 @@ import { AlertTriangle, Check, Volume2, Pause } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
+import {  type PersonalityInfo } from '../../../../types/podcast-types'
 import { useAudioPlayer } from '@/contexts/audio-player-context';
-import { useVoices, PersonalityId, type PersonalityInfo } from '@/contexts/voices-context';
+import { useVoices, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import FormFieldInfo from '@/routes/-components/common/form-field-info';
 import Spinner from '@/routes/-components/common/spinner';
+import { generatePodcastSchema } from '@/validations/podcast-validation';
 
 
 interface GeneratePodcastModalProps {
@@ -34,36 +36,6 @@ interface GeneratePodcastModalProps {
   setOpen: (open: boolean) => void;
   onSuccess: () => void;
 }
-
-const generatePodcastSchema = v.pipe(
-  v.object({
-    sourceUrl: v.pipe(v.string('Source must be a string'), v.url('Please provide a valid URL')),
-    hostPersonalityId: v.pipe(
-      v.string('Host ID must be a string.'),
-      v.nonEmpty('Please select a host voice.'),
-      v.custom<PersonalityId>((input) => Object.values(PersonalityId).includes(input as PersonalityId), 'Invalid host personality selected.')
-    ),
-    cohostPersonalityId: v.pipe(
-      v.string('Co-host ID must be a string.'),
-      v.nonEmpty('Please select a co-host voice.'),
-      v.custom<PersonalityId>((input) => Object.values(PersonalityId).includes(input as PersonalityId), 'Invalid co-host personality selected.')
-    ),
-  }),
-  v.forward(
-    v.check(
-      (input) => input.hostPersonalityId !== input.cohostPersonalityId,
-      'Host and co-host voices must be different.'
-    ),
-    ['cohostPersonalityId']
-  ),
-  v.forward(
-    v.check(
-      (input) => input.hostPersonalityId !== input.cohostPersonalityId,
-      'Host and co-host voices must be different.'
-    ),
-    ['hostPersonalityId']
-  )
-);
 
 export function GeneratePodcastModal({
   open,
@@ -159,7 +131,7 @@ export function GeneratePodcastModal({
       pause();
     } else {
       loadTrack({
-        id: `preview-${personality.id}`,
+        id: `preview-${personality.name}`,
         title: `Preview: ${personality.name}`,
         audioUrl: previewUrl,
       });
@@ -240,7 +212,7 @@ export function GeneratePodcastModal({
                   <div className="space-y-2">
                     <TooltipProvider delayDuration={100}>
                       {availableVoices.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-2 rounded hover:bg-input/50">
+                        <div key={p.name} className="flex items-center justify-between p-2 rounded hover:bg-input/50">
                           {/* Preview Button - Use Audio Context */}
                           {p.previewAudioUrl ? (
                             <Tooltip>

@@ -9,7 +9,7 @@ import {
 import { Dialog, DialogTrigger } from '@repo/ui/components/dialog';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { GeneratePodcastModal } from './generate-podcast-modal';
+import { GeneratePodcastModal } from '../../podcasts/-components/generate-podcast-modal';
 import { useVoices } from '@/contexts/voices-context';
 import Spinner from '@/routes/-components/common/spinner';
 

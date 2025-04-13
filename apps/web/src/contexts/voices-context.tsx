@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, type ReactNode } from 'react';
+import type { PersonalityInfo } from '@/types/podcast-types';
 import { trpc } from '@/router';
 
 export enum PersonalityId {
@@ -9,14 +10,6 @@ export enum PersonalityId {
   Sam = 'Sam',
   Evelyn = 'Evelyn',
   David = 'David',
-}
-
-export interface PersonalityInfo {
-  name: PersonalityId;
-  voiceName?: string;
-  description: string;
-  previewPhrase?: string;
-  previewAudioUrl?: string;
 }
 
 interface VoicesContextType {

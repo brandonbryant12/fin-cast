@@ -11,33 +11,15 @@ import {
     ChevronUp,
 } from 'lucide-react';
 import { useState } from 'react';
+import type { Podcast } from '@/types/podcast-types';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { trpc } from '@/router';
-
-export type PodcastStatus = 'processing' | 'failed' | 'success';
-
-export interface Podcast {
-    id: string;
-    userId: string;
-    title: string;
-    description: string | null;
-    status: PodcastStatus;
-    sourceType: string | null;
-    sourceDetail: string | null;
-    audioUrl: string | null;
-    durationSeconds: number | null;
-    errorMessage: string | null;
-    generatedAt: Date | string | null;
-    createdAt: Date | string;
-    updatedAt?: Date | string;
-}
 
 interface PodcastListItemProps {
     podcast: Podcast;
     onDelete: (id: string) => void;
 }
 
-// Helper function to format date (basic example)
 const formatDate = (dateInput: Date | string | null): string => {
     if (!dateInput) return 'N/A';
     try {
@@ -48,7 +30,6 @@ const formatDate = (dateInput: Date | string | null): string => {
     }
 };
 
-// Helper function to format duration from seconds
 const formatDuration = (seconds: number | null): string | null => {
     if (seconds === null || seconds === undefined || seconds <= 0) return null;
     const minutes = Math.floor(seconds / 60);
