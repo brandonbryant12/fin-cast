@@ -11,9 +11,14 @@ import {
     ChevronUp,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { Podcast } from '@/types/podcast-types';
+import type { AppRouter } from '@repo/api/server';
+import type { inferRouterOutputs } from '@trpc/server';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { trpc } from '@/router';
+
+type PodcastListOutput = inferRouterOutputs<AppRouter>['podcasts']['myPodcasts'];
+
+export type Podcast = PodcastListOutput[number];
 
 interface PodcastListItemProps {
     podcast: Podcast;

@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { createContext, useContext, type ReactNode } from 'react';
-import type { PersonalityInfo } from '@/types/podcast-types';
+
+import type { AppRouter } from '@repo/api/server';
+import type { inferRouterOutputs } from '@trpc/server';
 import { trpc } from '@/router';
+
+type PersonalitiesOutput = inferRouterOutputs<AppRouter>['podcasts']['getAvailablePersonalities'];
+export type PersonalityInfo = PersonalitiesOutput[number];
+
 
 export enum PersonalityId {
   Arthur = 'Arthur',

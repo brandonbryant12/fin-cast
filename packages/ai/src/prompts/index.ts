@@ -4,8 +4,8 @@ import * as v from 'valibot'; // Keep valibot if needed for re-export or interna
 export type { PromptDefinition } from '../types';
 
 // Export the example prompt's definition object directly
-import * as examplePrompt from './example.prompt';
 import type { PromptDefinition } from '../types';
+import * as examplePrompt from './example.prompt';
 
 // Create and export the definition object for the example prompt
 export const examplePromptDefinition: PromptDefinition<examplePrompt.Params, string | null> = {

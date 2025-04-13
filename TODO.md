@@ -3,8 +3,6 @@
 
 - make UI reactive, adjust the style guide
 
-- look at Post as an example and think about how to refactor podcast
-
 
 ## new feature
 

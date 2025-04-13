@@ -1,0 +1,10 @@
+---
+description:  Prioritize Frontend Type Inference via TRPC
+globs: apps/web/**
+---
+
+**MDC Rule: Prioritize Frontend Type Inference via TRPC**
+* **Rule:** When working with frontend code (`apps/web`), **always** attempt to infer types (especially enums, object shapes, and database-derived types like `PodcastStatus`) directly from the backend API schema using TRPC's `inferRouterOutputs` and TypeScript's indexed access types (e.g., `type MyStatus = InferredDataType['status']`).
+* **Rationale:** This project leverages an end-to-end type-safe stack (Drizzle, TRPC, TypeScript). Inferring types maintains a single source of truth (the backend/database schema), reduces code duplication, and enhances type safety across the application.
+* **Avoid:** Manually defining types in the frontend (`apps/web/src/types` or components) that directly mirror types already defined in the database schema or returned by TRPC procedures.
+* **Example:** Instead of manually writing `type PodcastStatus = 'processing' | 'failed' | 'success';` in the frontend, infer it like: `type PodcastStatus = Podcast['status'];` where `Podcast` is derived from `inferRouterOutputs`.

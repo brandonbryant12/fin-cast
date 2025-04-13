@@ -22,13 +22,19 @@ import { AlertTriangle, Check, Volume2, Pause } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import * as v from 'valibot';
-import {  type PersonalityInfo } from '../../../../types/podcast-types'
+import type { AppRouter } from '@repo/api/server';
+import type { inferRouterOutputs } from '@trpc/server';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { useVoices, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import FormFieldInfo from '@/routes/-components/common/form-field-info';
 import Spinner from '@/routes/-components/common/spinner';
 import { generatePodcastSchema } from '@/validations/podcast-validation';
+
+
+type PersonalitiesOutput = inferRouterOutputs<AppRouter>['podcasts']['getAvailablePersonalities'];
+
+export type PersonalityInfo = PersonalitiesOutput[number];
 
 
 interface GeneratePodcastModalProps {
