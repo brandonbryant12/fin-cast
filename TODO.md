@@ -1,3 +1,7 @@
+- Get workflow to deploy to digital ocean on push to main 
+
+- get the appr unning with domain fincast.brandonbryant.io
+
 - common http client with options for proxy 
 
 - split llm and tts into their own 
