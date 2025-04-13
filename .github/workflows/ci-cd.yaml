@@ -30,24 +30,22 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.7.0
+          version: 10.7.0 # Match your project's package.json
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22' # Match your project's .nvmrc or package.json
           cache: 'pnpm'
 
       # 3. Install Dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 4. Run Lint Check
-      # NOTE: You were missing the actual build step before linting/pushing
-      # Lint dependsOn build in your turbo.json, but build wasn't explicitly run here.
-      # Let's add the build step explicitly before the docker steps.
+      # 4. Run Build
       - name: Run build
         run: pnpm build
 
+      # 5. Run Lint Check
       - name: Run lint check
         run: pnpm lint
 
@@ -66,6 +64,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # --- Server Image ---
       # 8. Extract Docker metadata for server image
       - name: Extract metadata for server image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -90,6 +89,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # --- Web Image ---
       # 10. Extract Docker metadata for web image
       - name: Extract metadata for web image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -112,6 +112,31 @@ jobs:
           tags: ${{ steps.meta_web.outputs.tags }}
           labels: ${{ steps.meta_web.outputs.labels }}
           build-args: |
-            PUBLIC_SERVER_URL=${{ vars.PUBLIC_SERVER_URL || 'http://fallback.example.com' }}
+            PUBLIC_SERVER_URL=${{ vars.PUBLIC_SERVER_URL || 'http://localhost:3035' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # --- DB Image (for drizzle migrations) ---
+      # 12. Extract Docker metadata for db image
+      - name: Extract metadata for db image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: meta_db
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-db # Choose a name for your db image
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # 13. Build and push db image
+      - name: Build and push db image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./packages/db/Dockerfile # Correct path to the db Dockerfile
+          push: true
+          tags: ${{ steps.meta_db.outputs.tags }}
+          labels: ${{ steps.meta_db.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
