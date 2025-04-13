@@ -52,7 +52,7 @@ if (!llm) {
   process.exit(1);
 }
 
-const podcast = createPodcastService({ db, llm, logger, scraper, tts });
+const podcast = createPodcastService({ db, llm, logger, scraper, tts, isRunningInDocker: env.IS_RUNNING_IN_DOCKER });
 
 const api = createApi({ auth, db, logger, podcast, tts });
 const app = new Hono<{

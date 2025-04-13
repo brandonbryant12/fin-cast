@@ -1,4 +1,3 @@
-# .github/workflows/ci-cd.yaml
 name: CI/CD Pipeline
 
 on:
@@ -13,59 +12,38 @@ jobs:
   build-test-push:
     name: Build, Test & Push Docker Images
     runs-on: ubuntu-latest
-
     environment:
       name: ci-cd
-
     permissions:
       contents: read
       packages: write
-
     steps:
-      # 1. Checkout Repository
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # 2. Set up Node.js and pnpm
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.7.0 # Match your project's package.json
+          version: 10.7.0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # Match your project's .nvmrc or package.json
+          node-version: '22'
           cache: 'pnpm'
-
-      # 3. Install Dependencies
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      # 4. Run Build
       - name: Run build
         run: pnpm build
-
-      # 5. Run Lint Check
       - name: Run lint check
         run: pnpm lint
-
-      # --- Docker Steps ---
-
-      # 6. Set up Docker Buildx
       - name: Set up Docker Buildx
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/setup-buildx-action@v3
-
-      # 7. Log in to Docker Hub
       - name: Log in to Docker Hub
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # --- Server Image ---
-      # 8. Extract Docker metadata for server image
       - name: Extract metadata for server image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta_server
@@ -75,8 +53,6 @@ jobs:
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
-
-      # 9. Build and push server image
       - name: Build and push server image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
@@ -88,9 +64,6 @@ jobs:
           labels: ${{ steps.meta_server.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # --- Web Image ---
-      # 10. Extract Docker metadata for web image
       - name: Extract metadata for web image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta_web
@@ -100,8 +73,6 @@ jobs:
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
-
-      # 11. Build and push web image
       - name: Build and push web image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
@@ -115,28 +86,57 @@ jobs:
             PUBLIC_SERVER_URL=${{ vars.PUBLIC_SERVER_URL || 'http://localhost:3035' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # --- DB Image (for drizzle migrations) ---
-      # 12. Extract Docker metadata for db image
       - name: Extract metadata for db image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: meta_db
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-db # Choose a name for your db image
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/fin-cast-db
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
-
-      # 13. Build and push db image
       - name: Build and push db image
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./packages/db/Dockerfile # Correct path to the db Dockerfile
+          file: ./packages/db/Dockerfile
           push: true
           tags: ${{ steps.meta_db.outputs.tags }}
           labels: ${{ steps.meta_db.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Droplet
+    needs: build-test-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: ci-cd
+    steps:
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: root
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            cd /opt/fin-cast || exit 1
+            git pull origin main || exit 1
+            export OPENAI_API_KEY='${{ secrets.OPENAI_API_KEY }}'
+            export GEMINI_API_KEY='${{ secrets.GEMINI_API_KEY }}'
+            export SERVER_AUTH_SECRET='${{ secrets.SERVER_AUTH_SECRET }}'
+            export SERVER_POSTGRES_URL='${{ secrets.SERVER_POSTGRES_URL }}'
+            export PUBLIC_WEB_URL='${{ secrets.PUBLIC_WEB_URL }}'
+            export SERVER_HOST='${{ secrets.SERVER_HOST }}'
+            export SERVER_PORT='${{ secrets.SERVER_PORT }}'
+            export POSTGRES_USER='${{ secrets.POSTGRES_USER }}'
+            export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
+            export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
+            export DOCKERHUB_USERNAME='${{ secrets.DOCKERHUB_USERNAME }}'
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d --remove-orphans

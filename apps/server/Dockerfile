@@ -45,6 +45,8 @@ RUN addgroup --system --gid 1001 nodejs \
 
 RUN apk add --no-cache ffmpeg
 
+ENV IS_RUNNING_IN_DOCKER=true
+
 COPY --from=installer --chown=hono:nodejs /app/apps/server/dist /app/dist
 
 USER hono

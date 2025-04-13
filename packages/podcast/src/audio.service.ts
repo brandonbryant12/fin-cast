@@ -1,3 +1,5 @@
+// packages/podcast/src/audio.service.ts
+
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as os from 'os';
@@ -6,17 +8,32 @@ import ffmpeg from 'fluent-ffmpeg';
 import type { AppLogger } from '@repo/logger';
 
 export const AUDIO_FORMAT = 'mp3';
+const FFMPEG_PATH = '/usr/bin/ffmpeg';
+const FFPROBE_PATH = '/usr/bin/ffprobe';
 
+// Define the dependencies, including the new flag
 interface AudioServiceDependencies {
     logger: AppLogger;
+    /** Flag indicating if the service is running within a Docker container */
+    isRunningInDocker: boolean;
 }
 
 export class AudioService {
     private readonly logger: AppLogger;
+    private isRunningInDocker = false;
 
-    constructor({ logger }: AudioServiceDependencies) {
+
+    constructor({ logger, isRunningInDocker }: AudioServiceDependencies) {
         this.logger = logger.child({ service: 'AudioService' });
-        this.logger.info('AudioService initialized');
+
+        this.logger.info(`AudioService initialized. Docker environment flag: ${isRunningInDocker}`);
+
+        if (isRunningInDocker) {
+            this.isRunningInDocker = true;
+            this.logger.info('Docker flag is true, setting explicit ffmpeg paths:', { FFMPEG_PATH, FFPROBE_PATH });
+        } else {
+            this.logger.info('Docker flag is false, relying on default ffmpeg path discovery.');
+        }
     }
 
     /**
@@ -54,6 +71,10 @@ export class AudioService {
 
             await new Promise<void>((resolve, reject) => {
                 const command = ffmpeg();
+                if(this.isRunningInDocker) {
+                    command.setFfmpegPath(FFMPEG_PATH);
+                    command.setFfprobePath(FFPROBE_PATH);
+                }
                 tempAudioFiles.forEach(file => {
                     command.input(file);
                 });
@@ -80,12 +101,12 @@ export class AudioService {
         } catch (error) {
             logger.error({ err: error }, 'Audio stitching process failed.');
             if (!tempAudioFiles.includes(finalOutputPath)) {
-                try {
-                    await fs.access(finalOutputPath);
-                    tempAudioFiles.push(finalOutputPath);
-                } catch { /* File doesn't exist, no need to add */ }
+                 try {
+                     await fs.access(finalOutputPath);
+                     tempAudioFiles.push(finalOutputPath);
+                 } catch { /* File doesn't exist, no need to add */ }
             }
-            throw error;
+            throw error; // Re-throw the error after attempting to mark for cleanup
         } finally {
             if (tempAudioFiles.length > 0) {
                 logger.info(`Cleaning up ${tempAudioFiles.length} temporary/output audio files...`);
@@ -94,6 +115,7 @@ export class AudioService {
                         await fs.unlink(tempFile);
                         logger.debug(`Deleted temporary/output file: ${tempFile}`);
                     } catch (cleanupError: any) {
+                        // Don't log error if file simply doesn't exist (e.g., merge failed before creation)
                         if (cleanupError?.code !== 'ENOENT') {
                             logger.error({ err: cleanupError, file: tempFile }, 'Failed to delete temporary/output audio file during cleanup.');
                         }
@@ -109,7 +131,7 @@ export class AudioService {
       * @param audioBuffer The audio content as a Buffer.
       * @returns A promise resolving to the duration in seconds (rounded), or 0 if detection fails.
       */
-    async getAudioDuration(audioBuffer: Buffer): Promise<number> {
+     async getAudioDuration(audioBuffer: Buffer): Promise<number> {
          const logger = this.logger.child({ method: 'getAudioDuration' });
          const tempFileName = `duration-probe-${crypto.randomUUID()}.${AUDIO_FORMAT}`;
          const tempFilePath = path.join(os.tmpdir(), tempFileName);
@@ -118,10 +140,11 @@ export class AudioService {
              await fs.writeFile(tempFilePath, audioBuffer);
              logger.debug(`Wrote temporary file for duration probe: ${tempFilePath}`);
 
-             const duration = await new Promise<number>((resolveProbe) => {
-                ffmpeg(tempFilePath).ffprobe((err: Error, metadata: ffmpeg.FfprobeData) => {
+             const duration = await new Promise<number>((resolveProbe, rejectProbe) => {
+                 ffmpeg(tempFilePath).ffprobe((err: Error | null, metadata?: ffmpeg.FfprobeData) => { // Make Error nullable
                      if (err) {
                          logger.warn({ err: err.message, file: tempFilePath }, 'ffprobe failed to get audio duration.');
+                         // Resolve with 0 instead of rejecting, as per original logic
                          resolveProbe(0);
                          return;
                      }
@@ -138,14 +161,14 @@ export class AudioService {
              return duration;
          } catch (error) {
              logger.error({ err: error, file: tempFilePath }, 'Error during ffprobe setup/file write for duration.');
-             return 0;
+             return 0; // Return 0 on unexpected errors during setup
          } finally {
              try {
                  await fs.unlink(tempFilePath);
                  logger.debug(`Deleted temporary duration probe file: ${tempFilePath}`);
              } catch (cleanupError: any) {
                  if (cleanupError?.code !== 'ENOENT') {
-                    logger.error({ err: cleanupError, file: tempFilePath }, 'Failed to delete temporary duration probe file.');
+                     logger.error({ err: cleanupError, file: tempFilePath }, 'Failed to delete temporary duration probe file.');
                  }
              }
          }

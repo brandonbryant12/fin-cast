@@ -32,7 +32,13 @@ export const envSchema = v.object({
   GEMINI_API_KEY: v.optional(v.string()),
 
   LOG_LEVEL: v.optional(v.string()),
-  NODE_ENV: v.optional(v.string())
+  NODE_ENV: v.optional(v.string()),
+
+  IS_RUNNING_IN_DOCKER: v.pipe(
+    v.optional(v.string()),
+    v.transform(value => typeof value === 'string' && value.toLowerCase() === 'true'),
+    v.boolean()
+),
 });
 
 export const env = v.parse(envSchema, process.env);

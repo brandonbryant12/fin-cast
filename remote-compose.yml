@@ -1,0 +1,81 @@
+services:
+  web:
+    image: brandonbryant/fin-cast-web:latest
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      args:
+        PUBLIC_SERVER_URL: http://localhost:3035
+    ports:
+      - 8085:80
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      test:
+        ['CMD-SHELL', 'curl --fail --silent http://localhost:80/healthcheck']
+    depends_on:
+      - server
+
+  server:
+    image: brandonbryant/fin-cast-server:latest
+    build:
+      context: .
+      dockerfile: ./apps/server/Dockerfile
+    ports:
+      - 3035:3000
+    environment:
+      - SERVER_AUTH_SECRET=${SERVER_AUTH_SECRET}
+      - SERVER_POSTGRES_URL=${SERVER_POSTGRES_URL}
+      - SERVER_HOST=${SERVER_HOST}
+      - SERVER_PORT=${SERVER_PORT}
+      - PUBLIC_WEB_URL=${PUBLIC_WEB_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --spider http://$$SERVER_HOST:$$SERVER_PORT/healthcheck',
+        ]
+    depends_on:
+      - db
+
+  db:
+    image: docker.io/postgres:latest
+    ports:
+      - 5432:5432
+    command: ['postgres', '-c', 'log_statement=all']
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      test: ['CMD', 'pg_isready', '-U', '${POSTGRES_USER:-postgres}', '-d', '${POSTGRES_DB:-postgres}']
+
+  drizzle:
+    image: brandonbryant/fin-cast-db:latest
+    restart: 'no'
+    command: /bin/sh
+    build:
+      context: .
+      dockerfile: ./packages/db/Dockerfile
+    environment:
+      - DB_POSTGRES_URL=${SERVER_POSTGRES_URL}
+      - TURBO_UI=true
+    profiles:
+      - drizzle
+
+volumes:
+  postgres_data:

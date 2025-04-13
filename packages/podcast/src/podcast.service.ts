@@ -15,6 +15,7 @@ interface PodcastFactoryDependencies {
     scraper: Scraper;
     logger: AppLogger;
     tts: TTSService;
+    isRunningInDocker: boolean;
 }
 
 export class PodcastService {
@@ -114,7 +115,7 @@ export class PodcastService {
 export function createPodcastService(dependencies: PodcastFactoryDependencies): PodcastService {
     const mainLogger = dependencies.logger;
     const podcastRepository = new PodcastRepository(dependencies.db);
-    const audioService = createAudioService({ logger: mainLogger });
+    const audioService = createAudioService({ logger: mainLogger, isRunningInDocker: dependencies.isRunningInDocker });
     const dialogueSynthesisService = new DialogueSynthesisService({ tts: dependencies.tts, logger: mainLogger });
 
     const podcastGenerationService = new PodcastGenerationService({

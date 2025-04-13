@@ -30,6 +30,7 @@ services:
       - SERVER_PORT=3000
       - PUBLIC_WEB_URL=http://localhost:8085
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     healthcheck:
       interval: 30s
       timeout: 10s
@@ -69,8 +70,6 @@ services:
       - DB_POSTGRES_URL=postgres://postgres:postgres@db:5432/postgres
       - TURBO_UI=true
     profiles:
-      # Using profiles to avoid starting this container by default.
-      # We only use this to run `pnpm db:push`
       - drizzle
 
 volumes:

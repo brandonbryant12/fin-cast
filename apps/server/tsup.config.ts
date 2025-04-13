@@ -1,3 +1,4 @@
+// apps/server/tsup.config.ts
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
@@ -9,17 +10,39 @@ export default defineConfig({
   bundle: true,
   outDir: './dist',
   clean: true,
-  env: { IS_SERVER_BUILD: 'true' },
   loader: { '.json': 'copy' },
   minify: false,
   sourcemap: true,
 
-  // https://github.com/egoist/tsup/issues/927#issuecomment-2416440833
   banner: ({ format }) => {
-    if (format === 'esm')
+    if (format === 'esm') {
       return {
-        js: `import { createRequire } from 'module'; const require = createRequire(import.meta.url);`,
+        js: `
+        // --- Start ESM Shims ---
+        import { createRequire } from 'module';
+
+        // Shim require - needed to load 'url' and 'path' modules below
+        const require = createRequire(import.meta.url);
+
+        // Shim __filename and __dirname using the shimmed require and native import.meta.url
+        // This avoids top-level 'import' in the banner string, which might resolve the conflict.
+        let __filename = '';
+        let __dirname = '';
+        try {
+            // Use the shimmed require to get CJS modules
+            const url = require('url');
+            const path = require('path');
+            // Use native ESM import.meta.url to get the current file path
+            __filename = url.fileURLToPath(import.meta.url);
+            __dirname = path.dirname(__filename);
+        } catch (e) {
+            console.error('Failed to create __filename/__dirname shims in banner:', e);
+            // If fluent-ffmpeg absolutely needs these, this error is critical.
+        }
+        // --- End ESM Shims ---
+        `,
       };
+    }
     return {};
   },
 });

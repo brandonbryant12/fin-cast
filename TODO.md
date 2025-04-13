@@ -1,3 +1,11 @@
+- common http client with options for proxy 
+
+- split llm and tts into their own 
+
+- implement new llm and tts 
+
+- env variables says the provider
+
 
 ## UI 
 
