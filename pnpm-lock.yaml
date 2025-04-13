@@ -392,9 +392,6 @@ importers:
       '@google/genai':
         specifier: 0.8.0
         version: 0.8.0
-      '@repo/db':
-        specifier: workspace:*
-        version: link:../db
       ai:
         specifier: 4.3.2
         version: 4.3.2(react@19.1.0)(zod@3.24.2)
@@ -650,6 +647,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.14.0
+      '@types/play-sound':
+        specifier: ^1.1.2
+        version: 1.1.2
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       eslint:
         specifier: 'catalog:'
         version: 9.24.0(jiti@2.4.2)

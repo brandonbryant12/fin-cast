@@ -1,34 +1,17 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
-import type { TTSService, TtsOptions } from '../types';
-import { personalities as allPersonalities, PersonalityId, type PersonalityInfo } from '../personalities';
-
-// Get the directory path in an ESM context
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import type { TTSProvider, TTSService, TtsOptions, Voice } from '../types';
 
 interface OpenAITtsOptions extends TtsOptions {
-  apiKey?: string;
+  apiKey: string;
   model?: 'tts-1' | 'tts-1-hd';
 }
 
 export class OpenAITtsService implements TTSService {
   private openai: OpenAI;
   private defaultModel: 'tts-1' | 'tts-1-hd';
-  private personalityToVoiceMap: Record<PersonalityId, string> = {
-    [PersonalityId.Arthur]: 'onyx',
-    [PersonalityId.Chloe]: 'shimmer',
-    [PersonalityId.Maya]: 'nova',
-    [PersonalityId.Sam]: 'alloy',
-    [PersonalityId.Evelyn]: 'fable',
-    [PersonalityId.David]: 'echo',
-  };
   private defaultVoice = 'alloy';
+  private voices = ['onyx', 'shimmer','nova', 'alloy', 'fable', 'echo' ] as Voice[];
 
-  private loadedPersonalityInfo: PersonalityInfo[] | null = null;
-  private initializationPromise: Promise<void>;
 
   constructor(options?: OpenAITtsOptions) {
     const apiKey = options?.apiKey;
@@ -37,76 +20,14 @@ export class OpenAITtsService implements TTSService {
     }
     this.openai = new OpenAI({ apiKey });
     this.defaultModel = options?.model ?? 'tts-1';
-
-    this.initializationPromise = this._initializePersonalities();
-    this.initializationPromise.catch(error => {
-        console.error("Failed to initialize OpenAITtsService:", error);
-    });
   }
 
-  private async _initializePersonalities(): Promise<void> {
-    const supportedIds = Object.keys(this.personalityToVoiceMap) as PersonalityId[];
-    const supportedBasePersonalities = allPersonalities.filter(p => supportedIds.includes(p.id));
-
-    const previewsDir = path.resolve(__dirname, 'previews');
-    console.log(`Initializing personalities - Reading previews from: ${previewsDir}`);
-
-    const finalPersonalityInfoPromises = supportedBasePersonalities.map(async (p): Promise<PersonalityInfo> => {
-      const previewFilePath = path.join(previewsDir, `${p.id}.mp3`);
-      let previewUrl: string | undefined = undefined;
-
-      try {
-        const audioBuffer = await fs.readFile(previewFilePath);
-        // Convert buffer to base64 string
-        const base64String = audioBuffer.toString('base64');
-        // Construct the data URI
-        previewUrl = `data:audio/mp3;base64,${base64String}`;
-        console.log(`Successfully loaded and encoded preview for ${p.name}`);
-      } catch (error: any) {
-        if (error.code === 'ENOENT') {
-          console.error(`Preview file not found for ${p.name}: ${previewFilePath}`);
-          throw new Error(`Preview file not found for ${p.name}: ${previewFilePath}`);
-        } else {
-          console.error(`Error reading preview file for ${p.name} (${previewFilePath}):`, error);
-          throw new Error(`Failed to read preview file for ${p.name} (${previewFilePath}): ${error.message}`);
-        }
-      }
-
-      return {
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        previewPhrase: p.previewPhrase,
-        previewAudioUrl: previewUrl, // This will always be defined if no error was thrown
-      };
-    });
-
-    // Wait for all file reads and conversions to complete. If any promise rejects, Promise.all rejects.
-    const finalPersonalityInfo = await Promise.all(finalPersonalityInfoPromises);
-
-    // Cache the result only if all promises resolved successfully
-    this.loadedPersonalityInfo = finalPersonalityInfo;
-    console.log('Personalities initialized successfully.');
+  getProvider(): TTSProvider {
+    return 'openai';
   }
 
   async synthesize(text: string, options?: OpenAITtsOptions): Promise<Buffer> {
-    // Ensure initialization is complete before proceeding
-    await this.initializationPromise;
-
-    const requestedPersonality = options?.personality;
-    let targetVoice = this.defaultVoice;
-
-    if (requestedPersonality) {
-      const mappedVoice = this.personalityToVoiceMap[requestedPersonality];
-      if (mappedVoice) {
-        targetVoice = mappedVoice;
-      } else {
-        console.warn(`Personality ${requestedPersonality} requested but no mapping found for OpenAI TTS. Using default voice ${this.defaultVoice}.`);
-      }
-    } else {
-      console.warn(`No personality requested for OpenAI TTS. Using default voice ${this.defaultVoice}.`);
-    }
-
+    const targetVoice = options?.voice ?? this.defaultVoice;
     try {
       const response = await this.openai.audio.speech.create({
         model: options?.model ?? this.defaultModel,
@@ -123,14 +44,7 @@ export class OpenAITtsService implements TTSService {
       throw new Error('Failed to synthesize speech with OpenAI.');
     }
   }
-
-  async getAvailablePersonalities(): Promise<PersonalityInfo[]> {
-    await this.initializationPromise;
-
-    if (this.loadedPersonalityInfo) {
-      return this.loadedPersonalityInfo;
-    }
-
-    throw new Error('TTS Personalities failed to initialize properly.');
+  async getAvailableVoices(): Promise<Voice[]> {
+    return this.voices;
   }
 }

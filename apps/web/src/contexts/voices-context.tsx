@@ -3,22 +3,21 @@ import { createContext, useContext, type ReactNode } from 'react';
 import { trpc } from '@/router';
 
 export enum PersonalityId {
-  Arthur = 'arthur',
-  Chloe = 'chloe',
-  Maya = 'maya',
-  Sam = 'sam',
-  Evelyn = 'evelyn',
-  David = 'david',
+  Arthur = 'Arthur',
+  Chloe = 'Chloe',
+  Maya = 'Maya',
+  Sam = 'Sam',
+  Evelyn = 'Evelyn',
+  David = 'David',
 }
 
 export interface PersonalityInfo {
-  id: PersonalityId;
-  name: string;
+  name: PersonalityId;
+  voiceName?: string;
   description: string;
   previewPhrase?: string;
   previewAudioUrl?: string;
 }
-
 
 interface VoicesContextType {
   availableVoices: PersonalityInfo[];
@@ -30,7 +29,7 @@ const VoicesContext = createContext<VoicesContextType | undefined>(undefined);
 
 export function VoicesProvider({ children }: { children: ReactNode }) {
   const { data: availableVoices, isLoading: isLoadingVoices, error: voicesError } = useQuery(
-    trpc.tts.getAvailablePersonalities.queryOptions()
+    trpc.podcasts.getAvailablePersonalities.queryOptions()
   );
 
   const value = {

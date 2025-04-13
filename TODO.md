@@ -1,6 +1,8 @@
 ## Bug 
 - when playback is set to higher speed on start up it still plays at 1x.  When you change the speed it works 
 
+## When audio generation fails we need to set podcast to failed
+
 ## feature
 
  - Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
@@ -8,6 +10,8 @@
 ## UI 
 
 - make UI reactive, adjust the style guide
+
+- look at Post as an example and think about how to refactor podcast
 
 ## Backend 
 

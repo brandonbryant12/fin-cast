@@ -165,7 +165,6 @@ export class AudioService {
     }
 }
 
-// Factory function uses updated dependencies
 export function createAudioService(dependencies: AudioServiceDependencies): AudioService {
     return new AudioService(dependencies);
 }

@@ -1,9 +1,9 @@
 import pLimit from 'p-limit';
-import type { TTSService, PersonalityId } from '@repo/ai';
+import type { PersonalityId } from './personalities/personalities';
+import type { TTSService } from '@repo/ai';
 import type { AppLogger } from '@repo/logger';
-import { AUDIO_FORMAT } from './audio.service'; // Need AUDIO_FORMAT for tts.synthesize
+import { AUDIO_FORMAT } from './audio.service';
 
-// Reuse DialogueSegment interface (or move to a shared types file later)
 interface DialogueSegment {
     speaker: string;
     line: string;
@@ -17,7 +17,7 @@ interface DialogueSynthesisServiceDependencies {
 export class DialogueSynthesisService {
     private readonly tts: TTSService;
     private readonly logger: AppLogger;
-    private readonly concurrencyLimit = 5; // Or make configurable
+    private readonly concurrencyLimit = 5;
 
     constructor(dependencies: DialogueSynthesisServiceDependencies) {
         this.tts = dependencies.tts;
@@ -35,7 +35,7 @@ export class DialogueSynthesisService {
      */
     async synthesizeDialogueSegments(
         dialogue: DialogueSegment[],
-        speakerPersonalities: Record<string, PersonalityId>,
+        speakerPersonalities: Record<string, string>,
         defaultPersonalityId: PersonalityId
     ): Promise<(Buffer | null)[]> {
         const logger = this.logger.child({ method: 'synthesizeDialogueSegments' });
@@ -59,14 +59,14 @@ export class DialogueSynthesisService {
 
                 try {
                     const audioBuffer = await this.tts.synthesize(segment.line, {
-                        personality: assignedPersonality,
-                        format: AUDIO_FORMAT // Use the imported constant
+                        voice: assignedPersonality,
+                        format: AUDIO_FORMAT
                     });
                     logger.debug(`Segment ${i + 1} synthesized successfully.`);
                     return audioBuffer;
                 } catch (ttsError) {
                     logger.error({ err: ttsError, segmentIndex: i, speaker: segment.speaker, personality: assignedPersonality }, 'TTS synthesis failed for a segment.');
-                    return null; // Return null for failed segments
+                    return null;
                 }
             });
         });

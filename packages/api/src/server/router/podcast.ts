@@ -1,8 +1,8 @@
-import { PersonalityId } from '@repo/ai';
 import * as schema from '@repo/db/schema';
+import { PersonalityId } from '@repo/podcast';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
-import { protectedProcedure, router } from '../trpc';
+import { protectedProcedure, publicProcedure, router } from '../trpc';
 
 type SelectPodcast = typeof schema.podcast.$inferSelect;
 
@@ -68,7 +68,6 @@ export const podcastRouter = router({
         }),
 
     myPodcasts: protectedProcedure
-        // Use the correct inferred type
         .query(async ({ ctx }): Promise<SelectPodcast[]> => {
             const userId = ctx.session.user.id;
             const logger = ctx.logger.child({ userId, procedure: 'myPodcasts' });
@@ -170,6 +169,12 @@ export const podcastRouter = router({
                 });
             }
         }),
+
+    getAvailablePersonalities: protectedProcedure
+    .query(async ({ ctx }) => {
+        const voices = await ctx.podcast.getAvailablePersonalities();
+        return voices;
+    }),
 });
 
 export default podcastRouter;

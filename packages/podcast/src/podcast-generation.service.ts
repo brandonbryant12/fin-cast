@@ -1,47 +1,42 @@
-import { getPersonalityInfo } from '@repo/ai';
-import * as v from 'valibot'; // Needed for ValiError handling
+import * as v from 'valibot';
 import type { AudioService } from './audio.service';
 import type { DialogueSynthesisService } from './dialogue-synthesis.service';
 import type { PodcastRepository } from './podcast.repository';
-import type { LLMInterface, TTSService, PersonalityId } from '@repo/ai';
-import type { ChatResponse } from '@repo/ai'; // Import ChatResponse
+import type { LLMInterface, TTSService } from '@repo/ai';
+import type { ChatResponse } from '@repo/ai';
 import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';
 import { generatePodcastScriptPrompt, type GeneratePodcastScriptOutput } from './generate-podcast-script-prompt';
+import { PersonalityId, getPersonalityInfo} from './personalities/personalities';
 
-// Reuse DialogueSegment interface (or move to shared types)
-interface DialogueSegment {
-    speaker: string;
-    line: string;
-}
 
 interface PodcastGenerationServiceDependencies {
     podcastRepository: PodcastRepository;
     scraper: Scraper;
     llm: LLMInterface;
-    tts: TTSService; // Kept tts for now, but will use dialogueSynthesisService
+    tts: TTSService;
     audioService: AudioService;
     logger: AppLogger;
-    dialogueSynthesisService: DialogueSynthesisService; // Add dialogue service dependency
+    dialogueSynthesisService: DialogueSynthesisService;
 }
 
 export class PodcastGenerationService {
     private readonly podcastRepository: PodcastRepository;
     private readonly scraper: Scraper;
     private readonly llm: LLMInterface;
-    // private readonly tts: TTSService; // No longer needed directly
     private readonly audioService: AudioService;
     private readonly logger: AppLogger;
     private readonly dialogueSynthesisService: DialogueSynthesisService;
+    private readonly tts: TTSService;
 
     constructor(dependencies: PodcastGenerationServiceDependencies) {
         this.podcastRepository = dependencies.podcastRepository;
         this.scraper = dependencies.scraper;
+        this.tts = dependencies.tts;
         this.llm = dependencies.llm;
-        // this.tts = dependencies.tts;
         this.audioService = dependencies.audioService;
         this.logger = dependencies.logger.child({ service: 'PodcastGenerationService' });
-        this.dialogueSynthesisService = dependencies.dialogueSynthesisService; // Initialize dialogue service
+        this.dialogueSynthesisService = dependencies.dialogueSynthesisService;
         this.logger.info('PodcastGenerationService initialized');
     }
 
@@ -61,10 +56,12 @@ export class PodcastGenerationService {
         let llmResponse: ChatResponse<GeneratePodcastScriptOutput> | null = null;
 
         try {
-            const hostInfo = getPersonalityInfo(hostPersonalityId);
-            const cohostInfo = getPersonalityInfo(cohostPersonalityId);
+            const hostInfo = getPersonalityInfo(hostPersonalityId, this.tts.getProvider());
+            const cohostInfo = getPersonalityInfo(cohostPersonalityId, this.tts.getProvider());
 
             if (!hostInfo || !cohostInfo) throw new Error('Invalid host or cohost personality ID provided.');
+            if (!hostInfo.voiceName || !cohostInfo.voiceName) throw new Error('Personalities are not mapped to voices');
+
             logger.info({ hostInfo, cohostInfo }, 'Retrieved personality info.');
 
             // --- Scrape Content ---
@@ -94,17 +91,17 @@ export class PodcastGenerationService {
                 scriptData = llmResponse.structuredOutput;
                 logger.info('LLM returned valid structured output. Processing audio.');
 
-                const speakerPersonalities: Record<string, PersonalityId> = {
-                    [hostInfo.name]: hostPersonalityId,
-                    [cohostInfo.name]: cohostPersonalityId
+                const speakerVoiceMap: Record<string, string> = {
+                    [hostInfo.name]: hostInfo.voiceName,     // e.g., { 'Arthur': 'echo' }
+                    [cohostInfo.name]: cohostInfo.voiceName, // e.g., { 'Chloe': 'nova' }
                 };
-                logger.info({ speakerPersonalities }, 'Assigned personalities.');
+                logger.info({ speakerVoiceMap }, 'Assigned personalities.');
 
                 // --- Synthesize Audio using DialogueSynthesisService ---
                 logger.info('Starting TTS synthesis via DialogueSynthesisService...');
                 const audioBuffers = await this.dialogueSynthesisService.synthesizeDialogueSegments(
                     scriptData.dialogue,
-                    speakerPersonalities,
+                    speakerVoiceMap,
                     hostPersonalityId // Default personality if speaker not found
                 );
                 const validBufferCount = audioBuffers.filter(b => b !== null).length;
@@ -134,13 +131,11 @@ export class PodcastGenerationService {
 
                 // --- Update Database using PodcastRepository ---
                 logger.info('Updating database transcript and generated data via PodcastRepository...');
-                // Update transcript first
                 await this.podcastRepository.updateTranscriptContent(podcastId, scriptData.dialogue);
-                // Update title, audioUrl, duration
                 await this.podcastRepository.updatePodcastGeneratedData(
                     podcastId,
-                    scriptData.title ?? `Podcast ${podcastId}`, // Fallback title
-                    finalAudioBase64, // Use the determined audio (could be empty encoded)
+                    scriptData.title ?? `Podcast ${podcastId}`,
+                    finalAudioBase64,
                     durationSeconds
                  );
                 logger.info('Database updates for transcript and generated data successful.');

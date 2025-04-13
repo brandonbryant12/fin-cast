@@ -1,4 +1,4 @@
-import type * as v from 'valibot'; // Add valibot import
+import type * as v from 'valibot';
 
 /**
  * Options for chat completion requests.

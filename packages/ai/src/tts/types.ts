@@ -1,22 +1,26 @@
-import { PersonalityId, type PersonalityInfo } from './personalities';
-
 export interface TtsOptions {
-  personality?: PersonalityId;
+  voice?: string;
   format?: 'mp3' | 'opus' | 'aac' | 'flac';
   speed?: number;
 }
 
-export interface VoiceInfo {
-  id: string;
-  name: string;
-}
+export type Voice = string
 
 export interface TTSService {
   synthesize(text: string, options?: TtsOptions): Promise<Buffer>;
-  getAvailablePersonalities(): Promise<PersonalityInfo[]>;
+  getAvailableVoices(): Promise<Voice[]>;
+  getProvider(): TTSProvider;
 }
 
-export interface TtsFactoryConfig {
-  provider: 'openai';
-  options?: Record<string, any>;
+
+export type TTSProvider = 'openai' 
+
+interface OpenAITtsFactoryConfig {
+  provider: TTSProvider,
+  options: {
+    apiKey: string;
+    model?: 'tts-1' | 'tts-1-hd';
+  };
 }
+
+export type TtsFactoryConfig = OpenAITtsFactoryConfig; // | GoogleTtsFactoryConfig | ... etc.

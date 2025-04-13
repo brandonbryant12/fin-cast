@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import playSound from 'play-sound';
 import type { TtsOptions, ChatOptions, ChatResponse } from './index';
-import { createTtsService, createLLMService, PersonalityId, personalities as allPersonalities } from './index';
+import { createTtsService, createLLMService } from './index';
 
 // Get directory path in ESM
 const currentFilePath = import.meta.url ? fileURLToPath(import.meta.url) : '';
@@ -98,7 +98,7 @@ ttsCommand
       const speed = parseFloat(options.speed);
 
       const serviceOptions: TtsOptions = {
-        personality: PersonalityId.Arthur,
+        voice: 'arthur',
         format: 'mp3',
         speed: isNaN(speed) ? 1.0 : speed,
       };
@@ -141,7 +141,7 @@ ttsCommand
   });
 
 ttsCommand
-  .command('list-personalities')
+  .command('list-voices')
   .description('List available voices for the TTS provider')
   .option('--provider <provider>', 'TTS provider to use', 'openai')
   .action(async (options: { provider: string }) => {
@@ -150,76 +150,11 @@ ttsCommand
     console.log('Fetching available voices...');
     try {
       const ttsService = createTtsService(serviceConfig(apiKey));
-      const personalities = await ttsService.getAvailablePersonalities();
-      if (personalities.length === 0) {
-        console.log('No voices found for the provider.');
-      } else {
-        console.log('Available voices:');
-        personalities.forEach(v => console.log(` - ${v.name} (ID: ${v.id}) ${v.previewPhrase ? '[Has Phrase]' : ''}`));
-      }
+      const voices = await ttsService.getAvailableVoices();
+      console.log({ voices });
     } catch (error) {
       console.error('Error fetching voices:', error);
       process.exitCode = 1;
-    }
-  });
-
-ttsCommand
-  .command('generate-previews')
-  .description('Generate audio preview snippets and save as MP3 files')
-  .option('--provider <provider>', 'TTS provider to use', 'openai')
-  .option('--format <format>', 'Audio format for previews', 'mp3')
-  .action(async (options: { provider: string, format: string }) => {
-    const { provider, format } = options;
-    const { apiKeyEnvVar, serviceConfig } = getProviderConfig(provider);
-    const apiKey = ensureApiKey(apiKeyEnvVar);
-
-    const previewsDir = path.resolve(currentDirPath, `tts/${provider}/previews`);
-
-    try {
-      await fs.mkdir(previewsDir, { recursive: true });
-      console.log(`Ensured preview directory exists: ${previewsDir}`);
-    } catch (error) {
-      console.error(`Failed to create preview directory ${previewsDir}:`, error);
-      process.exitCode = 1;
-      return;
-    }
-
-    console.log(`Starting audio preview generation for ${provider}...`);
-    console.log(`Outputting MP3 files to: ${previewsDir}`);
-
-    const ttsService = createTtsService(serviceConfig(apiKey));
-
-    let hasError = false;
-    const personalityIdsToProcess = allPersonalities.map(p => p.id);
-
-    for (const personality of allPersonalities) {
-      if (!personality.previewPhrase) {
-        console.warn(`Skipping ${personality.name} (${personality.id}): No preview phrase defined.`);
-        continue;
-      }
-
-      const outputFilePath = path.join(previewsDir, `${personality.id}.${format}`);
-      console.log(`Generating preview for ${personality.name} (${personality.id}) -> ${outputFilePath}...`);
-
-      try {
-        const audioBuffer = await ttsService.synthesize(personality.previewPhrase, {
-          personality: personality.id,
-          format: format as 'mp3',
-        });
-        await fs.writeFile(outputFilePath, audioBuffer);
-        console.log(` -> Successfully saved preview for ${personality.name} to ${outputFilePath}.`);
-      } catch (error) {
-        console.error(` -> Failed to generate or save preview for ${personality.name}:`, error instanceof Error ? error.message : error);
-        hasError = true;
-      }
-    }
-
-    console.log("\nPreview generation complete.");
-    if (hasError) {
-      console.warn("Errors occurred during generation. Check logs above for details.");
-      process.exitCode = 1;
-    } else {
-      console.log("All previews generated successfully.");
     }
   });
 

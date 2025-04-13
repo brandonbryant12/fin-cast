@@ -17,7 +17,7 @@ import {
 } from '@repo/ui/components/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
-import { useMutation } from '@tanstack/react-query'; // Removed useQuery
+import { useMutation } from '@tanstack/react-query';
 import { AlertTriangle, Check, Volume2, Pause } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
@@ -128,17 +128,17 @@ export function GeneratePodcastModal({
     if (!isLoadingVoices && !voicesError && availableVoices.length > 0) {
 
       if (!form.state.values.hostPersonalityId && availableVoices[0]) {
-        form.setFieldValue('hostPersonalityId', availableVoices[0].id);
+        form.setFieldValue('hostPersonalityId', availableVoices[0].name);
       }
 
       if (!form.state.values.cohostPersonalityId && availableVoices.length > 1) {
          
-          const defaultHostId = form.state.values.hostPersonalityId || availableVoices[0]?.id;
-          const differentCohost = availableVoices.find(p => p.id !== defaultHostId);
+          const defaultHostId = form.state.values.hostPersonalityId || availableVoices[0]?.name;
+          const differentCohost = availableVoices.find(p => p.name !== defaultHostId);
           if (differentCohost) {
-              form.setFieldValue('cohostPersonalityId', differentCohost.id);
-          } else if(availableVoices[1] && availableVoices[0]?.id !== availableVoices[1]?.id) {
-              form.setFieldValue('cohostPersonalityId', availableVoices[1].id);
+              form.setFieldValue('cohostPersonalityId', differentCohost.name);
+          } else if(availableVoices[1] && availableVoices[0]?.name !== availableVoices[1]?.name) {
+              form.setFieldValue('cohostPersonalityId', availableVoices[1].name);
           }
       }
     }
@@ -153,7 +153,7 @@ export function GeneratePodcastModal({
     }
 
     // Check if this specific preview is currently playing
-    const isCurrentlyPlayingPreview = isPlaying && activePodcast?.id === `preview-${personality.id}`;
+    const isCurrentlyPlayingPreview = isPlaying && activePodcast?.id === `preview-${personality.name}`;
 
     if (isCurrentlyPlayingPreview) {
       pause();
@@ -251,7 +251,7 @@ export function GeneratePodcastModal({
                                   size="icon"
                                   className={cn(
                                     "text-muted-foreground hover:text-foreground h-8 w-8 flex-shrink-0 mr-1",
-                                    isPlaying && activePodcast?.id === `preview-${p.id}` && "text-primary"
+                                    isPlaying && activePodcast?.id === `preview-${p.name}` && "text-primary"
                                   )}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -259,7 +259,7 @@ export function GeneratePodcastModal({
                                   }}
                                   aria-label={`Preview voice ${p.name}`}
                                 >
-                                  {isPlaying && activePodcast?.id === `preview-${p.id}` ? (
+                                  {isPlaying && activePodcast?.id === `preview-${p.name}` ? (
                                     <Pause className="h-4 w-4" />
                                   ) : (
                                     <Volume2 className="h-4 w-4" />
@@ -299,44 +299,44 @@ export function GeneratePodcastModal({
                                   <>
                                     <Button
                                       type="button"
-                                      variant={hostId === p.id ? 'secondary' : 'outline'}
+                                      variant={hostId === p.name ? 'secondary' : 'outline'}
                                       size="sm"
                                       onClick={() => {
-                                        if (cohostId !== p.id) {
-                                          form.setFieldValue('hostPersonalityId', p.id);
+                                        if (cohostId !== p.name) {
+                                          form.setFieldValue('hostPersonalityId', p.name);
                                         } else {
                                           toast.error("Host and Co-host cannot be the same voice.");
                                         }
                                       }}
-                                      aria-checked={hostId === p.id}
+                                      aria-checked={hostId === p.name}
                                       role="radio"
                                       className={cn(
                                         "px-3 py-1 text-xs h-auto",
-                                        hostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                        hostId === p.name && "ring-2 ring-primary ring-offset-1 ring-offset-background"
                                       )}
                                     >
-                                      {hostId === p.id && <Check className="h-3 w-3 mr-1" />}
+                                      {hostId === p.name && <Check className="h-3 w-3 mr-1" />}
                                       Host
                                     </Button>
                                     <Button
                                       type="button"
-                                      variant={cohostId === p.id ? 'secondary' : 'outline'}
+                                      variant={cohostId === p.name ? 'secondary' : 'outline'}
                                       size="sm"
                                       onClick={() => {
-                                        if (hostId !== p.id) {
-                                          form.setFieldValue('cohostPersonalityId', p.id);
+                                        if (hostId !== p.name) {
+                                          form.setFieldValue('cohostPersonalityId', p.name);
                                         } else {
                                            toast.error("Host and Co-host cannot be the same voice.");
                                         }
                                       }}
-                                      aria-checked={cohostId === p.id}
+                                      aria-checked={cohostId === p.name}
                                       role="radio"
                                       className={cn(
                                         "px-3 py-1 text-xs h-auto",
-                                        cohostId === p.id && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+                                        cohostId === p.name && "ring-2 ring-primary ring-offset-1 ring-offset-background"
                                       )}
                                     >
-                                      {cohostId === p.id && <Check className="h-3 w-3 mr-1" />}
+                                      {cohostId === p.name && <Check className="h-3 w-3 mr-1" />}
                                       Co-host
                                     </Button>
                                   </>
