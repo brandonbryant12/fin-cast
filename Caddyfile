@@ -7,7 +7,7 @@ fincast.brandonbryant.io {
     reverse_proxy web:80
 }
 
-teachgpt.brandonbryant.io {
+api.brandonbryant.io {
     # Enable standard compression
     encode gzip zstd
 
