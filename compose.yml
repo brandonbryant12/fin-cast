@@ -9,14 +9,14 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp" # For HTTP/3
+      - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile # Assumes Caddyfile is in the same directory
+      - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     networks:
       - app_network
-    depends_on: # Optional, but ensures web/server start attempting before Caddy tries proxying
+    depends_on:
       - web
       - server
 

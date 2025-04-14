@@ -1,0 +1,17 @@
+fincast.brandonbryant.io {
+    # Enable standard compression
+    encode gzip zstd
+
+    # Proxy requests to the 'web' service container (listening on port 80)
+    # Caddy automatically handles required X-Forwarded-* headers
+    reverse_proxy web:80
+}
+
+teachgpt.brandonbryant.io {
+    # Enable standard compression
+    encode gzip zstd
+
+    # Proxy requests to the 'server' service container (listening on port 3000)
+    # Caddy automatically handles required X-Forwarded-* headers
+    reverse_proxy server:3000
+}
