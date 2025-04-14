@@ -1,4 +1,25 @@
+networks:
+  app_network:
+    driver: bridge
+
 services:
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # For HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile # Assumes Caddyfile is in the same directory
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app_network
+    depends_on: # Optional, but ensures web/server start attempting before Caddy tries proxying
+      - web
+      - server
+
   web:
     image: brandonbryant/fin-cast-web:latest
     build:
@@ -16,6 +37,8 @@ services:
         ['CMD-SHELL', 'curl --fail --silent http://localhost:80/healthcheck']
     depends_on:
       - server
+    networks:
+      - app_network
 
   server:
     image: brandonbryant/fin-cast-server:latest
@@ -27,8 +50,8 @@ services:
     environment:
       - SERVER_AUTH_SECRET=${SERVER_AUTH_SECRET}
       - SERVER_POSTGRES_URL=${SERVER_POSTGRES_URL}
-      - SERVER_HOST=${SERVER_HOST}
-      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3000
       - PUBLIC_WEB_URL=${PUBLIC_WEB_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -42,10 +65,12 @@ services:
       test:
         [
           'CMD-SHELL',
-          'wget --quiet --spider http://$$SERVER_HOST:$$SERVER_PORT/healthcheck',
+          'wget --quiet --spider http://0.0.0.0:3000/healthcheck',
         ]
     depends_on:
       - db
+    networks:
+      - app_network
 
   db:
     image: docker.io/postgres:latest
@@ -63,6 +88,8 @@ services:
       timeout: 10s
       retries: 3
       test: ['CMD', 'pg_isready', '-U', '${POSTGRES_USER:-postgres}', '-d', '${POSTGRES_DB:-postgres}']
+    networks:
+      - app_network
 
   drizzle:
     image: brandonbryant/fin-cast-db:latest
@@ -72,10 +99,16 @@ services:
       context: .
       dockerfile: ./packages/db/Dockerfile
     environment:
-      - DB_POSTGRES_URL=${SERVER_POSTGRES_URL}
+      - DB_POSTGRES_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - TURBO_UI=true
     profiles:
       - drizzle
+    depends_on:
+      - db
+    networks:
+      - app_network
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
