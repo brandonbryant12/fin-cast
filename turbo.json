@@ -34,7 +34,7 @@
     "push": {
       "env": ["DB_POSTGRES_URL"],
       "cache": false,
-      "interactive": true
+      "interactive": false
     },
     "start": {
       "dependsOn": ["^build"]
