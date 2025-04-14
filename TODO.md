@@ -8,7 +8,13 @@
 
 - implement new llm and tts 
 
-- env variables says the provider
+- publish as npm package llm and tts packages - on each commit to main (improve readme's)
+
+- for the tts and llm, have a ttsProvider and llmProvider that control what service to create. the env variables will provide this and throw error if whole config not created.
+
+## Infra 
+
+- Set up a managed db remove the db service from remote compose
 
 
 ## UI 
