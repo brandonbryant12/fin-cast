@@ -16,6 +16,8 @@
 
 - Set up a managed db remove the db service from remote compose
 
+- set up protected branches 
+
 
 # BUG - 
  - trying to fetch voices even on login page (401 error)
@@ -38,3 +40,5 @@
 - improve the news feed, my news features 
 
 - generate avatars for the personalities
+
+- progress bar creating podcast rather than spinner
