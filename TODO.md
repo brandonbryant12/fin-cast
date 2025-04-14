@@ -17,6 +17,8 @@
 - Set up a managed db remove the db service from remote compose
 
 
+# BUG - 
+trying to fetch voices even on login page
 
 ## UI 
 
