@@ -140,7 +140,7 @@ jobs:
             EOF
 
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            docker-compose pull
-            docker-compose down --remove-orphans
-            docker-compose up -d
+            docker compose pull
+            docker compose down --remove-orphans
+            docker compose up -d
             docker image prune -f
