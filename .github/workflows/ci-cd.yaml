@@ -83,7 +83,7 @@ jobs:
           tags: ${{ steps.meta_web.outputs.tags }}
           labels: ${{ steps.meta_web.outputs.labels }}
           build-args: |
-            PUBLIC_SERVER_URL=${secrets.PUBLIC_SERVER_URL}
+            PUBLIC_SERVER_URL=${vars.PUBLIC_SERVER_URL}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Extract metadata for db image
