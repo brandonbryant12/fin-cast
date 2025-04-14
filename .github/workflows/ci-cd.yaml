@@ -130,7 +130,6 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             SERVER_AUTH_SECRET=${{ secrets.SERVER_AUTH_SECRET }}
-            SERVER_POSTGRES_URL=${{ secrets.SERVER_POSTGRES_URL }}
             PUBLIC_WEB_URL=${{ secrets.PUBLIC_WEB_URL }}
             SERVER_HOST=${{ secrets.SERVER_HOST }}
             SERVER_PORT=${{ secrets.SERVER_PORT }}
