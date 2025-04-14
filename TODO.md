@@ -18,7 +18,9 @@
 
 
 # BUG - 
-trying to fetch voices even on login page
+ - trying to fetch voices even on login page (401 error)
+
+ - migrate in workflow
 
 ## UI 
 
