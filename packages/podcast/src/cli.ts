@@ -46,6 +46,7 @@ program
     const { provider, format } = options;
 
     // --- Provider Validation and Setup ---
+    let ttsService;
     let apiKey: string;
     let voiceMap: Record<PersonalityId, string>;
     let apiKeyEnvVar: string;
@@ -53,9 +54,20 @@ program
     if (provider.toLowerCase() === 'openai') {
       apiKeyEnvVar = 'OPENAI_API_KEY';
       apiKey = ensureApiKey(apiKeyEnvVar);
+      ttsService = createTtsService({ provider: 'openai', options: { apiKey } });
+      voiceMap = openaiPersonalityMap;
+    } else if (provider.toLowerCase() === 'azure') {
+      const speechKey = process.env.AZURE_SPEECH_KEY;
+      const wsUrl = process.env.AZURE_SPEECH_WS_URL;
+      if (!speechKey || !wsUrl) {
+        console.error('AZURE_SPEECH_KEY or AZURE_SPEECH_WS_URL is not set.');
+        process.exit(1);
+      }
+      ttsService = createTtsService({ provider: 'azure', options: { speechKey, wsUrl } });
+      // Set voiceMap for Azure if you have one
       voiceMap = openaiPersonalityMap;
     } else {
-      console.error(`Error: Unsupported provider \'${provider}\'. Currently only \'openai\' is supported.`);
+      console.error(`Error: Unsupported provider '${provider}'. Supported: 'openai', 'azure'.`);
       process.exit(1);
     }
 
@@ -72,9 +84,6 @@ program
 
     console.log(`\nStarting audio preview generation for ${provider}...`);
     console.log(`Outputting ${format.toUpperCase()} files to: ${outputDir}`);
-
-    // --- TTS Service Instantiation ---
-    const ttsService = createTtsService({ provider: provider as TTSProvider, options: { apiKey } });
 
     let hasError = false;
 

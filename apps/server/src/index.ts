@@ -99,6 +99,36 @@ function initializeLLMService() {
 
 }
 
+function initializeTTSService() {
+  switch (env.TTS_PROVIDER) {
+    case 'azure': {
+      if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_WS_URL) {
+        logger.error('TTS_PROVIDER is "azure", but AZURE_SPEECH_KEY or AZURE_SPEECH_WS_URL is not set.');
+        return null;
+      }
+      return createTtsService({
+        provider: 'azure',
+        options: {
+          speechKey: env.AZURE_SPEECH_KEY,
+          wsUrl: env.AZURE_SPEECH_WS_URL,
+        },
+      });
+    }
+    case 'openai':
+    default: {
+      const apiKey = env.OPENAI_API_KEY;
+      if (!apiKey) {
+        logger.error('TTS_PROVIDER is "openai", but OPENAI_TTS_API_KEY or OPENAI_API_KEY is not set.');
+        return null;
+      }
+      return createTtsService({
+        provider: 'openai',
+        options: { apiKey },
+      });
+    }
+  }
+}
+
 const llm = initializeLLMService();
 const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
 const auth = createAuth({
@@ -108,9 +138,7 @@ const auth = createAuth({
 });
 const scraper = createScraper();
 
-const tts = env.OPENAI_API_KEY
-  ? createTtsService({ provider: 'openai', options: { apiKey: env.OPENAI_API_KEY } })
-  : null;
+const tts = initializeTTSService();
 
 if (!llm) {
   throw new Error('LLM service could not be initialized. Features requiring LLM may be unavailable.');

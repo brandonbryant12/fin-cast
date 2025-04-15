@@ -21,7 +21,7 @@
     "llm:anthropic": "pnpm --filter=@repo/ai cli llm chat --provider anthropic",
     "tts": "pnpm --filter=@repo/ai cli tts synthesize",
     "tts:list": "pnpm --filter=@repo/ai cli tts list-personalities",
-    "tts:preview": "pnpm --filter=@repo/ai cli tts generate-previews",
+    "tts:preview": "pnpm --filter=@repo/podcast cli generate-previews",
     "tts:preview:openai": "pnpm --filter=@repo/ai cli tts generate-previews --provider openai",
     "tts:preview:gemini": "pnpm --filter=@repo/ai cli tts generate-previews --provider gemini",
     "webscrape": "pnpm --filter=@repo/webscraper cli",

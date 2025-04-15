@@ -13,14 +13,23 @@ export interface TTSService {
 }
 
 
-export type TTSProvider = 'openai' 
+export type TTSProvider = 'openai' | 'azure';
 
-interface OpenAITtsFactoryConfig {
-  provider: TTSProvider,
+export interface OpenAITtsFactoryConfig {
+  provider: 'openai',
   options: {
     apiKey: string;
     model?: 'tts-1' | 'tts-1-hd';
   };
 }
 
-export type TtsFactoryConfig = OpenAITtsFactoryConfig; // | GoogleTtsFactoryConfig | ... etc.
+export interface AzureTtsFactoryConfig {
+  provider: 'azure',
+  options: {
+    speechKey: string;
+    wsUrl: string;
+    region?: string; // default to eastus2
+  };
+}
+
+export type TtsFactoryConfig = OpenAITtsFactoryConfig | AzureTtsFactoryConfig;

@@ -14,6 +14,7 @@ const createPortSchema = ({ defaultPort }: { defaultPort: number }) =>
   );
 
 const supportedLLMProviders = ['openai', 'gemini', 'anthropic', 'custom-openai'] as const;
+const supportedTTSProviders = ['openai', 'azure'] as const;
 
 export const envSchema = v.object({
   SERVER_PORT: createPortSchema({ defaultPort: DEFAULT_SERVER_PORT }),
@@ -38,7 +39,13 @@ export const envSchema = v.object({
   GEMINI_API_KEY: v.optional(v.string()),
   // ANTHROPIC_API_KEY: v.optional(v.string()),
 
-  TTS_PROVIDER: v.optional(v.picklist(['openai'])),
+  TTS_PROVIDER: v.pipe(
+    v.optional(v.picklist(supportedTTSProviders, 'TTS_PROVIDER must be one of: openai, azure'), 'openai'),
+    v.transform(val => val as 'openai' | 'azure')
+  ),
+  OPENAI_TTS_API_KEY: v.optional(v.string()),
+  AZURE_SPEECH_KEY: v.optional(v.string()),
+  AZURE_SPEECH_WS_URL: v.optional(v.string()),
 
   LOG_LEVEL: v.optional(v.string(), 'info'),
   NODE_ENV: v.optional(v.picklist(['development', 'production', 'test']), 'development'),
