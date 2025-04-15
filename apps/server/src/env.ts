@@ -13,7 +13,7 @@ const createPortSchema = ({ defaultPort }: { defaultPort: number }) =>
     v.maxValue(65535),
   );
 
-const supportedLLMProviders = ['openai', 'gemini', 'anthropic'] as const;
+const supportedLLMProviders = ['openai', 'gemini', 'anthropic', 'custom-openai'] as const;
 
 export const envSchema = v.object({
   SERVER_PORT: createPortSchema({ defaultPort: DEFAULT_SERVER_PORT }),
@@ -30,7 +30,7 @@ export const envSchema = v.object({
   PUBLIC_WEB_URL: v.pipe(v.string(), v.url()),
 
   LLM_PROVIDER: v.pipe(
-    v.optional(v.picklist(supportedLLMProviders, 'LLM_PROVIDER must be one of: openai, gemini, anthropic'), 'gemini'),
+    v.optional(v.picklist(supportedLLMProviders, 'LLM_PROVIDER must be one of: openai, gemini, anthropic, custom-openai'), 'gemini'),
     v.transform(val => val as SupportedLLMProviders)
   ),
   OPENAI_API_KEY: v.optional(v.string()),
@@ -47,6 +47,15 @@ export const envSchema = v.object({
     v.transform(value => typeof value === 'string' && value.toLowerCase() === 'true'),
     v.boolean()
   ),
+  CUSTOM_OPENAI_BASE_URL: v.optional(v.string()),
+  CUSTOM_OPENAI_API_VERSION: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_URL: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_SECRET: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_SCOPE: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_USERNAME: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD: v.optional(v.string()),
+  CUSTOM_OPENAI_HTTP_PROXY: v.optional(v.string()),
+  CUSTOM_OPENAI_HTTPS_PROXY: v.optional(v.string()),
 });
 
 export const env = v.parse(envSchema, process.env);

@@ -49,6 +49,34 @@ function initializeLLMService() {
         },
       };
       break;
+    case 'custom-openai':
+      if (
+        !env.CUSTOM_OPENAI_BASE_URL ||
+        !env.CUSTOM_OPENAI_API_VERSION ||
+        !env.CUSTOM_OPENAI_BEARER_TOKEN_URL ||
+        !env.CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_SECRET ||
+        !env.CUSTOM_OPENAI_BEARER_TOKEN_SCOPE ||
+        !env.CUSTOM_OPENAI_BEARER_TOKEN_USERNAME ||
+        !env.CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD
+      ) {
+        logger.error('LLM_PROVIDER is "custom-openai", but one or more required environment variables are not set.');
+        return null;
+      }
+      llmConfig = {
+        provider: 'custom-openai',
+        options: {
+          BASE_URL: env.CUSTOM_OPENAI_BASE_URL,
+          API_VERSION: env.CUSTOM_OPENAI_API_VERSION,
+          BEARER_TOKEN_URL: env.CUSTOM_OPENAI_BEARER_TOKEN_URL,
+          BEARER_TOKEN_CLIENT_SECRET: env.CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_SECRET,
+          BEARER_TOKEN_SCOPE: env.CUSTOM_OPENAI_BEARER_TOKEN_SCOPE,
+          BEARER_TOKEN_USERNAME: env.CUSTOM_OPENAI_BEARER_TOKEN_USERNAME,
+          BEARER_TOKEN_PASSWORD: env.CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD,
+          HTTP_PROXY: env.CUSTOM_OPENAI_HTTP_PROXY,
+          HTTPS_PROXY: env.CUSTOM_OPENAI_HTTPS_PROXY,
+        },
+      };
+      break;
     // case 'anthropic':
     //   if (!env.ANTHROPIC_API_KEY) {
     //      logger.error('LLM_PROVIDER is "anthropic", but ANTHROPIC_API_KEY is not set.');
