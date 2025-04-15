@@ -1,5 +1,6 @@
-import axios, { type AxiosRequestConfig, isAxiosError } from 'axios';
+import https from 'node:https';
 import * as cheerio from 'cheerio';
+import superagent from 'superagent';
 import type { ScraperOptions, Scraper } from './types';
 import type { AppLogger } from '@repo/logger';
 
@@ -35,39 +36,50 @@ export const createScraper = (): Scraper => {
 
     const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
-    const requestConfig: AxiosRequestConfig = {
-      url: url,
-      method: 'get',
-      responseType: 'text',
-      proxy: options?.proxy,
-      headers: {
-        'User-Agent': defaultUserAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        ...(options?.headers ?? {}),
-      },
-      timeout: timeoutMs,
-      signal: controller.signal,
-      maxRedirects: 5,
-      validateStatus: function (status) {
-        return status >= 200 && status < 300;
-      },
-    };
+    let req = superagent
+      .get(url)
+      .set('User-Agent', defaultUserAgent)
+      .set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+      .set('Accept-Language', 'en-US,en;q=0.5')
+      .timeout({ response: timeoutMs, deadline: timeoutMs })
+      .disableTLSCerts();
 
-    const timeoutId = setTimeout(() => {
-      logger.warn({ url, timeout: timeoutMs }, `Scraping timed out after ${timeoutMs}ms`);
-      controller.abort(`Request timed out after ${timeoutMs}ms`);
-    }, timeoutMs);
+    if (options?.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        req = req.set(key, value as string);
+      });
+    }
 
+    // Proxy support
+    if (options?.proxy) {
+      const { HttpsProxyAgent } = await import('https-proxy-agent');
+      let proxyUrl: string;
+      if (typeof options.proxy === 'string') {
+        proxyUrl = options.proxy;
+      } else {
+        // AxiosProxyConfig: { protocol, host, port, auth }
+        const { protocol = 'http', host, port, auth } = options.proxy;
+        proxyUrl = `${protocol}://${auth ? auth + '@' : ''}${host}${port ? ':' + port : ''}`;
+      }
+      req = req.agent(new HttpsProxyAgent(proxyUrl));
+    } else {
+      req = req.agent(new https.Agent({ rejectUnauthorized: false }));
+    }
 
+    let timeoutId: NodeJS.Timeout | undefined;
     try {
+      timeoutId = setTimeout(() => {
+        logger.warn({ url, timeout: timeoutMs }, `Scraping timed out after ${timeoutMs}ms`);
+        controller.abort();
+      }, timeoutMs);
+
       logger.debug({ msg: "Scraping URL", url, proxy: options?.proxy });
-      const response = await axios.request(requestConfig);
-      clearTimeout(timeoutId);
+      const response = await req;
+      if (timeoutId) clearTimeout(timeoutId);
       logger.debug({ msg: "Scrape successful", url, status: response.status });
       
       // Parse HTML and extract relevant content
-      const html = response.data;
+      const html = response.text;
       const $ = cheerio.load(html);
 
       // Remove common non-content elements
@@ -85,24 +97,21 @@ export const createScraper = (): Scraper => {
 
       return cleanedContent;
     } catch (error) {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       let errorMessage = `Failed to scrape URL: ${url}.`;
       let statusCode: number | undefined;
       let cause: unknown = error;
 
-      if (isAxiosError(error)) {
-        statusCode = error.response?.status;
+      if (error && typeof error === 'object' && 'status' in error) {
+        statusCode = (error as any).status;
         errorMessage += ` Status: ${statusCode ?? 'N/A'}.`;
-        if (error.code) errorMessage += ` Code: ${error.code}.`;
+        if ((error as any).code) errorMessage += ` Code: ${(error as any).code}.`;
         logger.error({
-          msg: "Axios error during scrape",
+          msg: "Superagent error during scrape",
           url,
-          code: error.code,
+          code: (error as any).code,
           status: statusCode,
-          requestConfig: { method: error.config?.method, url: error.config?.url },
-          responseHeaders: error.response?.headers,
-          responseDataSample: typeof error.response?.data === 'string' ? error.response.data.substring(0, 100) + '...' : '[non-string data]',
-          err: error.message
+          err: (error as any).message
         }, errorMessage);
       } else if (error instanceof Error && error.name === 'AbortError') {
         errorMessage = `Scraping timed out for URL: ${url} after ${timeoutMs}ms.`;

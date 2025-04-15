@@ -36,6 +36,14 @@ export const openaiPersonalityMap: Record<PersonalityId, string> = {
   [PersonalityId.David]: 'onyx',
 };
 
+export const azurePersonalityMap: Record<PersonalityId, string> = {
+  [PersonalityId.Arthur]: 'en-US-GuyNeural',
+  [PersonalityId.Chloe]: 'en-US-JennyNeural',
+  [PersonalityId.Maya]: 'en-GB-LibbyNeural',
+  [PersonalityId.Sam]: 'en-GB-RyanNeural',
+  [PersonalityId.Evelyn]: 'en-AU-NatashaNeural',
+  [PersonalityId.David]: 'en-IN-NeerjaNeural',
+};
 
 export const personalities: PersonalityInfo[] = [
   {

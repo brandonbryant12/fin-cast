@@ -79,6 +79,7 @@ export function createLLMService(config: LLMServiceConfig): LLMInterface {
       return new CustomOpenAIClient(config.options);
 
     default:
+      // eslint-disable-next-line no-case-declarations
       const exhaustiveCheck: never = config;
       throw new Error(`Unsupported LLM configuration passed to factory: ${JSON.stringify(exhaustiveCheck)}`);
   }

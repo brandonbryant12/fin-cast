@@ -100,74 +100,64 @@ export abstract class BaseLLM implements LLMInterface {
         }
 
         // 6. Process Output: Parse and Validate if an outputSchema exists
-        if (promptDef.outputSchema && typeof rawResponse.content === 'string') {
-            let parsedJson: unknown;
+        let parsedJson: unknown;
+        let contentToParse: string | undefined = typeof rawResponse.content === 'string' ? rawResponse.content.trim() : undefined;
+        if (contentToParse) {
+            // Strip potential markdown fences (```json ... ```)
+            const jsonFenceRegex = /^```json\s*([\s\S]*?)\s*```$/;
+            const match = contentToParse.match(jsonFenceRegex);
+            if (match && match[1]) {
+                contentToParse = match[1].trim();
+                console.log(`[LLM Prompt] Extracted JSON content from within markdown fence for prompt "${promptName}".`);
+            } else if (contentToParse.startsWith('```') && contentToParse.endsWith('```')) {
+                // Handle generic code blocks if ```json is missing
+                contentToParse = contentToParse.substring(3, contentToParse.length - 3).trim();
+                console.log(`[LLM Prompt] Extracted content from within generic markdown fence for prompt "${promptName}".`);
+            }
             try {
-                // Strip potential markdown fences (```json ... ```)
-                let contentToParse = rawResponse.content.trim();
-                const jsonFenceRegex = /^```json\s*([\s\S]*?)\s*```$/;
-                const match = contentToParse.match(jsonFenceRegex);
-                if (match && match[1]) {
-                    contentToParse = match[1].trim();
-                    console.log(`[LLM Prompt] Extracted JSON content from within markdown fence for prompt "${promptName}".`);
-                } else if (contentToParse.startsWith('```') && contentToParse.endsWith('```')) {
-                    // Handle generic code blocks if ```json is missing
-                    contentToParse = contentToParse.substring(3, contentToParse.length - 3).trim();
-                     console.log(`[LLM Prompt] Extracted content from within generic markdown fence for prompt "${promptName}".`);
-                }
-
-                // Attempt to parse the potentially cleaned string content as JSON
                 parsedJson = JSON.parse(contentToParse);
             } catch (parseError: unknown) {
                 const message = parseError instanceof Error ? parseError.message : "Unknown JSON parsing error";
                 console.error(`[LLM Prompt Error] Failed to parse LLM output as JSON for prompt "${promptName}": ${message}`, { rawContent: rawResponse.content });
-                // Throw a specific error indicating JSON parsing failure
-                 throw new Error(`Failed to parse LLM output as JSON for prompt "${promptName}". Error: ${message}. Raw Content Snippet: "${rawResponse.content.substring(0, 150)}..."`);
+                throw new Error(`Failed to parse LLM output as JSON for prompt "${promptName}". Error: ${message}. Raw Content Snippet: "${rawResponse.content?.substring(0, 150)}..."`);
             }
-
+        }
+        if (promptDef.outputSchema && parsedJson !== undefined) {
             try {
                 // Validate the parsed JSON against the provided output schema
                 const validatedOutput = v.parse(promptDef.outputSchema, parsedJson);
-                 console.log(`[LLM Prompt] Successfully parsed and validated structured output for prompt "${promptName}".`);
-
-                // Return successful response with the validated structured output
-                // The type `validatedOutput` is inferred by v.parse based on the schema,
-                // which matches the expected type `O` derived from TOutputSchema.
+                console.log(`[LLM Prompt] Successfully parsed and validated structured output for prompt "${promptName}".`);
                 return {
-                    ...rawResponse, // Include original content, usage, etc.
-                    structuredOutput: validatedOutput as unknown as O, // Cast to O, should be type-safe here
-                    error: undefined, // Explicitly clear any potential previous error
+                    ...rawResponse,
+                    structuredOutput: validatedOutput as unknown as O,
+                    error: undefined,
                 };
             } catch (validationError: unknown) {
-                 // Handle output schema validation error
                 let errorMessage = "Unknown output schema validation error";
                 if (validationError instanceof v.ValiError) {
                     errorMessage = validationError.issues.map((issue) => `${issue.path?.map((p: { key: string | number }) => p.key).join('.') || 'root'}: ${issue.message} (received: ${JSON.stringify(issue.input)})`).join("; ");
                     console.error(`[LLM Prompt Error] LLM output failed schema validation for prompt "${promptName}": ${errorMessage}`, { parsedJson, issues: validationError.issues });
-                     // Re-throw the original ValiError for detailed debugging upstream
                     throw new v.ValiError(validationError.issues);
                 } else if (validationError instanceof Error) {
                     errorMessage = validationError.message;
-                     console.error(`[LLM Prompt Error] Error during output validation for prompt "${promptName}": ${errorMessage}`, { parsedJson, validationError });
+                    console.error(`[LLM Prompt Error] Error during output validation for prompt "${promptName}": ${errorMessage}`, { parsedJson, validationError });
                     throw new Error(`LLM output validation failed for prompt "${promptName}": ${errorMessage}`);
                 } else {
                     console.error(`[LLM Prompt Error] Unknown error during output validation for prompt "${promptName}":`, validationError);
-                     throw new Error(`An unknown error occurred during output validation for prompt "${promptName}".`);
+                    throw new Error(`An unknown error occurred during output validation for prompt "${promptName}".`);
                 }
             }
-        } else {
-            // No output schema, return raw content.
-            // We need to cast the response to match the return signature where O is (string | null).
-             console.log(`[LLM Prompt] Prompt "${promptName}" has no outputSchema or content was not string. Returning raw content.`);
-             if (typeof rawResponse.content !== 'string' && !promptDef.outputSchema) {
-                 console.warn(`[LLM Prompt] Raw response content was not a string for prompt "${promptName}" and no output schema was defined.`, { rawResponse });
-             }
+        } else if (parsedJson !== undefined) {
+            // No output schema, but JSON was parsed successfully
             return {
                 ...rawResponse,
-                 // Explicitly set structuredOutput to undefined as per the type `O` when no schema is present.
-                structuredOutput: undefined as unknown as O,
-                error: undefined, // Explicitly clear any potential previous error
-            } as ChatResponse<O>; // Cast needed because O defaults to string | null here
+                structuredOutput: parsedJson as O,
+                error: undefined,
+            } as ChatResponse<O>;
+        } else {
+            // No output schema and could not parse JSON
+            console.warn(`[LLM Prompt] Raw response content was not a string or could not be parsed as JSON for prompt "${promptName}".`, { rawResponse });
+            throw new Error(`LLM output for prompt "${promptName}" could not be parsed as JSON.`);
         }
     }
 }

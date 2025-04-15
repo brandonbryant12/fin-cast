@@ -841,6 +841,12 @@ importers:
       commander:
         specifier: ^12.1.0
         version: 12.1.0
+      https-proxy-agent:
+        specifier: ^7.0.6
+        version: 7.0.6
+      superagent:
+        specifier: ^10.2.0
+        version: 10.2.0
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -854,6 +860,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.14.0
+      '@types/superagent':
+        specifier: ^8.1.9
+        version: 8.1.9
       eslint:
         specifier: 'catalog:'
         version: 9.24.0(jiti@2.4.2)

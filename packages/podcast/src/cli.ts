@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { createTtsService, type TTSProvider } from '@repo/tts'; 
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
-import { openaiPersonalityMap } from './personalities/personalities';
+import { openaiPersonalityMap, azurePersonalityMap } from './personalities/personalities';
 import { personalities, PersonalityId } from './personalities/personalities';
 
 const getDirname = (metaUrl: string): string => {
@@ -64,8 +64,7 @@ program
         process.exit(1);
       }
       ttsService = createTtsService({ provider: 'azure', options: { speechKey, wsUrl } });
-      // Set voiceMap for Azure if you have one
-      voiceMap = openaiPersonalityMap;
+      voiceMap = azurePersonalityMap;
     } else {
       console.error(`Error: Unsupported provider '${provider}'. Supported: 'openai', 'azure'.`);
       process.exit(1);

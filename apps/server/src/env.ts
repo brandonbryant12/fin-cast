@@ -57,7 +57,7 @@ export const envSchema = v.object({
   CUSTOM_OPENAI_BASE_URL: v.optional(v.string()),
   CUSTOM_OPENAI_API_VERSION: v.optional(v.string()),
   CUSTOM_OPENAI_BEARER_TOKEN_URL: v.optional(v.string()),
-  CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_SECRET: v.optional(v.string()),
+  CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_ID: v.optional(v.string()),
   CUSTOM_OPENAI_BEARER_TOKEN_SCOPE: v.optional(v.string()),
   CUSTOM_OPENAI_BEARER_TOKEN_USERNAME: v.optional(v.string()),
   CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD: v.optional(v.string()),
