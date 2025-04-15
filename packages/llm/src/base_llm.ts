@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import type { LLMInterface } from "./base";
-import type { ChatOptions, ChatResponse, PromptDefinition } from "../types";
+import type { ChatOptions, ChatResponse, PromptDefinition } from "./types";
 import type { CoreMessage } from 'ai';
 
 /**

@@ -1,4 +1,4 @@
-import type { ChatOptions, ChatResponse, PromptDefinition } from "../types";
+import type { ChatOptions, ChatResponse, PromptDefinition } from "./types";
 import type { CoreMessage } from 'ai';
 import type * as v from 'valibot';
 

@@ -1,9 +1,10 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
-import { createLLMService, createTtsService } from '@repo/ai';
+import { createTtsService } from '@repo/tts';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
+import { createLLMService } from '@repo/llm';
 import { createLogger, type LogLevel } from '@repo/logger';
 import { createPodcastService } from '@repo/podcast';
 import { createScraper } from '@repo/webscraper';

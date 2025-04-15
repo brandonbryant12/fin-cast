@@ -1,4 +1,5 @@
-import type { LLMInterface, TTSService, TTSProvider } from '@repo/ai';
+import type { LLMInterface } from '@repo/llm';
+import type { TTSService, TTSProvider } from '@repo/tts';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { Scraper } from '@repo/webscraper';

@@ -1,7 +1,7 @@
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { type OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { generateText, type CoreMessage, type GenerateTextResult } from "ai";
-import type { ChatOptions, ChatResponse } from "../types";
+import type { ChatOptions, ChatResponse } from "./types";
 import { BaseLLM } from "./base_llm"; // Import the BaseLLM
 
 interface OpenAIClientOptions {

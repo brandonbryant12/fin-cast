@@ -1,6 +1,6 @@
 import { type Content, type GenerateContentResponse, type Part, GoogleGenAI } from "@google/genai";
 import { type CoreMessage } from "ai";
-import type { ChatOptions, ChatResponse } from "../types";
+import type { ChatOptions, ChatResponse } from "./types";
 import { BaseLLM } from "./base_llm";
 
 interface GeminiClientOptions {

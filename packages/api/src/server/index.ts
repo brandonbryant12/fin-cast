@@ -1,8 +1,8 @@
-import type { TTSService } from '@repo/ai';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { PodcastService } from '@repo/podcast';
+import type { TTSService } from '@repo/tts';
 import { createPodcastRouter } from './router/podcast';
 import { createPostRouter } from './router/post';
 import { createTRPCContext as createTRPCContextInternal, router } from './trpc';

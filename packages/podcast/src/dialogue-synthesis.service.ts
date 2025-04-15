@@ -1,7 +1,7 @@
 import pLimit from 'p-limit';
 import type { PersonalityId } from './personalities/personalities';
-import type { TTSService } from '@repo/ai';
 import type { AppLogger } from '@repo/logger';
+import type { TTSService } from '@repo/tts';
 import { AUDIO_FORMAT } from './audio.service';
 
 interface DialogueSegment {

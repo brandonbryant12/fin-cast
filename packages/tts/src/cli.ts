@@ -6,8 +6,8 @@ import { fileURLToPath } from 'url';
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import playSound from 'play-sound';
-import type { TtsOptions, ChatOptions, ChatResponse } from './index';
-import { createTtsService, createLLMService } from './index';
+import type { TtsOptions } from './types';
+import { createTtsService } from './index';
 
 // Get directory path in ESM
 const currentFilePath = import.meta.url ? fileURLToPath(import.meta.url) : '';
@@ -61,7 +61,7 @@ function getProviderConfig(provider: string): { apiKeyEnvVar: string, serviceCon
 const program = new Command();
 
 program
-  .name('ai-cli')
+  .name('tts-cli')
   .description('CLI tool to interact with AI services (TTS, LLM)')
   .version('0.1.0');
 
@@ -154,40 +154,6 @@ ttsCommand
       console.log({ voices });
     } catch (error) {
       console.error('Error fetching voices:', error);
-      process.exitCode = 1;
-    }
-  });
-
-const llmCommand = program.command('llm')
-  .description('Large Language Model operations');
-
-interface LlmChatOptions {
-  provider: string;
-  model?: string;
-}
-
-llmCommand
-  .command('chat <prompt>')
-  .description('Send a prompt to the chat model')
-  .option('--provider <provider>', 'LLM provider to use (openai, gemini, anthropic)', 'openai')
-  .option('--model <model>', 'LLM model to use (optional, provider-specific)')
-  .action(async (prompt: string, options: LlmChatOptions) => {
-    const { provider, model } = options;
-    
-    try {
-      const { apiKeyEnvVar, serviceConfig } = getProviderConfig(provider);
-      const apiKey = ensureApiKey(apiKeyEnvVar);
-      
-      console.log(`Sending prompt to ${provider} LLM...`);
-      
-      const llmService = createLLMService(serviceConfig(apiKey, model));
-      const chatOptions: ChatOptions = model ? { model } : {};
-      const response: ChatResponse = await llmService.chatCompletion(prompt, chatOptions);
-
-      console.log("\nLLM Response:");
-      console.log(response.content);
-    } catch (error) {
-      console.error(`Error interacting with ${provider} LLM:`, error);
       process.exitCode = 1;
     }
   });

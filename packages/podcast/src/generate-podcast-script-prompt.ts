@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { PromptDefinition } from '@repo/ai/prompts';
+import type { PromptDefinition } from '@repo/llm';
 
 const paramsSchema = v.object({
     htmlContent: v.pipe(v.string(), v.minLength(1, 'HTML content cannot be empty.')),

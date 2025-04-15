@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { type TTSProvider } from "@repo/ai";
+import { type TTSProvider } from "@repo/tts";
 
 const getDirname = (metaUrl: string): string => {
   const filename = fileURLToPath(metaUrl);
