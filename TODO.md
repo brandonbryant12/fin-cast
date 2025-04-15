@@ -1,12 +1,8 @@
-- Get workflow to deploy to digital ocean on push to main 
 
-- get the appr unning with domain fincast.brandonbryant.io
 
-- common http client with options for proxy 
+- common http client with options for proxy  
 
-- split llm and tts into their own 
-
-- implement new llm and tts 
+- implement new llm and tts for enterprise
 
 - publish as npm package llm and tts packages - on each commit to main (improve readme's)
 
