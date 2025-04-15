@@ -16,8 +16,8 @@ const createPortSchema = ({ defaultPort }: { defaultPort: number }) =>
 const supportedLLMProviders = ['openai', 'gemini', 'anthropic'] as const;
 
 export const envSchema = v.object({
-  PORT: createPortSchema({ defaultPort: DEFAULT_SERVER_PORT }),
-  HOST: v.pipe(
+  SERVER_PORT: createPortSchema({ defaultPort: DEFAULT_SERVER_PORT }),
+  SERVER_HOST: v.pipe(
     v.optional(v.string(), DEFAULT_SERVER_HOST),
     v.minLength(1),
   ),

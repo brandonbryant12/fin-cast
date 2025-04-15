@@ -165,8 +165,8 @@ app.get('/healthcheck', (c) => {
 const server = serve(
   {
     fetch: app.fetch,
-    port: env.PORT,
-    hostname: env.HOST,
+    port: env.SERVER_PORT,
+    hostname: env.SERVER_HOST,
   },
   (info) => {
     const host = info.family === 'IPv6' ? `[${info.address}]` : info.address;
