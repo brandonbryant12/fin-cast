@@ -112,8 +112,8 @@ export class CustomOpenAIClient implements LLMInterface {
       promptWithJsonInstruction = promptOrMessages;
     }
     const token = await this.getToken();
-    const { BASE_URL, API_VERSION } = this.config;
-    const url = `${BASE_URL.replace(/\/$/, '')}/chat/completions?api_version=${API_VERSION}`;
+    const { BASE_URL } = this.config;
+    const url = BASE_URL;
     let req = superagent
       .post(url)
       .set('Authorization', `Bearer ${token}`)
