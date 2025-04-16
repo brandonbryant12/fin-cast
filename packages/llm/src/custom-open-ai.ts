@@ -161,7 +161,7 @@ export class CustomOpenAIClient implements LLMInterface {
         // @ts-expect-error: outputSchema may not match the type of chatRes.content
         structuredOutput = promptDef.outputSchema.parse(chatRes.content);
       } catch {
-        structuredOutput = chatRes.content as O;
+        structuredOutput = JSON.parse(chatRes.content) as O;
       }
     } else {
       structuredOutput = chatRes.content as O;
