@@ -92,6 +92,9 @@ export function getPersonalityInfo(name: PersonalityId, ttsProvider: TTSProvider
   if (personality && ttsProvider === 'openai') {
     personality.voiceName = openaiPersonalityMap[name];
   }
+  if(personality &&  ttsProvider === 'azure') {
+    personality.voiceName = azurePersonalityMap[name];
+  }
   return personality;
 } 
 
