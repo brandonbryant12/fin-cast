@@ -23,10 +23,10 @@ export type GeneratePodcastScriptOutput = v.InferInput<typeof outputSchema>;
 export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodcastScriptOutput> = {
     paramsSchema: paramsSchema,
     outputSchema: outputSchema,
-    description: 'Generates a conversational podcast script as JSON based on HTML content, embodying specific host personalities.',
+    description: 'Generates a conversational podcast script, embodying specific host personalities.',
     defaultOptions: {
         temperature: 0.70,
-        maxTokens: 500,
+        maxTokens: 1000,
     },
     template: (params: Params): string => {
         try {
@@ -53,7 +53,6 @@ You are an expert podcast script writer. Your task is to create an engaging podc
 **CRITICAL OUTPUT REQUIREMENT:**
 Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanation, markdown formatting, or anything else before or after the JSON object. The JSON object must strictly adhere to the following structure:
 
-\`\`\`json
 {
   "title": "string",
   "dialogue": [
@@ -63,19 +62,16 @@ Your entire response MUST be a single, valid JSON object. Do NOT include any tex
     }
   ],
 }
-\`\`\`
 
 **Script Generation Guidelines:**
 1.  **Analyze HTML:** Extract the core topic, main points, and key details from the provided HTML. Focus only on the main article/content. Ignore headers, footers, navigation, ads, sidebars.
-2.  **Embody Personalities:** Write the dialogue for ${hostName} reflecting ${hostName}'s personality (${hostPersonalityDescription}) and the dialogue for ${cohostName} reflecting ${cohostName}'s personality (${cohostPersonalityDescription}). Create a natural, engaging back-and-forth conversation based on the HTML content.
+2.  **Embody Personalities:** Write the dialogue for ${hostName} reflecting ${hostName}'s personality (${hostPersonalityDescription}) and the dialogue for ${cohostName} reflecting ${cohostName}'s personality (${cohostPersonalityDescription}). Create a natural, engaging back-and-forth conversation based on the content.
 3.  **Structure JSON:** Create the JSON object according to the required schema.
 5.  **Write Dialogue:** Populate the "dialogue" array, ensuring the conversation flows logically and reflects the assigned personalities discussing the HTML content.
-7.  **Validate JSON:** Ensure the final output is a single, valid JSON object matching the schema exactly.
+7.  **Validate JSON:** Ensure the final output is a single, valid complete JSON object matching the schema exactly.
 
-**Source HTML Content:**
-\`\`\`html
 ${htmlContent}
-\`\`\`
+
 
 **REMEMBER: Output ONLY the JSON object.**
 `;

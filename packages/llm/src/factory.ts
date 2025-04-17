@@ -1,9 +1,8 @@
-import type { LLMInterface } from "./base";
+import type { LLMInterface } from "./base_llm";
 import type { CustomOpenAIClientConfig } from "./custom-open-ai";
 import { CustomOpenAIClient } from "./custom-open-ai";
 import { GeminiClient } from "./gemini";
 import { OpenAIClient } from "./openai";
-// import { AnthropicClient } from "./anthropic";
 
 
 export type SupportedLLMProviders = "openai" | "gemini" | "anthropic";

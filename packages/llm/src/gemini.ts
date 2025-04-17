@@ -1,7 +1,7 @@
-import { type Content, type GenerateContentResponse, type Part, GoogleGenAI } from "@google/genai";
+import { type Content, type Part, GoogleGenAI } from "@google/genai";
 import { type CoreMessage } from "ai";
 import type { ChatOptions, ChatResponse } from "./types";
-import { BaseLLM } from "./base_llm";
+import { BaseLLM, type LLMInterface } from "./base_llm";
 
 interface GeminiClientOptions {
     apiKey: string;
@@ -54,7 +54,7 @@ function adaptMessagesToGoogleGenAIContent(messages: CoreMessage[], systemPrompt
     return history;
 }
 
-export class GeminiClient extends BaseLLM {
+export class GeminiClient extends BaseLLM implements LLMInterface {
     private client: GoogleGenAI;
     private options: GeminiClientOptions;
 
@@ -72,44 +72,46 @@ export class GeminiClient extends BaseLLM {
         this.client = new GoogleGenAI({ apiKey: this.options.apiKey });
     }
 
+    /**
+     * Executes the actual Gemini API call.
+     * This method implements the abstract `_executeModel` from `BaseLLM`.
+     * @param request The formatted prompt string or message array.
+     * @param options Merged options potentially overriding client defaults.
+     * @returns Raw response from the Gemini API.
+     */
     protected async _executeModel(
-        promptOrMessages: string | CoreMessage[],
+        request: string | CoreMessage[],
         options: ChatOptions,
     ): Promise<ChatResponse<string | null>> {
         const modelId = options?.model ?? this.options.defaultModel ?? DEFAULT_GEMINI_MODEL;
         const systemPrompt = options?.systemPrompt ?? this.options.defaultSystemPrompt ?? '';
 
         try {
-            let response: GenerateContentResponse;
+            const contents: Content[] | string = Array.isArray(request)
+                ? adaptMessagesToGoogleGenAIContent(request, systemPrompt)
+                : request;
 
-            // Create a chat instance if we have a message history
-            if (Array.isArray(promptOrMessages)) {
-                const history = adaptMessagesToGoogleGenAIContent(promptOrMessages, systemPrompt);
-                const lastMessage = promptOrMessages[promptOrMessages.length - 1];
-                if (!lastMessage || lastMessage.role !== 'user') {
-                    throw new Error("Last message must be from user");
-                }
+            // Use generateContent for both cases now
+            const response = await this.client.models.generateContent({
+                model: modelId,
+                contents: contents,
+                // NOTE: Gemini API generationConfig (temp, maxTokens etc.) is set here if needed
+                // generationConfig: {
+                //   temperature: options.temperature,
+                //   maxOutputTokens: options.maxTokens
+                // }
+            });
 
-                response = await this.client.models.generateContent({
-                    model: modelId,
-                    contents: history,
-                });
-            } else {
-                // Single prompt case
-                response = await this.client.models.generateContent({
-                    model: modelId,
-                    contents: promptOrMessages,
-                });
-            }
 
-            // Get the first candidate's text
-            const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+            const responseText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const usageMetadata = response?.usageMetadata;
+
             return {
                 content: responseText ?? null,
-                usage: response.usageMetadata ? {
-                    promptTokens: response.usageMetadata.promptTokenCount,
-                    completionTokens: response.usageMetadata.candidatesTokenCount,
-                    totalTokens: response.usageMetadata.totalTokenCount
+                usage: usageMetadata ? {
+                    promptTokens: usageMetadata.promptTokenCount,
+                    completionTokens: usageMetadata.candidatesTokenCount,
+                    totalTokens: usageMetadata.totalTokenCount
                 } : undefined,
                 structuredOutput: undefined,
                 error: undefined,

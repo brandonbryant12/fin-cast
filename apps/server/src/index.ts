@@ -1,12 +1,12 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
-import { createTtsService } from '@repo/tts';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { createLLMService, type LLMServiceConfig } from '@repo/llm';
 import { createLogger, type LogLevel } from '@repo/logger';
 import { createPodcastService } from '@repo/podcast';
+import { createTtsService } from '@repo/tts';
 import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -51,8 +51,7 @@ function initializeLLMService() {
       break;
     case 'custom-openai':
       if (
-        !env.CUSTOM_OPENAI_BASE_URL ||
-        !env.CUSTOM_OPENAI_API_VERSION ||
+        !env.CUSTOM_OPENAI_URL ||
         !env.CUSTOM_OPENAI_BEARER_TOKEN_URL ||
         !env.CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_ID ||
         !env.CUSTOM_OPENAI_BEARER_TOKEN_SCOPE ||
@@ -65,28 +64,17 @@ function initializeLLMService() {
       llmConfig = {
         provider: 'custom-openai',
         options: {
-          BASE_URL: env.CUSTOM_OPENAI_BASE_URL,
-          API_VERSION: env.CUSTOM_OPENAI_API_VERSION,
+          BASE_URL: env.CUSTOM_OPENAI_URL,
           BEARER_TOKEN_URL: env.CUSTOM_OPENAI_BEARER_TOKEN_URL,
           BEARER_TOKEN_CLIENT_ID: env.CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_ID,
           BEARER_TOKEN_SCOPE: env.CUSTOM_OPENAI_BEARER_TOKEN_SCOPE,
           BEARER_TOKEN_USERNAME: env.CUSTOM_OPENAI_BEARER_TOKEN_USERNAME,
           BEARER_TOKEN_PASSWORD: env.CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD,
-          HTTP_PROXY: env.CUSTOM_OPENAI_HTTP_PROXY,
-          HTTPS_PROXY: env.CUSTOM_OPENAI_HTTPS_PROXY,
+          HTTP_PROXY: env.HTTP_PROXY,
+          HTTPS_PROXY: env.HTTPS_PROXY,
         },
       };
       break;
-    // case 'anthropic':
-    //   if (!env.ANTHROPIC_API_KEY) {
-    //      logger.error('LLM_PROVIDER is "anthropic", but ANTHROPIC_API_KEY is not set.');
-    //      return null;
-    //   }
-    //   llmConfig = {
-    //     provider: 'anthropic',
-    //     options: { apiKey: env.ANTHROPIC_API_KEY },
-    //   };
-    //   break;
     default:
        logger.error(`Unsupported LLM_PROVIDER value: ${env.LLM_PROVIDER}`);
        return null;

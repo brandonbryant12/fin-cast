@@ -2,7 +2,7 @@ import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { type OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { generateText, type CoreMessage, type GenerateTextResult } from "ai";
 import type { ChatOptions, ChatResponse } from "./types";
-import { BaseLLM } from "./base_llm"; // Import the BaseLLM
+import { BaseLLM, type LLMInterface } from "./base_llm";
 
 interface OpenAIClientOptions {
     apiKey: string;
@@ -11,15 +11,15 @@ interface OpenAIClientOptions {
     defaultSystemPrompt?: string;
 }
 
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
 
-export class OpenAIClient extends BaseLLM { // Extend BaseLLM
+export class OpenAIClient extends BaseLLM implements LLMInterface {
     private client: OpenAIProvider;
-    private options: OpenAIClientOptions; // Store all options specific to this client
+    private options: OpenAIClientOptions;
 
     constructor(options: OpenAIClientOptions) {
-        super(); // Call base class constructor (if it had one)
+        super();
         if (!options.apiKey) {
             throw new Error("OpenAI API key is required.");
         }
@@ -41,15 +41,14 @@ export class OpenAIClient extends BaseLLM { // Extend BaseLLM
     /**
      * Executes the actual OpenAI API call.
      * This method implements the abstract `_executeModel` from `BaseLLM`.
-     * @param promptOrMessages The formatted prompt string or message array.
+     * @param request The formatted prompt string or message array.
      * @param options Merged options potentially overriding client defaults.
      * @returns Raw response from the OpenAI API.
      */
     protected async _executeModel(
-        promptOrMessages: string | CoreMessage[],
-        options: ChatOptions, // Receives already merged options (promptDef + call)
+        request: string | CoreMessage[],
+        options: ChatOptions,
     ): Promise<ChatResponse<string | null>> {
-        // Apply client defaults *before* the passed-in options
         const modelId = options?.model ?? this.options.defaultModel;
         const systemPrompt = options?.systemPrompt ?? this.options.defaultSystemPrompt;
         const temperature = options?.temperature;
@@ -62,15 +61,14 @@ export class OpenAIClient extends BaseLLM { // Extend BaseLLM
                 system: systemPrompt,
                 temperature: temperature,
                 maxTokens: maxTokens,
-                ...(typeof promptOrMessages === 'string'
-                    ? { prompt: promptOrMessages }
-                    : { messages: promptOrMessages }),
+                ...(typeof request === 'string'
+                    ? { prompt: request }
+                    : { messages: request }),
             };
 
             // Explicitly type the result expected
             const result: GenerateTextResult<never, Record<string, unknown>> = await generateText(generateTextParams);
             const { text, usage } = result;
-
             return {
                 content: text,
                 usage: {
@@ -97,6 +95,4 @@ export class OpenAIClient extends BaseLLM { // Extend BaseLLM
         }
     }
 
-    // chatCompletion is inherited from BaseLLM
-    // runPrompt is inherited from BaseLLM
 } 
