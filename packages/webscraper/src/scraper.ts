@@ -50,21 +50,26 @@ export const createScraper = (): Scraper => {
       });
     }
 
-    // Proxy support
+    // Proxy and agent support
+    let agent: any = undefined;
+    const allowUnsignedCerts = options?.allowUnsignedCerts === true;
     if (options?.proxy) {
       const { HttpsProxyAgent } = await import('https-proxy-agent');
       let proxyUrl: string;
       if (typeof options.proxy === 'string') {
         proxyUrl = options.proxy;
       } else {
-        // AxiosProxyConfig: { protocol, host, port, auth }
         const { protocol = 'http', host, port, auth } = options.proxy;
         proxyUrl = `${protocol}://${auth ? auth + '@' : ''}${host}${port ? ':' + port : ''}`;
       }
-      req = req.agent(new HttpsProxyAgent(proxyUrl));
+      agent = new HttpsProxyAgent(proxyUrl);
+      if (allowUnsignedCerts && agent.options) {
+        agent.options.rejectUnauthorized = false;
+      }
     } else {
-      req = req.agent(new https.Agent({ rejectUnauthorized: false }));
+      agent = new https.Agent({ rejectUnauthorized: !allowUnsignedCerts });
     }
+    req = req.agent(agent);
 
     let timeoutId: NodeJS.Timeout | undefined;
     try {

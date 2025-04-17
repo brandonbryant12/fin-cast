@@ -36,7 +36,6 @@
   "dependencies": {
     "@repo/logger": "workspace:*",
     "@types/cheerio": "^0.22.35",
-    "axios": "^1.8.4",
     "cheerio": "^1.0.0",
     "https-proxy-agent": "^7.0.6",
     "superagent": "^10.2.0",

@@ -77,20 +77,22 @@ export function GeneratePodcastModal({
   const form = useForm({
     defaultValues: {
       sourceUrl: '',
-      hostPersonalityId: '' as PersonalityId | '',
-      cohostPersonalityId: '' as PersonalityId | '',
+      hostPersonalityId: undefined as unknown as PersonalityId,
+      cohostPersonalityId: undefined as unknown as PersonalityId,
     },
     onSubmit: async ({ value }) => {
       const submissionValue = {
-          ...value,
-          hostPersonalityId: value.hostPersonalityId || undefined,
-          cohostPersonalityId: value.cohostPersonalityId || undefined,
-      }
+        ...value,
+        hostPersonalityId: value.hostPersonalityId || undefined,
+        cohostPersonalityId: value.cohostPersonalityId || undefined,
+      };
       const result = v.safeParse(generatePodcastSchema, submissionValue);
 
       if (!result.success) {
-        console.error("Validation Issues:", result.issues);
-        toast.error("Validation Error", { description: "Please check the form for errors." });
+        console.error('Validation Issues:', result.issues);
+        toast.error('Validation Error', {
+          description: 'Please check the form for errors.',
+        });
         return;
       }
 
@@ -109,18 +111,25 @@ export function GeneratePodcastModal({
         form.setFieldValue('hostPersonalityId', availableVoices[0].name);
       }
 
-      if (!form.state.values.cohostPersonalityId && availableVoices.length > 1) {
-         
-          const defaultHostId = form.state.values.hostPersonalityId || availableVoices[0]?.name;
-          const differentCohost = availableVoices.find(p => p.name !== defaultHostId);
-          if (differentCohost) {
-              form.setFieldValue('cohostPersonalityId', differentCohost.name);
-          } else if(availableVoices[1] && availableVoices[0]?.name !== availableVoices[1]?.name) {
-              form.setFieldValue('cohostPersonalityId', availableVoices[1].name);
-          }
+      if (
+        !form.state.values.cohostPersonalityId &&
+        availableVoices.length > 1
+      ) {
+        const defaultHostId =
+          form.state.values.hostPersonalityId || availableVoices[0]?.name;
+        const differentCohost = availableVoices.find(
+          p => p.name !== defaultHostId,
+        );
+        if (differentCohost) {
+          form.setFieldValue('cohostPersonalityId', differentCohost.name);
+        } else if (
+          availableVoices[1] &&
+          availableVoices[0]?.name !== availableVoices[1]?.name
+        ) {
+          form.setFieldValue('cohostPersonalityId', availableVoices[1].name);
+        }
       }
     }
-   
   }, [isLoadingVoices, voicesError, availableVoices, form]);
 
   const handlePreviewClick = (personality: PersonalityInfo) => {
@@ -130,8 +139,8 @@ export function GeneratePodcastModal({
       return;
     }
 
-    // Check if this specific preview is currently playing
-    const isCurrentlyPlayingPreview = isPlaying && activePodcast?.id === `preview-${personality.name}`;
+    const isCurrentlyPlayingPreview =
+      isPlaying && activePodcast?.id === `preview-${personality.name}`;
 
     if (isCurrentlyPlayingPreview) {
       pause();
@@ -145,15 +154,18 @@ export function GeneratePodcastModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
+    <Dialog
+      open={open}
+      onOpenChange={isOpen => {
         setOpen(isOpen);
         if (!isOpen) {
-            closePlayer();
+          closePlayer();
         }
-       }}>
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <form
-          onSubmit={(e) => {
+          onSubmit={e => {
             e.preventDefault();
             e.stopPropagation();
             void form.handleSubmit();
@@ -162,10 +174,11 @@ export function GeneratePodcastModal({
           <DialogHeader>
             <DialogTitle>Generate Podcast</DialogTitle>
             <DialogDescription>
-              Enter the URL of an article and select distinct voices for your podcast hosts. Hover over a name for details. Click the speaker icon to preview.
+              Enter the URL of an article and select distinct voices for your
+              podcast hosts. Hover over a name for details. Click the speaker
+              icon to preview.
             </DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
             <form.Field
               name="sourceUrl"

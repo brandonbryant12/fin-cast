@@ -21,10 +21,6 @@ function PodcastsPage() {
 
     const {
         activePodcast,
-        isPlaying,
-        loadTrack,
-        play,
-        pause,
         closePlayer
     } = useAudioPlayer();
 
@@ -49,44 +45,6 @@ function PodcastsPage() {
 
     const handleDelete = (id: string) => {
         deletePodcastMutation.mutate({ id });
-    };
-
-    const handlePlay = (id: string) => {
-        const podcast = podcastsQuery.data?.find(p => p.id === id);
-
-        if (!podcast || podcast.status !== 'success' || !podcast.audioUrl) {
-            let description = 'Audio is unavailable or data is missing.';
-            if (podcast?.status === 'processing') {
-                description = 'Podcast is still processing.';
-            } else if (podcast?.status === 'failed') {
-                description = 'Podcast generation failed.';
-            }
-            toast.error('Cannot play podcast', { description });
-            console.warn('Attempted to play invalid podcast:', podcast);
-            return;
-        }
-
-        if (!podcast.audioUrl.startsWith('data:audio/')) {
-            toast.error('Invalid audio format.', {
-                description: 'The audio data for this podcast is not in a playable format.',
-            });
-            console.warn('Attempted to play podcast with non-data URL:', podcast);
-            return;
-        }
-
-        if (activePodcast?.id === id) {
-            if (isPlaying) {
-                pause();
-            } else {
-                play();
-            }
-        } else {
-            loadTrack({
-                id: podcast.id,
-                audioUrl: podcast.audioUrl,
-                title: podcast.title || 'Untitled Podcast',
-            });
-        }
     };
 
     const handleGenerationSuccess = () => {

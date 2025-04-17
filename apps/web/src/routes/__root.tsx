@@ -7,7 +7,7 @@ import { Menu } from 'lucide-react';
 import React, { useState } from 'react';
 import { authClient } from '@/clients/authClient';
 import { AudioProvider } from '@/contexts/audio-player-context';
-import { VoicesProvider } from '@/contexts/voices-context.tsx';
+import { VoicesProvider } from '@/contexts/voices-context';
 import Spinner from '@/routes/-components/common/spinner';
 import { Sidebar } from '@/routes/-components/layout/nav/side-bar';
 
