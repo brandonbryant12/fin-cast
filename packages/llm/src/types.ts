@@ -34,7 +34,7 @@ export interface ChatResponse<T = unknown> { // Default to unknown for structure
  * Uses generics for input parameters and potential structured output types.
  */
 export interface PromptDefinition<
-    TInputParams extends Record<string, any> = Record<string, any>,
+    TInputParams extends Record<string, unknown> = Record<string, unknown>,
     TOutput = unknown, // Default output is unknown if no schema
 > {
     /** Optional Valibot schema for validating input parameters. */
@@ -43,8 +43,8 @@ export interface PromptDefinition<
     /** Function to generate the prompt string from validated parameters. */
     template: (params: TInputParams) => string;
 
-    /** Optional Valibot schema for validating and parsing the LLM JSON output. */
-    outputSchema?: v.GenericSchema<TOutput>;
+    /** Required Valibot schema for validating and parsing the LLM JSON output. */
+    outputSchema: v.GenericSchema<TOutput>;
 
     /** Optional: Default configuration options for the LLM call for this prompt. */
     defaultOptions?: Partial<ChatOptions>;

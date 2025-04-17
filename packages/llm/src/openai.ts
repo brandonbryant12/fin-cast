@@ -66,7 +66,6 @@ export class OpenAIClient extends BaseLLM implements LLMInterface {
                     : { messages: request }),
             };
 
-            // Explicitly type the result expected
             const result: GenerateTextResult<never, Record<string, unknown>> = await generateText(generateTextParams);
             const { text, usage } = result;
             return {
@@ -76,7 +75,7 @@ export class OpenAIClient extends BaseLLM implements LLMInterface {
                     completionTokens: usage.completionTokens,
                     totalTokens: usage.totalTokens,
                 },
-                structuredOutput: undefined, // Raw call doesn't produce structured output
+                structuredOutput: undefined,
                 error: undefined,
             };
         } catch (error: unknown) {

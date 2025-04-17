@@ -29,18 +29,6 @@ export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodca
         maxTokens: 1000,
     },
     template: (params: Params): string => {
-        try {
-            v.parse(paramsSchema, params);
-        } catch (error) {
-            let errorMessage = "An unknown validation error occurred";
-            if (error instanceof v.ValiError) {
-                errorMessage = error.issues.map((issue) => issue.message).join(", ");
-            } else if (error instanceof Error) {
-                errorMessage = error.message;
-            }
-            throw new Error(`Invalid parameters provided to generate-podcast-script prompt: ${errorMessage}`);
-        }
-
         const { htmlContent, hostName, hostPersonalityDescription, cohostName, cohostPersonalityDescription } = params;
 
         return `
@@ -50,19 +38,6 @@ You are an expert podcast script writer. Your task is to create an engaging podc
 * **(Host):** Name is ${hostName}. Personality: ${hostPersonalityDescription}.
 * **(Co-host):** Name is ${cohostName}. Personality: ${cohostPersonalityDescription}
 
-**CRITICAL OUTPUT REQUIREMENT:**
-Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanation, markdown formatting, or anything else before or after the JSON object. The JSON object must strictly adhere to the following structure:
-
-{
-  "title": "string",
-  "dialogue": [
-    {
-      "speaker":  ${hostName} | ${cohostName},
-      "line": "string"
-    }
-  ],
-}
-
 **Script Generation Guidelines:**
 1.  **Analyze HTML:** Extract the core topic, main points, and key details from the provided HTML. Focus only on the main article/content. Ignore headers, footers, navigation, ads, sidebars.
 2.  **Embody Personalities:** Write the dialogue for ${hostName} reflecting ${hostName}'s personality (${hostPersonalityDescription}) and the dialogue for ${cohostName} reflecting ${cohostName}'s personality (${cohostPersonalityDescription}). Create a natural, engaging back-and-forth conversation based on the content.
@@ -71,9 +46,6 @@ Your entire response MUST be a single, valid JSON object. Do NOT include any tex
 7.  **Validate JSON:** Ensure the final output is a single, valid complete JSON object matching the schema exactly.
 
 ${htmlContent}
-
-
-**REMEMBER: Output ONLY the JSON object.**
 `;
     },
 };
