@@ -33,6 +33,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/prettier-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/jest": "^29.5.14",
     "@types/node": "catalog:",
     "@types/superagent": "^8.1.9",
     "commander": "^12.1.0",

@@ -1,5 +1,5 @@
+import { Prompt } from '@repo/llm';
 import * as v from 'valibot';
-import type { PromptDefinition } from '@repo/llm';
 
 const paramsSchema = v.object({
     htmlContent: v.pipe(v.string(), v.minLength(1, 'HTML content cannot be empty.')),
@@ -20,27 +20,16 @@ const outputSchema = v.object({
 });
 export type GeneratePodcastScriptOutput = v.InferInput<typeof outputSchema>;
 
-export const generatePodcastScriptPrompt: PromptDefinition<Params, GeneratePodcastScriptOutput> = {
-    paramsSchema: paramsSchema,
-    outputSchema: outputSchema,
+export const generatePodcastScriptPrompt = Prompt.define<Params, GeneratePodcastScriptOutput>({
+    name: 'podcast-script-generator',
     description: 'Generates a conversational podcast script, embodying specific host personalities.',
+    paramSchema: { parse: (input: unknown) => v.parse(paramsSchema, input) },
+    outputSchema: { parse: (input: unknown) => v.parse(outputSchema, input) },
     defaultOptions: {
         temperature: 0.70,
         maxTokens: 1000,
     },
     template: (params: Params): string => {
-        try {
-            v.parse(paramsSchema, params);
-        } catch (error) {
-            let errorMessage = "An unknown validation error occurred";
-            if (error instanceof v.ValiError) {
-                errorMessage = error.issues.map((issue) => issue.message).join(", ");
-            } else if (error instanceof Error) {
-                errorMessage = error.message;
-            }
-            throw new Error(`Invalid parameters provided to generate-podcast-script prompt: ${errorMessage}`);
-        }
-
         const { htmlContent, hostName, hostPersonalityDescription, cohostName, cohostPersonalityDescription } = params;
 
         return `
@@ -76,4 +65,4 @@ ${htmlContent}
 **REMEMBER: Output ONLY the JSON object.**
 `;
     },
-};
+});

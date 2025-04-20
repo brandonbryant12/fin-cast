@@ -1,8 +1,7 @@
 import https from 'node:https';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import superagent from 'superagent';
-import * as v from 'valibot';
-import type { ChatOptions, ChatResponse, PromptDefinition } from './types';
+import type { ChatOptions, ChatResponse } from './types';
 import type { CoreMessage } from 'ai';
 import { BaseLLM, type LLMInterface } from './base_llm';
 
@@ -111,119 +110,6 @@ export class CustomOpenAIClient extends BaseLLM implements LLMInterface {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[Custom OpenAI Client] Error: ${msg}`, { error: err });
       return { content: null, error: `Custom OpenAI Client failed: ${msg}`, structuredOutput: undefined, usage: undefined };
-    }
-  }
-
-  /* ------------------------------------------------------ */
-  /*  renderPrompt Hook Override                          */
-  /* ------------------------------------------------------ */
-  /**
-   * Override renderPrompt to enforce JSON output.
-   * Matches the base class signature exactly.
-   */
-  protected renderPrompt<P extends Record<string, any>>(
-      def: PromptDefinition<P, unknown>,
-      params: P
-  ): string {
-    // Call the base implementation to get the standard prompt
-    const standardPrompt = super.renderPrompt(def, params);
-    // Append the JSON instruction
-    return standardPrompt + '\n\nRespond ONLY in valid JSON.';
-  }
-
-  /* ------------------------------------------------------ */
-  /*  runPrompt                                             */
-  /* ------------------------------------------------------ */
-  async runPrompt<
-    TInputParams extends Record<string, unknown>,
-    TOutputSchema = unknown,
-    O = TOutputSchema extends v.GenericSchema<infer P> ? P : string | null,
-  >(
-    promptDef: PromptDefinition<TInputParams, TOutputSchema>,
-    params: TInputParams,
-    options?: ChatOptions,
-  ): Promise<ChatResponse<O>> {
-    const prompt = promptDef.template(params);
-    const baseRes = await this.chatCompletion(prompt, options);
-
-    if (baseRes.error || baseRes.content === null) {
-      return { ...baseRes, structuredOutput: undefined };
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(baseRes.content);
-    } catch (e) {
-      return {
-        ...baseRes,
-        structuredOutput: undefined,
-        error: `Failed to parse JSON: ${(e as Error).message}`,
-      };
-    }
-
-    if (promptDef.outputSchema) {
-      try {
-        const validated = v.parse(promptDef.outputSchema as v.GenericSchema, parsed);
-        return { ...baseRes, structuredOutput: validated as O };
-      } catch (e) {
-        const msg =
-          e instanceof v.ValiError
-            ? e.issues.map(i => i.message).join('; ')
-            : (e as Error).message;
-        return { ...baseRes, structuredOutput: undefined, error: `Schema validation error: ${msg}` };
-      }
-    }
-
-    return { ...baseRes, structuredOutput: parsed as O };
-  }
-
-  /* ------------------------------------------------------ */
-  /*  chatCompletion                                        */
-  /* ------------------------------------------------------ */
-  async chatCompletion(
-    promptOrMessages: string | CoreMessage[],
-    options?: ChatOptions,
-  ): Promise<ChatResponse<string | null>> {
-    /* append JSON‑only instruction once */
-    const instruction = '\n\nRespond ONLY in valid JSON.';
-    const promptWithJson =
-      typeof promptOrMessages === 'string'
-        ? `${promptOrMessages}${instruction}`
-        : [
-            { role: 'system', content: 'Respond ONLY in valid JSON.' },
-            ...(promptOrMessages as CoreMessage[]),
-          ];
-
-    /* HTTP call */
-    const token = await this.getToken();
-    let req = superagent
-      .post(this.config.BASE_URL)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Content-Type', 'application/json')
-      .disableTLSCerts();
-    req = this.proxyAgent ? req.agent(this.proxyAgent) : req.agent(new https.Agent({ rejectUnauthorized: false }));
-
-    const body =
-      typeof promptWithJson === 'string'
-        ? { messages: [{ role: 'user', content: promptWithJson }] }
-        : { messages: promptWithJson };
-
-    if (options) Object.assign(body, options);
-
-    try {
-      const res = await req.send(body);
-      const raw = res.body?.choices?.[0]?.message?.content ?? null;
-      if (typeof raw !== 'string') return { content: null, error: 'No content' };
-
-      /* strip ```json fences if present */
-      const fenced = raw.trim();
-      const match = fenced.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-      const cleaned = match?.[1]?.trim() ?? fenced;
-
-      return { content: cleaned };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { content: null, error: `chatCompletion failed: ${msg}` };
     }
   }
 }
