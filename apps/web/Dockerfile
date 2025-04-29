@@ -6,11 +6,11 @@
 
   WORKDIR /app
   
-  ENV NODE_ENV=production \
-      TURBO_TELEMETRY_DISABLED=1 \
-      PNPM_HOME="/pnpm" \
-      PATH="$PNPM_HOME:$PATH" \
-      CI=1
+  ENV TURBO_TELEMETRY_DISABLED=1
+  ENV PNPM_HOME="/pnpm"
+  ENV PATH="$PNPM_HOME:$PATH"
+  ENV CI=1
+  
   
   RUN corepack enable pnpm
   
