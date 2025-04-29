@@ -1,24 +1,11 @@
 
 
-- common http client with options for proxy  
-
-- implement new llm and tts for enterprise
-
-- publish as npm package llm and tts packages - on each commit to main (improve readme's)
-
-- for the tts and llm, have a ttsProvider and llmProvider that control what service to create. the env variables will provide this and throw error if whole config not created.
-
 ## Infra 
 
 - Set up a managed db remove the db service from remote compose
 
 - set up protected branches 
 
-
-# BUG - 
- - trying to fetch voices even on login page (401 error)
-
- - migrate in workflow
 
 ## UI 
 
