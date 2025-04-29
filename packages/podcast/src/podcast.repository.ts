@@ -4,21 +4,25 @@ import type { PersonalityId } from './personalities/personalities';
 import type { DatabaseInstance } from '@repo/db/client';
 
 type SelectTranscript = typeof schema.transcript.$inferSelect;
-
 type FullPodcast = typeof schema.podcast.$inferSelect;
 
 export type PodcastSummary = FullPodcast;
 
+// Ensures transcript relation is included for updates/checks
 export type PodcastWithTranscript = Omit<FullPodcast, 'audioUrl'> & {
     transcript: SelectTranscript | null;
 };
 
 export type PodcastStatus = FullPodcast['status'];
 
-interface DialogueSegment {
+export interface DialogueSegment {
     speaker: string;
     line: string;
 }
+
+// Type definition for the partial update payload, ensuring type safety
+type PodcastUpdatePayload = Partial<Omit<FullPodcast, 'id' | 'userId' | 'createdAt' | 'sourceType' | 'sourceDetail'>>;
+
 
 export class PodcastRepository {
     private readonly db: DatabaseInstance;
@@ -37,28 +41,12 @@ export class PodcastRepository {
             const [podcastRecord] = await tx.insert(schema.podcast).values({
                 userId,
                 title: `Podcast from ${sourceUrl}`,
-                status: 'processing',
+                status: 'processing', // Start as processing
                 sourceType: 'url',
                 sourceDetail: sourceUrl,
                 hostPersonalityId: hostId,
                 cohostPersonalityId: cohostId,
-            }).returning({
-                id: schema.podcast.id,
-                userId: schema.podcast.userId,
-                title: schema.podcast.title,
-                description: schema.podcast.description,
-                status: schema.podcast.status,
-                sourceType: schema.podcast.sourceType,
-                sourceDetail: schema.podcast.sourceDetail,
-                durationSeconds: schema.podcast.durationSeconds,
-                errorMessage: schema.podcast.errorMessage,
-                generatedAt: schema.podcast.generatedAt,
-                hostPersonalityId: schema.podcast.hostPersonalityId,
-                cohostPersonalityId: schema.podcast.cohostPersonalityId,
-                createdAt: schema.podcast.createdAt,
-                updatedAt: schema.podcast.updatedAt,
-                audioUrl: schema.podcast.audioUrl,
-            });
+            }).returning(); // Return all columns
 
             if (!podcastRecord?.id) {
                 throw new Error('Failed to create podcast entry.');
@@ -66,7 +54,7 @@ export class PodcastRepository {
 
             await tx.insert(schema.transcript).values({
                 podcastId: podcastRecord.id,
-                content: [],
+                content: [], // Start with empty transcript content
             });
 
             return podcastRecord;
@@ -84,12 +72,13 @@ export class PodcastRepository {
         status: PodcastStatus,
         errorMessage?: string | null
     ): Promise<void> {
-        const updateData: Partial<FullPodcast> = { status };
+        const updateData: Partial<FullPodcast> = { status, updatedAt: new Date() };
         if (status === 'success') {
             updateData.errorMessage = null;
         } else if (status === 'failed') {
             updateData.errorMessage = errorMessage ?? 'Unknown error';
         } else {
+            // For 'processing' or other statuses, clear the error message
             updateData.errorMessage = null;
         }
 
@@ -99,29 +88,70 @@ export class PodcastRepository {
             .returning({ id: schema.podcast.id });
 
         if (result.length === 0) {
-            return;
+            // Log or handle the case where the podcast wasn't found for status update
+            console.warn(`Podcast with ID ${podcastId} not found for status update.`);
         }
     }
 
-    async updatePodcastGeneratedData(
+    /**
+     * Finds a podcast by ID, ensuring it belongs to the specified user, and includes transcript data.
+     */
+    async findPodcastByIdAndUser(userId: string, podcastId: string): Promise<PodcastWithTranscript | null> {
+        const result = await this.db.query.podcast.findFirst({
+            where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
+            // Explicitly list columns to omit audioUrl by default if it's large/not always needed
+            columns: {
+                id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true
+            },
+            with: {
+                transcript: { // Eager load transcript content
+                    columns: {
+                        content: true, podcastId: true, id: true, createdAt: true, updatedAt: true, format: true
+                    }
+                }
+            }
+        });
+
+        if (!result) {
+            return null;
+        }
+
+        // Drizzle includes the relation under the 'with' key name
+        return {
+            ...result,
+            transcript: result.transcript ?? null,
+        };
+    }
+
+
+    async updatePodcast(
         podcastId: string,
-        title: string,
-        audioUrl: string,
-        durationSeconds: number
+        data: PodcastUpdatePayload // Use the defined type for safety
     ): Promise<void> {
-        const generatedTime = new Date();
+        const updateData: any = { ...data };
+
+        // Ensure updatedAt is always set on update
+        updateData.updatedAt = new Date();
+        if ('audioUrl' in updateData && updateData.audioUrl === undefined) {
+          updateData.audioUrl = null; // Ensure undefined becomes null in DB
+        }
+        if ('durationSeconds' in updateData && updateData.durationSeconds === undefined) {
+          updateData.durationSeconds = null; // Ensure undefined becomes null
+        }
+        if ('errorMessage' in updateData && updateData.errorMessage === undefined) {
+           updateData.errorMessage = null;
+        }
+        if ('generatedAt' in updateData && updateData.generatedAt === undefined) {
+          updateData.generatedAt = null;
+        }
+
         const result = await this.db.update(schema.podcast)
-            .set({
-                title: title,
-                audioUrl: audioUrl,
-                durationSeconds: durationSeconds,
-                generatedAt: generatedTime,
-            })
+            .set(updateData)
             .where(eq(schema.podcast.id, podcastId))
             .returning({ id: schema.podcast.id });
 
         if (result.length === 0) {
-            return;
+            console.warn(`Podcast with ID ${podcastId} not found for update.`);
         }
     }
 
@@ -131,12 +161,12 @@ export class PodcastRepository {
     ): Promise<void> {
         const contentToUpdate = dialogue ?? [];
         const result = await this.db.update(schema.transcript)
-            .set({ content: contentToUpdate })
+            .set({ content: contentToUpdate, updatedAt: new Date() })
             .where(eq(schema.transcript.podcastId, podcastId))
             .returning({ id: schema.transcript.id });
 
         if (result.length === 0) {
-            return;
+            console.warn(`Transcript for podcast ID ${podcastId} not found for update.`);
         }
     }
 
@@ -149,68 +179,48 @@ export class PodcastRepository {
         return results;
     }
 
-    async findPodcastById(userId: string, podcastId: string): Promise<PodcastWithTranscript | null> {
-        const result = await this.db.query.podcast.findFirst({
-            where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
-            columns: { id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true },
-            with: {
-                transcript: {
-                    columns: {
-                       content: true,
-                       podcastId: true,
-                       id: true,
-                       createdAt: true,
-                       updatedAt: true,
-                       format: true
-                    }
-                }
-            }
-        });
-
-        if (!result) {
-            return null;
-        }
-
-        const { transcript, ...podcastData } = result;
-        return {
-            ...podcastData,
-            transcript: transcript ?? null,
-        };
-    }
-
     async getPodcastAudioUrl(userId: string, podcastId: string): Promise<string | null | undefined> {
         const result = await this.db.query.podcast.findFirst({
             where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
             columns: { audioUrl: true }
         });
-        if (!result) {
-            return undefined;
-        }
-        return result.audioUrl;
+        return result?.audioUrl;
     }
 
     async deletePodcast(userId: string, podcastId: string): Promise<{ success: boolean; deletedId: string } | { success: boolean; error: string }> {
-        const podcast = await this.db.query.podcast.findFirst({
-            where: eq(schema.podcast.id, podcastId),
-            columns: { id: true, userId: true },
-        });
+        try {
+            const deletedResult = await this.db.transaction(async (tx) => {
+                const podcast = await tx.query.podcast.findFirst({
+                    where: eq(schema.podcast.id, podcastId),
+                    columns: { id: true, userId: true },
+                });
 
-        if (!podcast) {
-            return { success: false, error: `Podcast not found: ${podcastId}` };
+                if (!podcast) {
+                    throw new Error(`Podcast not found: ${podcastId}`);
+                }
+                if (podcast.userId !== userId) {
+                    throw new Error('Unauthorized delete');
+                }
+
+                // Delete transcript first (or handle cascade delete in DB schema)
+                await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
+
+                // Then delete podcast
+                const result = await tx
+                    .delete(schema.podcast)
+                    .where(eq(schema.podcast.id, podcastId))
+                    .returning({ deletedId: schema.podcast.id });
+
+                if (!result || result.length === 0 || !result[0]?.deletedId) {
+                    throw new Error('Failed to confirm podcast deletion in DB transaction');
+                }
+                return result[0].deletedId;
+            });
+            return { success: true, deletedId: deletedResult };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown deletion error';
+            console.error(`Failed to delete podcast ${podcastId}: ${message}`);
+            return { success: false, error: message };
         }
-        if (podcast.userId !== userId) {
-            return { success: false, error: 'Unauthorized delete' };
-        }
-
-        const result = await this.db
-            .delete(schema.podcast)
-            .where(eq(schema.podcast.id, podcastId))
-            .returning({ deletedId: schema.podcast.id });
-
-        if (!result || result.length === 0 || !result[0]?.deletedId) {
-            return { success: false, error: 'Failed to confirm deletion in DB' };
-        }
-
-        return { success: true, deletedId: result[0].deletedId };
     }
 } 

@@ -1,7 +1,6 @@
 import * as v from 'valibot';
 import type { AudioService } from './audio.service';
 import type { DialogueSynthesisService } from './dialogue-synthesis.service';
-import type { PodcastRepository } from './podcast.repository';
 import type { LLMInterface } from '@repo/llm';
 import type { ChatResponse } from '@repo/llm';
 import type { AppLogger } from '@repo/logger';
@@ -9,7 +8,7 @@ import type { TTSService } from '@repo/tts';
 import type { Scraper } from '@repo/webscraper';
 import { generatePodcastScriptPrompt, type GeneratePodcastScriptOutput } from './generate-podcast-script-prompt';
 import { PersonalityId, getPersonalityInfo} from './personalities/personalities';
-
+import { type PodcastRepository, type DialogueSegment } from './podcast.repository';
 
 interface PodcastGenerationServiceDependencies {
     podcastRepository: PodcastRepository;
@@ -42,8 +41,8 @@ export class PodcastGenerationService {
     }
 
     /**
-     * Orchestrates the podcast generation process.
-     * Corresponds to the logic previously in PodcastService._processPodcastInBackground.
+     * Orchestrates the initial podcast generation process (Scrape -> LLM -> Audio -> Finalize).
+     * This runs in the background after createPodcast returns.
      */
     async generatePodcast(
         podcastId: string,
@@ -52,7 +51,7 @@ export class PodcastGenerationService {
         cohostPersonalityId: PersonalityId
     ): Promise<void> {
         const logger = this.logger.child({ podcastId, method: 'generatePodcast', hostPersonalityId, cohostPersonalityId });
-        logger.info('Starting podcast generation orchestration.');
+        logger.info('Starting background podcast generation orchestration.');
 
         let llmResponse: ChatResponse<GeneratePodcastScriptOutput> | null = null;
 
@@ -60,10 +59,8 @@ export class PodcastGenerationService {
             const hostInfo = getPersonalityInfo(hostPersonalityId, this.tts.getProvider());
             const cohostInfo = getPersonalityInfo(cohostPersonalityId, this.tts.getProvider());
 
-            if (!hostInfo || !cohostInfo) throw new Error('Invalid host or cohost personality ID provided.');
-            if (!hostInfo.voiceName || !cohostInfo.voiceName) throw new Error('Personalities are not mapped to voices');
-
-            logger.info({ hostInfo, cohostInfo }, 'Retrieved personality info.');
+            if (!hostInfo || !cohostInfo) throw new Error('Invalid host or cohost personality ID provided for generation.');
+            logger.info({ hostInfo, cohostInfo }, 'Retrieved personality info for generation.');
 
             // --- Scrape Content ---
             logger.info('Scraping content...');
@@ -85,58 +82,14 @@ export class PodcastGenerationService {
             logger.info('LLM prompt execution finished.');
 
             let scriptData: GeneratePodcastScriptOutput | undefined;
-            let finalAudioBase64: string | undefined;
-            let durationSeconds = 0;
 
             if (llmResponse.structuredOutput && !llmResponse.error) {
                 scriptData = llmResponse.structuredOutput;
-                logger.info('LLM returned valid structured output. Processing audio.');
+                logger.info('LLM returned valid structured output. Updating transcript and processing audio.');
 
-                const speakerVoiceMap: Record<string, string> = {
-                    [hostInfo.name]: hostInfo.voiceName,     // e.g., { 'Arthur': 'echo' }
-                    [cohostInfo.name]: cohostInfo.voiceName, // e.g., { 'Chloe': 'nova' }
-                };
-                logger.info({ speakerVoiceMap }, 'Assigned personalities.');
-
-                // --- Synthesize Audio using DialogueSynthesisService ---
-                logger.info('Starting TTS synthesis via DialogueSynthesisService...');
-                const audioBuffers = await this.dialogueSynthesisService.synthesizeDialogueSegments(
-                    scriptData.dialogue,
-                    speakerVoiceMap,
-                    hostPersonalityId // Default personality if speaker not found
-                );
-                const validBufferCount = audioBuffers.filter(b => b !== null).length;
-                logger.info(`DialogueSynthesisService completed for ${validBufferCount}/${scriptData.dialogue.length} segments.`);
-
-                if (validBufferCount === 0) {
-                    throw new Error('Audio generation failed: No valid audio segments were synthesized.');
-                } else {
-                    // --- Stitch Audio using AudioService ---
-                    logger.info('Stitching audio segments via AudioService...');
-                    const finalAudioBuffer = await this.audioService.stitchAudio(audioBuffers.filter(b => b !== null) as Buffer[], podcastId);
-                    logger.info('AudioService stitching completed.');
-
-                    // --- Get Duration using AudioService ---
-                    logger.info('Getting audio duration via AudioService...');
-                    durationSeconds = await this.audioService.getAudioDuration(finalAudioBuffer);
-                    logger.info(`AudioService reported duration: ${durationSeconds} seconds.`);
-
-                    // --- Encode to Base64 using AudioService ---
-                    logger.info('Encoding final audio to base64 via AudioService...');
-                    finalAudioBase64 = this.audioService.encodeToBase64(finalAudioBuffer);
-                    logger.info('AudioService encoding completed.');
-                }
-
-                // --- Update Database using PodcastRepository ---
-                logger.info('Updating database transcript and generated data via PodcastRepository...');
                 await this.podcastRepository.updateTranscriptContent(podcastId, scriptData.dialogue);
-                await this.podcastRepository.updatePodcastGeneratedData(
-                    podcastId,
-                    scriptData.title ?? `Podcast ${podcastId}`,
-                    finalAudioBase64,
-                    durationSeconds
-                 );
-                logger.info('Database updates for transcript and generated data successful.');
+                logger.info('Transcript content updated in database.');
+                await this._processAudioAndFinalize(podcastId, scriptData.dialogue, hostPersonalityId, cohostPersonalityId, scriptData.title);
 
             } else {
                 const errorMsg = llmResponse?.error ?? 'LLM did not return valid structured output.';
@@ -144,22 +97,11 @@ export class PodcastGenerationService {
                 throw new Error(`Podcast script generation failed: ${errorMsg}`);
             }
 
-            // --- Finalize Podcast Status (Success) using PodcastRepository ---
-            logger.info('Updating podcast status to success via PodcastRepository.');
-            await this.podcastRepository.updatePodcastStatus(podcastId, 'success');
-            logger.info('Podcast generation process finished successfully.');
+            logger.info('Background podcast generation process finished successfully.');
 
         } catch (error: unknown) {
-            // --- Handle Errors & Finalize Podcast Status (Failure) using PodcastRepository ---
-            logger.error({ err: error }, 'Podcast generation process failed.');
-            let errorMessage = 'Podcast generation failed.';
-             if (error instanceof v.ValiError) {
-                errorMessage = `Generation failed due to invalid data: ${error.message}. Issues: ${JSON.stringify(error.issues)}`;
-            } else if (error instanceof Error) {
-                errorMessage = `Generation failed: ${error.message}`;
-            } else {
-                errorMessage = `Generation failed with an unknown error: ${String(error)}`;
-            }
+            const errorMessage = this._formatErrorMessage(error, 'Background generation failed');
+            logger.error({ err: error, errorMessage }, 'Background podcast generation process failed.');
 
             try {
                 await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', errorMessage);
@@ -167,6 +109,127 @@ export class PodcastGenerationService {
             } catch (updateError) {
                 logger.fatal({ initialError: error, updateError }, 'CRITICAL FAILURE: Could not update podcast status to FAILED in generation error handler.');
             }
+        }
+    }
+
+    /**
+     * Regenerates the audio for an existing podcast based on provided or existing dialogue.
+     * Runs in the background after updatePodcast returns.
+     */
+    async regeneratePodcastAudio(
+        podcastId: string,
+        dialogueContent: DialogueSegment[],
+        hostPersonalityId: PersonalityId,
+        cohostPersonalityId: PersonalityId,
+        title?: string // Optional title if it was also part of the update
+    ): Promise<void> {
+        const logger = this.logger.child({ podcastId, method: 'regeneratePodcastAudio', hostPersonalityId, cohostPersonalityId });
+        logger.info('Starting background podcast audio regeneration.');
+
+        try {
+            if (dialogueContent.length === 0) {
+                throw new Error('Cannot regenerate audio: No dialogue content provided or found.');
+            }
+            await this._processAudioAndFinalize(podcastId, dialogueContent, hostPersonalityId, cohostPersonalityId, title);
+            logger.info('Background audio regeneration finished successfully.');
+        } catch (error: unknown) {
+            const errorMessage = this._formatErrorMessage(error, 'Background regeneration failed');
+            logger.error({ err: error, errorMessage }, 'Background podcast audio regeneration failed.');
+            try {
+                await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', errorMessage);
+                logger.warn({ errorMessage }, 'Podcast status updated to failed due to regeneration error.');
+            } catch (updateError) {
+                logger.fatal({ initialError: error, updateError }, 'CRITICAL FAILURE: Could not update podcast status to FAILED in regeneration error handler.');
+            }
+        }
+    }
+
+    /**
+     * Private helper to handle audio synthesis, stitching, storage, and final DB update.
+     */
+    private async _processAudioAndFinalize(
+        podcastId: string,
+        dialogue: DialogueSegment[],
+        hostPersonalityId: PersonalityId,
+        cohostPersonalityId: PersonalityId,
+        finalTitle?: string,
+    ): Promise<void> {
+        const logger = this.logger.child({ podcastId, method: '_processAudioAndFinalize' });
+        logger.info('Starting audio processing and finalization.');
+
+        let finalAudioBase64: string | undefined | null = null;
+        let durationSeconds = 0;
+
+        try {
+            const hostInfo = getPersonalityInfo(hostPersonalityId, this.tts.getProvider());
+            const cohostInfo = getPersonalityInfo(cohostPersonalityId, this.tts.getProvider());
+
+            if (!hostInfo?.voiceName || !cohostInfo?.voiceName) {
+                throw new Error('Could not find personality info for voice synthesis.');
+            }
+
+            const speakerVoiceMap: Record<string, string> = {
+                [hostInfo.name]: hostInfo.voiceName,
+                [cohostInfo.name]: cohostInfo.voiceName,
+            };
+            logger.info({ speakerVoiceMap }, 'Assigned personalities for TTS.');
+
+            // --- Synthesize Audio ---
+            logger.info(`Starting TTS synthesis for ${dialogue.length} segments...`);
+            const audioBuffers = await this.dialogueSynthesisService.synthesizeDialogueSegments(
+                dialogue,
+                speakerVoiceMap
+            );
+            const validBufferCount = audioBuffers.filter(b => b !== null).length;
+            logger.info(`TTS completed for ${validBufferCount}/${dialogue.length} segments.`);
+
+            if (validBufferCount === 0) {
+                throw new Error('Audio generation failed: No valid audio segments were synthesized.');
+            }
+
+            // --- Stitch Audio ---
+            logger.info('Stitching audio segments...');
+            const finalAudioBuffer = await this.audioService.stitchAudio(audioBuffers.filter(b => b !== null) as Buffer[], podcastId);
+            logger.info('Audio stitching completed.');
+
+            // --- Get Duration ---
+            logger.info('Getting audio duration...');
+            durationSeconds = await this.audioService.getAudioDuration(finalAudioBuffer);
+            logger.info(`Audio duration: ${durationSeconds} seconds.`);
+
+            // --- Encode to Base64 ---
+            logger.info('Encoding final audio to base64...');
+            finalAudioBase64 = this.audioService.encodeToBase64(finalAudioBuffer);
+            logger.info('Audio encoding completed.');
+
+            // --- Final Success Update ---
+            logger.info('Updating database with generated audio data and success status.');
+            await this.podcastRepository.updatePodcast(podcastId, {
+                ...(finalTitle && { title: finalTitle }),
+                audioUrl: finalAudioBase64,
+                durationSeconds: durationSeconds,
+                status: 'success',
+                errorMessage: null,
+                generatedAt: new Date(), // Mark generation time
+            });
+            logger.info('Database update successful.');
+
+        } catch (error) {
+            // --- Handle Audio Processing Errors ---
+            const errorMessage = this._formatErrorMessage(error, 'Audio processing failed');
+            logger.error({ err: error, errorMessage }, 'Error during audio processing or finalization.');
+            await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', errorMessage);
+            throw error;
+        }
+    }
+
+    private _formatErrorMessage(error: unknown, defaultMessage: string): string {
+        if (error instanceof v.ValiError) {
+            return `Invalid data: ${error.message}. Issues: ${JSON.stringify(error.issues)}`;
+        } else if (error instanceof Error) {
+            return `${defaultMessage}: ${error.message}`;
+        } else {
+            return `${defaultMessage}: Unknown error - ${String(error)}`;
         }
     }
 } 

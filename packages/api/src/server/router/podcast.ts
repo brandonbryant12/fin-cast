@@ -31,6 +31,31 @@ const DeletePodcastInput = v.object({
     id: v.pipe(v.string(), v.uuid('Invalid podcast ID format')),
 });
 
+const DialogueSegmentSchema = v.object({
+    speaker: v.string(),
+    line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
+});
+
+const UpdatePodcastInput = v.pipe(
+    v.object({
+        podcastId: v.pipe(v.string(), v.uuid('Invalid podcast ID format')),
+        title: v.optional(v.pipe(v.string(), v.minLength(1, 'Title cannot be empty.'))),
+        content: v.optional(v.pipe(v.array(DialogueSegmentSchema), v.minLength(1, 'Podcast content must contain at least one segment.'))),
+        hostPersonalityId: v.optional(v.enum(PersonalityId, 'Invalid host personality selected')),
+        cohostPersonalityId: v.optional(v.enum(PersonalityId, 'Invalid co-host personality selected')),
+    }),
+    v.check(
+        (input) =>
+            input.title !== undefined ||
+            input.content !== undefined ||
+            input.hostPersonalityId !== undefined ||
+            input.cohostPersonalityId !== undefined,
+        'At least one field (title, content, hostPersonalityId, cohostPersonalityId) must be provided for update.'
+    )
+);
+
+
+export type UpdatePodcastInputType = v.InferInput<typeof UpdatePodcastInput>;
 
 export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => {
   return router({
@@ -88,7 +113,7 @@ export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => 
 
     delete: protectedProcedure
         .input(DeletePodcastInput)
-        .mutation(async ({ ctx, input }): Promise<{ success: boolean; deletedId?: string, error?: string  }> => {
+        .mutation(async ({ ctx, input }): Promise<{ success: boolean; deletedId?: string, error?: string  }> => {
             const userId = ctx.session.user.id;
             const podcastId = input.id;
             const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'delete' });
@@ -100,6 +125,30 @@ export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => 
             } catch (error) {
                  procedureLogger.error({ err: error }, `Error calling PodcastService.deletePodcast`);
                   throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete podcast due to an unknown error.', cause: error });
+            }
+        }),
+
+    update: protectedProcedure
+        .input(UpdatePodcastInput)
+        .mutation(async ({ ctx, input }): Promise<{ success: boolean }> => {
+            const userId = ctx.session.user.id;
+            const podcastId = input.podcastId;
+            const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'update' });
+
+            try {
+                procedureLogger.info('Calling PodcastService.updatePodcast');
+                const result = await podcast.updatePodcast(userId, input);
+                procedureLogger.info('Podcast update initiated by service.');
+                return result;
+            } catch (error) {
+                procedureLogger.error({ err: error }, 'Error calling PodcastService.updatePodcast');
+                 if (error instanceof TRPCError) {
+                    throw error;
+                 }
+                 if (error instanceof Error) {
+                     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to initiate podcast update: ${error.message}`, cause: error });
+                 }
+                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to initiate podcast update due to an unknown error.', cause: error });
             }
         }),
 

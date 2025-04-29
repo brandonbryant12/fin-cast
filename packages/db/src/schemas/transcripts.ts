@@ -15,17 +15,16 @@ export const transcript = pgTable('transcript', {
   podcastId: uuid('podcast_id')
     .notNull()
     .references(() => podcast.id, { onDelete: 'cascade' })
-    .unique(), // Enforce one-to-one relationship
+    .unique(),
   content: jsonb('content').notNull(),
   format: transcriptFormatEnum('format').default('plain_text'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .notNull()
-    .$onUpdate(() => new Date()), // Ensure this updates on modification
+    .$onUpdate(() => new Date()),
 });
 
-// Define relation back to podcast
 export const transcriptRelations = relations(transcript, ({ one }) => ({
   podcast: one(podcast, {
     fields: [transcript.podcastId],

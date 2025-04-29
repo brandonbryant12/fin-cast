@@ -1,8 +1,8 @@
 import pLimit from 'p-limit';
-import type { PersonalityId } from './personalities/personalities';
 import type { AppLogger } from '@repo/logger';
 import type { TTSService } from '@repo/tts';
 import { AUDIO_FORMAT } from './audio.service';
+import { PersonalityId } from './personalities/personalities';
 
 interface DialogueSegment {
     speaker: string;
@@ -36,7 +36,7 @@ export class DialogueSynthesisService {
     async synthesizeDialogueSegments(
         dialogue: DialogueSegment[],
         speakerPersonalities: Record<string, string>,
-        defaultPersonalityId: PersonalityId
+        defaultPersonalityId: PersonalityId = PersonalityId.Arthur
     ): Promise<(Buffer | null)[]> {
         const logger = this.logger.child({ method: 'synthesizeDialogueSegments' });
         logger.info(`Starting TTS synthesis for ${dialogue.length} segments.`);
