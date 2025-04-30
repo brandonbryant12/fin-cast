@@ -21,6 +21,7 @@ import { Route as ProtectedPodcastsIndexImport } from './routes/_protected/podca
 import { Route as ProtectedNewsFeedIndexImport } from './routes/_protected/news-feed.index'
 import { Route as ProtectedHomeIndexImport } from './routes/_protected/home/index'
 import { Route as ProtectedPostsPostidIndexImport } from './routes/_protected/posts/$postid/index'
+import { Route as ProtectedPodcastsPodcastIdIndexImport } from './routes/_protected/podcasts/$podcastId/index'
 
 // Create/Update Routes
 
@@ -81,6 +82,13 @@ const ProtectedPostsPostidIndexRoute = ProtectedPostsPostidIndexImport.update({
   path: '/posts/$postid/',
   getParentRoute: () => ProtectedLayoutRoute,
 } as any)
+
+const ProtectedPodcastsPodcastIdIndexRoute =
+  ProtectedPodcastsPodcastIdIndexImport.update({
+    id: '/podcasts/$podcastId/',
+    path: '/podcasts/$podcastId/',
+    getParentRoute: () => ProtectedLayoutRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -149,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedPostsIndexImport
       parentRoute: typeof ProtectedLayoutImport
     }
+    '/_protected/podcasts/$podcastId/': {
+      id: '/_protected/podcasts/$podcastId/'
+      path: '/podcasts/$podcastId'
+      fullPath: '/podcasts/$podcastId'
+      preLoaderRoute: typeof ProtectedPodcastsPodcastIdIndexImport
+      parentRoute: typeof ProtectedLayoutImport
+    }
     '/_protected/posts/$postid/': {
       id: '/_protected/posts/$postid/'
       path: '/posts/$postid'
@@ -166,6 +181,7 @@ interface ProtectedLayoutRouteChildren {
   ProtectedNewsFeedIndexRoute: typeof ProtectedNewsFeedIndexRoute
   ProtectedPodcastsIndexRoute: typeof ProtectedPodcastsIndexRoute
   ProtectedPostsIndexRoute: typeof ProtectedPostsIndexRoute
+  ProtectedPodcastsPodcastIdIndexRoute: typeof ProtectedPodcastsPodcastIdIndexRoute
   ProtectedPostsPostidIndexRoute: typeof ProtectedPostsPostidIndexRoute
 }
 
@@ -174,6 +190,7 @@ const ProtectedLayoutRouteChildren: ProtectedLayoutRouteChildren = {
   ProtectedNewsFeedIndexRoute: ProtectedNewsFeedIndexRoute,
   ProtectedPodcastsIndexRoute: ProtectedPodcastsIndexRoute,
   ProtectedPostsIndexRoute: ProtectedPostsIndexRoute,
+  ProtectedPodcastsPodcastIdIndexRoute: ProtectedPodcastsPodcastIdIndexRoute,
   ProtectedPostsPostidIndexRoute: ProtectedPostsPostidIndexRoute,
 }
 
@@ -204,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
+  '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
 
@@ -216,6 +234,7 @@ export interface FileRoutesByTo {
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
+  '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
 
@@ -230,6 +249,7 @@ export interface FileRoutesById {
   '/_protected/news-feed/': typeof ProtectedNewsFeedIndexRoute
   '/_protected/podcasts/': typeof ProtectedPodcastsIndexRoute
   '/_protected/posts/': typeof ProtectedPostsIndexRoute
+  '/_protected/podcasts/$podcastId/': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/_protected/posts/$postid/': typeof ProtectedPostsPostidIndexRoute
 }
 
@@ -244,6 +264,7 @@ export interface FileRouteTypes {
     | '/news-feed'
     | '/podcasts'
     | '/posts'
+    | '/podcasts/$podcastId'
     | '/posts/$postid'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -255,6 +276,7 @@ export interface FileRouteTypes {
     | '/news-feed'
     | '/podcasts'
     | '/posts'
+    | '/podcasts/$podcastId'
     | '/posts/$postid'
   id:
     | '__root__'
@@ -267,6 +289,7 @@ export interface FileRouteTypes {
     | '/_protected/news-feed/'
     | '/_protected/podcasts/'
     | '/_protected/posts/'
+    | '/_protected/podcasts/$podcastId/'
     | '/_protected/posts/$postid/'
   fileRoutesById: FileRoutesById
 }
@@ -308,6 +331,7 @@ export const routeTree = rootRoute
         "/_protected/news-feed/",
         "/_protected/podcasts/",
         "/_protected/posts/",
+        "/_protected/podcasts/$podcastId/",
         "/_protected/posts/$postid/"
       ]
     },
@@ -340,6 +364,10 @@ export const routeTree = rootRoute
     },
     "/_protected/posts/": {
       "filePath": "_protected/posts/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/podcasts/$podcastId/": {
+      "filePath": "_protected/podcasts/$podcastId/index.tsx",
       "parent": "/_protected"
     },
     "/_protected/posts/$postid/": {

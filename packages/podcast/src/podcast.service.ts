@@ -60,9 +60,6 @@ export class PodcastService {
         if (hostPersonalityId === cohostPersonalityId) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: "Host and cohost personalities must be different." });
         }
-        if (!Object.values(PersonalityId).includes(hostPersonalityId) || !Object.values(PersonalityId).includes(cohostPersonalityId)) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: "Invalid PersonalityId provided." });
-        }
 
         const logger = this.logger.child({ userId, sourceUrl, method: 'createPodcast', hostPersonalityId, cohostPersonalityId });
 

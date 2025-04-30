@@ -1,6 +1,7 @@
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import {
     Loader2,
     AlertTriangle,
@@ -9,6 +10,7 @@ import {
     Trash2,
     ChevronDown,
     ChevronUp,
+    Edit,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { AppRouter } from '@repo/api/server';
@@ -68,6 +70,7 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
 
     const isActive = activePodcast?.id === id;
     const shouldShowPauseIcon = isActive && isContextPlaying;
+    const isProcessing = status === 'processing';
 
     const podcastByIdQuery = useQuery(trpc.podcasts.byId.queryOptions(
         { id: id },
@@ -198,6 +201,24 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     )}
+                    <Link
+                        to="/podcasts/$podcastId"
+                        params={{ podcastId: id }}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Edit Podcast"
+                        aria-disabled={isProcessing}
+                        className={cn(isProcessing && 'pointer-events-none')}
+                    >
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
+                            disabled={isProcessing}
+                            aria-hidden="true"
+                        >
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                    </Link>
                     <Button
                          variant="ghost" size="icon"
                          onClick={(e) => {
