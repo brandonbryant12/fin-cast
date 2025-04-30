@@ -1,6 +1,5 @@
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
-import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
     Loader2,
@@ -8,15 +7,12 @@ import {
     Play,
     Pause,
     Trash2,
-    ChevronDown,
-    ChevronUp,
-    Edit,
+    Info,
 } from 'lucide-react';
-import { useState } from 'react';
 import type { AppRouter } from '@repo/api/server';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
-import { trpc } from '@/router';
+
 
 type PodcastListOutput = inferRouterOutputs<AppRouter>['podcasts']['myPodcasts'];
 
@@ -45,7 +41,7 @@ const formatDuration = (seconds: number | null): string | null => {
 };
 
 export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Removed isExpanded state
 
     const {
         activePodcast,
@@ -72,14 +68,7 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
     const shouldShowPauseIcon = isActive && isContextPlaying;
     const isProcessing = status === 'processing';
 
-    const podcastByIdQuery = useQuery(trpc.podcasts.byId.queryOptions(
-        { id: id },
-        {
-            enabled: isExpanded,
-            staleTime: Infinity,
-            refetchOnWindowFocus: false,
-        }
-    ));
+    // Removed podcastByIdQuery
 
     const formattedDate = formatDate(createdAt);
     const formattedDuration = formatDuration(durationSeconds);
@@ -187,25 +176,11 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                             {shouldShowPauseIcon ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         </Button>
                     )}
-                    {status === 'success' && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIsExpanded(!isExpanded);
-                             }}
-                            className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
-                            aria-label={isExpanded ? "Collapse details" : "Expand details"}
-                        >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                    )}
                     <Link
                         to="/podcasts/$podcastId"
                         params={{ podcastId: id }}
                         onClick={(e) => e.stopPropagation()}
-                        aria-label="Edit Podcast"
+                        aria-label="View Details" // Changed label
                         aria-disabled={isProcessing}
                         className={cn(isProcessing && 'pointer-events-none')}
                     >
@@ -216,7 +191,7 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                             disabled={isProcessing}
                             aria-hidden="true"
                         >
-                            <Edit className="h-4 w-4" />
+                            <Info className="h-4 w-4" />
                         </Button>
                     </Link>
                     <Button
@@ -230,40 +205,6 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                     </Button>
                 </div>
             </div>
-
-            {isExpanded && (
-                <div className="mt-3 pt-3 pl-9 border-t border-slate-700 text-sm text-gray-300">
-                    {podcastByIdQuery.isLoading && (
-                        <div className="flex items-center space-x-2 text-gray-400">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Loading transcript...</span>
-                        </div>
-                    )}
-                    {podcastByIdQuery.isError && (
-                         <div className="flex items-center space-x-2 text-red-400">
-                            <AlertTriangle className="h-4 w-4" />
-                            <span>Error loading transcript: {podcastByIdQuery.error.message}</span>
-                        </div>
-                    )}
-                    {podcastByIdQuery.data && (
-                        <>
-                            <h4 className="font-semibold text-gray-200 mb-1">Transcript:</h4>
-                            {Array.isArray(podcastByIdQuery.data.transcript?.content) && podcastByIdQuery.data.transcript.content.length > 0 ? (
-                                <div className="space-y-2">
-                                    {podcastByIdQuery.data.transcript.content.map((segment: { speaker: string; line: string }, index: number) => (
-                                        <div key={index}>
-                                            <span className="font-semibold text-teal-400">{segment.speaker}:</span>
-                                            <p className="ml-2 text-gray-300 inline"> {segment.line}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500">No transcript dialogue available for this podcast.</p>
-                            )}
-                        </>
-                    )}
-                 </div>
-            )}
         </div>
     );
 }

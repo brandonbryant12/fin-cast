@@ -8,8 +8,7 @@ type FullPodcast = typeof schema.podcast.$inferSelect;
 
 export type PodcastSummary = FullPodcast;
 
-// Ensures transcript relation is included for updates/checks
-export type PodcastWithTranscript = Omit<FullPodcast, 'audioUrl'> & {
+export type PodcastWithTranscript = FullPodcast & {
     transcript: SelectTranscript | null;
 };
 
@@ -101,7 +100,7 @@ export class PodcastRepository {
             where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
             // Explicitly list columns to omit audioUrl by default if it's large/not always needed
             columns: {
-                id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true
+                id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true,
             },
             with: {
                 transcript: { // Eager load transcript content

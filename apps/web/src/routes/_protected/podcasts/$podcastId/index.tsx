@@ -1,4 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
+import { Badge } from "@repo/ui/components/badge"; // Import Badge
 import { Button } from '@repo/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/card';
 import { Input } from '@repo/ui/components/input';
@@ -10,11 +11,12 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@repo/ui/components/select";
+import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { AlertCircle, Terminal, Pencil, X, Check, Loader2 } from 'lucide-react';
+import { AlertCircle, Terminal, Pencil, X, Check, Loader2, Play, Pause } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
@@ -22,6 +24,7 @@ import type { AppRouter } from '@repo/api/server';
 import type { TRPCClientErrorLike } from '@trpc/client';
 import type { inferRouterOutputs, inferProcedureInput } from '@trpc/server';
 import { DialogueSegmentEditor } from './-components/dialogue-segment-editor';
+import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { useVoices, type PersonalityInfo, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
@@ -38,12 +41,24 @@ type PodcastOutput = inferRouterOutputs<AppRouter>['podcasts']['byId'];
 
 type UpdatePodcastInputType = inferProcedureInput<AppRouter['podcasts']['update']>;
 
-
-
 export const Route = createFileRoute('/_protected/podcasts/$podcastId/')({
  component: PodcastDetailPage,
  validateSearch: (search: Record<string, unknown>): Record<string, unknown> => { return {} },
 });
+
+// Static data for Key Topics - replace later with actual data
+const staticKeyTopics = ["Market Analysis", "AI Impact", "Q1 Earnings", "Federal Reserve", "Tech Stocks", "Global Economy"];
+
+// Define chip colors - using standard Tailwind for variety, ensure good contrast with text-white/text-gray-900
+const chipColorClasses = [
+  "bg-teal-600 hover:bg-teal-700 text-white",
+  "bg-sky-600 hover:bg-sky-700 text-white",
+  "bg-amber-600 hover:bg-amber-700 text-white",
+  "bg-rose-600 hover:bg-rose-700 text-white",
+  "bg-violet-600 hover:bg-violet-700 text-white",
+  "bg-lime-600 hover:bg-lime-700 text-white",
+];
+
 
 function PodcastDetailPage() {
  const { podcastId } = Route.useParams();
@@ -53,6 +68,13 @@ function PodcastDetailPage() {
  const podcastQueryOptions = trpc.podcasts.byId.queryOptions({ id: podcastId });
  const { data: podcast, isLoading: isLoadingPodcast, isError: isPodcastError, error: podcastError } = useQuery(podcastQueryOptions);
  const { availableVoices, isLoadingVoices } = useVoices();
+ const {
+    activePodcast,
+    isPlaying: isContextPlaying,
+    loadTrack,
+    play,
+    pause: pauseTrack
+ } = useAudioPlayer();
 
  const updatePodcastMutation = useMutation({
   ...trpc.podcasts.update.mutationOptions()
@@ -183,6 +205,30 @@ function PodcastDetailPage() {
   setIsEditing(false);
  };
 
+ const handlePlayPauseClick = () => {
+    if (!podcast || podcast.status !== 'success' || !podcast.audioUrl) {
+      console.warn('Cannot play podcast: Invalid status or missing audioUrl');
+      toast.error("Audio is not available for this podcast yet.");
+      return;
+    }
+
+    const isActive = activePodcast?.id === podcast.id;
+
+    if (isActive) {
+      if (isContextPlaying) {
+        pauseTrack();
+      } else {
+        play();
+      }
+    } else {
+      loadTrack({
+        id: podcast.id,
+        title: podcast.title || 'Untitled Podcast',
+        audioUrl: podcast.audioUrl
+      });
+    }
+ };
+
  if (isLoadingPodcast || isLoadingVoices) {
   return <div className="flex justify-center items-center h-64"><Spinner className="h-16 w-16" /></div>;
  }
@@ -215,6 +261,9 @@ function PodcastDetailPage() {
  const currentHostName = getPersonalityName(typedPodcast.hostPersonalityId);
  const currentCohostName = getPersonalityName(typedPodcast.cohostPersonalityId);
 
+ const isCurrentPodcastPlaying = activePodcast?.id === typedPodcast.id && isContextPlaying;
+ const canPlayPodcast = typedPodcast.status === 'success' && !!typedPodcast.audioUrl;
+
  return (
   <form
    onSubmit={(e) => {
@@ -227,100 +276,125 @@ function PodcastDetailPage() {
    <Card>
     <CardHeader>
      <div className="flex justify-between items-start gap-4">
-      <div className="flex-grow space-y-3">
-       {!isEditing ? (
-        <CardTitle className="text-3xl font-bold text-foreground">{form.getFieldValue('title')}</CardTitle>
-       ) : (
-        <form.Field name="title" key={`title-${isEditing}`}>
-         {(field) => {
-          return (
-           <div className="space-y-1">
-            <Label htmlFor={field.name} className="text-xs text-muted-foreground">Podcast Title</Label>
-            <Input
-             id={field.name}
-             name={field.name}
-             value={field.state.value}
-             onBlur={field.handleBlur}
-             onChange={(e) => field.handleChange(e.target.value)}
-             className="text-xl bg-input"
-             placeholder="Enter podcast title"
-            />
-           </div>
-          );
-         }}
-        </form.Field>
-       )}
+      <div className="flex-grow space-y-4">
        {!isEditing ? (
         <>
-         <CardDescription className="text-muted-foreground flex items-center gap-2">
-           Status: {typedPodcast.status}
-           {isProcessing && <Spinner className="h-4 w-4" />}
-         </CardDescription>
-         <CardDescription className="text-muted-foreground pt-1">
-          Host: {currentHostName} | Co-host: {currentCohostName}
-         </CardDescription>
+          <CardTitle className="text-3xl font-bold text-foreground">{typedPodcast.title}</CardTitle>
+
+          {/* Key Topics Section */}
+          <div className="flex flex-wrap gap-2">
+              {staticKeyTopics.map((topic, index) => (
+                  <Badge
+                      key={topic}
+                      variant="outline"
+                      className={cn(
+                          "border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                          chipColorClasses[index % chipColorClasses.length]
+                      )}
+                  >
+                      {topic}
+                  </Badge>
+              ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
+              <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handlePlayPauseClick}
+                  disabled={!canPlayPodcast || isProcessing}
+                  aria-label={isCurrentPodcastPlaying ? 'Pause Podcast' : 'Play Podcast'}
+                  className="text-foreground hover:bg-primary/10 disabled:opacity-50 flex-shrink-0"
+              >
+                  {isCurrentPodcastPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              </Button>
+              <CardDescription className="text-muted-foreground text-sm">
+                  {isProcessing && <Spinner className="inline-block h-4 w-4 ml-2" />}
+              </CardDescription>
+              <CardDescription className="text-muted-foreground text-sm">
+                  Host: {currentHostName} | Co-host: {currentCohostName}
+              </CardDescription>
+          </div>
         </>
        ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-         <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
-          {(field) => {
-           const previousHostId = field.state.value;
-           return (
+        <>
+          <form.Field name="title" key={`title-${isEditing}`}>
+           {(field) => (
             <div className="space-y-1">
-             <Label htmlFor={field.name} className="text-xs text-muted-foreground">Host</Label>
-             <Select
-               name={field.name}
-               value={field.state.value}
-               onValueChange={(newValue) => {
-                 updateDialogueSpeakers(previousHostId, newValue);
-                 field.handleChange(newValue);
-               }}
-              >
-              <SelectTrigger id={field.name} className="bg-input">
-               <SelectValue placeholder="Select host..." />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-               {Array.isArray(availableVoices) && availableVoices
-                .filter(p => p.name !== form.getFieldValue('cohostPersonalityId'))
-                .map((p: PersonalityInfo) => (
-                 <SelectItem key={p.name} value={p.name}>{p?.name ?? 'Unknown'}</SelectItem>
-                ))}
-              </SelectContent>
-             </Select>
+             <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Podcast Title</Label>
+             <Input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="text-lg bg-input"
+              placeholder="Enter podcast title"
+             />
             </div>
-           );
-          }}
-         </form.Field>
-         <form.Field name="cohostPersonalityId" key={`cohost-${isEditing}`}>
-          {(field) => {
-           const previousCohostId = field.state.value;
-           return (
-            <div className="space-y-1">
-             <Label htmlFor={field.name} className="text-xs text-muted-foreground">Co-host</Label>
-             <Select
-               name={field.name}
-               value={field.state.value}
-               onValueChange={(newValue) => {
-                 updateDialogueSpeakers(previousCohostId, newValue);
-                 field.handleChange(newValue);
-               }}
-              >
-              <SelectTrigger id={field.name} className="bg-input">
-               <SelectValue placeholder="Select co-host..." />
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-               {Array.isArray(availableVoices) && availableVoices
-                .filter(p => p.name !== form.getFieldValue('hostPersonalityId'))
-                .map((p: PersonalityInfo) => (
-                 <SelectItem key={p.name} value={p.name}>{p?.name ?? 'Unknown'}</SelectItem>
-                ))}
-              </SelectContent>
-             </Select>
-            </div>
-           );
-          }}
-         </form.Field>
-        </div>
+           )}
+          </form.Field>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+           <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
+            {(field) => {
+             const previousHostId = field.state.value;
+             return (
+              <div className="space-y-1">
+               <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Host</Label>
+               <Select
+                 name={field.name}
+                 value={field.state.value}
+                 onValueChange={(newValue) => {
+                   updateDialogueSpeakers(previousHostId, newValue);
+                   field.handleChange(newValue);
+                 }}
+                >
+                <SelectTrigger id={field.name} className="bg-input">
+                 <SelectValue placeholder="Select host..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                 {Array.isArray(availableVoices) && availableVoices
+                  .filter(p => p.name !== form.getFieldValue('cohostPersonalityId'))
+                  .map((p: PersonalityInfo) => (
+                   <SelectItem key={p.name} value={p.name}>{p?.name ?? 'Unknown'}</SelectItem>
+                  ))}
+                </SelectContent>
+               </Select>
+              </div>
+             );
+            }}
+           </form.Field>
+           <form.Field name="cohostPersonalityId" key={`cohost-${isEditing}`}>
+            {(field) => {
+             const previousCohostId = field.state.value;
+             return (
+              <div className="space-y-1">
+               <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Co-host</Label>
+               <Select
+                 name={field.name}
+                 value={field.state.value}
+                 onValueChange={(newValue) => {
+                   updateDialogueSpeakers(previousCohostId, newValue);
+                   field.handleChange(newValue);
+                 }}
+                >
+                <SelectTrigger id={field.name} className="bg-input">
+                 <SelectValue placeholder="Select co-host..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border">
+                 {Array.isArray(availableVoices) && availableVoices
+                  .filter(p => p.name !== form.getFieldValue('hostPersonalityId'))
+                  .map((p: PersonalityInfo) => (
+                   <SelectItem key={p.name} value={p.name}>{p?.name ?? 'Unknown'}</SelectItem>
+                  ))}
+                </SelectContent>
+               </Select>
+              </div>
+             );
+            }}
+           </form.Field>
+          </div>
+        </>
        )}
       </div>
       <div className="flex space-x-2 flex-shrink-0">
@@ -363,18 +437,30 @@ function PodcastDetailPage() {
       </div>
      </div>
     </CardHeader>
-    <CardContent>
+    <CardContent className="pt-6 border-t border-border">
      <h3 className="text-xl font-semibold mb-4 text-foreground">Transcript</h3>
 
      {!isEditing ? (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-card p-4">
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-background p-4">
        {Array.isArray(viewDialogue) && viewDialogue.length > 0 ? (
-        viewDialogue.map((segment, index) => (
-         <div key={index} className="text-sm">
-          <span className="font-semibold text-primary mr-2">{(segment as any)?.speaker ?? 'Unknown'}:</span>
-          <span className="text-foreground">{(segment as any)?.line ?? ''}</span>
-         </div>
-        ))
+        viewDialogue.map((segment, index) => {
+         const speakerName = (segment as any)?.speaker ?? 'Unknown';
+         const isHost = speakerName === typedPodcast.hostPersonalityId;
+         const isCohost = speakerName === typedPodcast.cohostPersonalityId;
+         const speakerColorClass = isHost
+           ? 'text-indigo-400'
+           : isCohost
+           ? 'text-teal-400'
+           : 'text-primary';
+         return (
+          <div key={index} className="text-sm flex flex-col sm:flex-row sm:items-start">
+             <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px] truncate`}>
+                {speakerName}:
+             </span>
+             <span className="text-foreground pl-1 sm:pl-0">{segment.line ?? ''}</span>
+          </div>
+         );
+        })
        ) : (
         <p className="text-muted-foreground italic">No transcript available.</p>
        )}
@@ -392,7 +478,7 @@ function PodcastDetailPage() {
              <div className="space-y-2 max-h-[50vh] overflow-y-auto rounded-md border border-input bg-background p-2">
                {(field.state.value || []).map((segment: DialogueSegment, index: number) => (
                  <DialogueSegmentEditor
-                   key={`${index}`}
+                   key={index}
                    index={index}
                    segment={segment}
                    onSpeakerChange={(idx, speaker) => handleUpdateSegment(idx, { ...segment, speaker })}
