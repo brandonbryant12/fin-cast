@@ -337,7 +337,8 @@ function PodcastDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
            <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
             {(field) => {
-             const previousHostId = field.state.value;
+             // Capture the current value *before* the change
+             const currentHostIdBeforeChange = field.state.value;
              return (
               <div className="space-y-1">
                <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Host</Label>
@@ -345,7 +346,8 @@ function PodcastDetailPage() {
                  name={field.name}
                  value={field.state.value}
                  onValueChange={(newValue) => {
-                   updateDialogueSpeakers(previousHostId, newValue);
+                   // Use the captured value from before the change
+                   updateDialogueSpeakers(currentHostIdBeforeChange, newValue);
                    field.handleChange(newValue);
                  }}
                 >

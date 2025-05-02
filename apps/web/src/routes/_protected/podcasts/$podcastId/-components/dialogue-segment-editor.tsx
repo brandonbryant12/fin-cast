@@ -56,6 +56,7 @@ export function DialogueSegmentEditor({
     <div className="flex items-start space-x-2 p-2 border border-transparent hover:border-border rounded-md">
       <div className="flex-shrink-0 w-28">
         <Select
+          key={`${segment.speaker}-${hostName}-${cohostName}`} // Add key to force re-render when relevant props change
           value={segment.speaker || ""}
           onValueChange={(newSpeaker) => onSpeakerChange(index, newSpeaker)}
         >
