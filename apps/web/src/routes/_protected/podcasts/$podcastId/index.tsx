@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
-import { Badge } from "@repo/ui/components/badge"; // Import Badge
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from '@repo/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/card';
 import { Input } from '@repo/ui/components/input';
@@ -11,25 +11,24 @@ import {
  SelectTrigger,
  SelectValue,
 } from "@repo/ui/components/select";
+import { Textarea } from '@repo/ui/components/textarea';
 import { cn } from '@repo/ui/lib/utils';
 import { useForm } from '@tanstack/react-form';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { AlertCircle, Terminal, Pencil, X, Check, Loader2, Play, Pause } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { AlertCircle, Terminal, Pencil, Play, Pause } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
 import type { AppRouter } from '@repo/api/server';
 import type { TRPCClientErrorLike } from '@trpc/client';
 import type { inferRouterOutputs, inferProcedureInput } from '@trpc/server';
-import { DialogueSegmentEditor } from './-components/dialogue-segment-editor';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { useVoices, type PersonalityInfo, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DialogueSegmentSchema = v.object({
  speaker: v.string(),
  line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
@@ -46,10 +45,8 @@ export const Route = createFileRoute('/_protected/podcasts/$podcastId/')({
  validateSearch: (search: Record<string, unknown>): Record<string, unknown> => { return {} },
 });
 
-// Static data for Key Topics - replace later with actual data
 const staticKeyTopics = ["Market Analysis", "AI Impact", "Q1 Earnings", "Federal Reserve", "Tech Stocks", "Global Economy"];
 
-// Define chip colors - using standard Tailwind for variety, ensure good contrast with text-white/text-gray-900
 const chipColorClasses = [
   "bg-teal-600 hover:bg-teal-700 text-white",
   "bg-sky-600 hover:bg-sky-700 text-white",
@@ -63,6 +60,8 @@ const chipColorClasses = [
 function PodcastDetailPage() {
  const { podcastId } = Route.useParams();
  const [isEditing, setIsEditing] = useState(false);
+ const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
+  const editingTextareaRef = useRef<HTMLTextAreaElement>(null);
  const queryClient = useQueryClient();
 
  const podcastQueryOptions = trpc.podcasts.byId.queryOptions({ id: podcastId });
@@ -134,6 +133,7 @@ function PodcastDetailPage() {
       toast.success("Podcast update initiated.");
       queryClient.invalidateQueries({ queryKey: podcastQueryOptions.queryKey });
       setIsEditing(false);
+      setEditingSegmentIndex(null);
      },
      onError: (error: TRPCClientErrorLike<AppRouter>) => {
       toast.error(`Failed to save: ${error.message}`);
@@ -155,11 +155,12 @@ function PodcastDetailPage() {
    });
  }, [form]);
 
- const handleAddSegment = () => {
-  const currentDialogue = form.getFieldValue('dialogue') || [];
-  const defaultSpeaker = form.getFieldValue('hostPersonalityId') || (availableVoices && availableVoices[0]?.name) || '';
-  form.setFieldValue('dialogue', [...currentDialogue, { speaker: defaultSpeaker, line: '' }]);
- };
+  useEffect(() => {
+    if (editingSegmentIndex !== null && editingTextareaRef.current) {
+      editingTextareaRef.current.focus();
+    }
+  }, [editingSegmentIndex]);
+
 
  const handleRemoveSegment = (index: number) => {
   const currentDialogue = form.getFieldValue('dialogue') || [];
@@ -194,6 +195,12 @@ function PodcastDetailPage() {
  const handleEditClick = () => {
   if (podcast) {
    resetFormWithData(podcast);
+    const dialogue = Array.isArray(podcast.transcript?.content) ? podcast.transcript.content : [];
+    if (dialogue.length > 0) {
+      setEditingSegmentIndex(0);
+    } else {
+      setEditingSegmentIndex(null);
+    }
   }
   setIsEditing(true);
  };
@@ -202,6 +209,7 @@ function PodcastDetailPage() {
   if (podcast) {
    resetFormWithData(podcast);
   }
+  setEditingSegmentIndex(null);
   setIsEditing(false);
  };
 
@@ -281,7 +289,6 @@ function PodcastDetailPage() {
         <>
           <CardTitle className="text-3xl font-bold text-foreground">{typedPodcast.title}</CardTitle>
 
-          {/* Key Topics Section */}
           <div className="flex flex-wrap gap-2">
               {staticKeyTopics.map((topic, index) => (
                   <Badge
@@ -337,7 +344,6 @@ function PodcastDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
            <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
             {(field) => {
-             // Capture the current value *before* the change
              const currentHostIdBeforeChange = field.state.value;
              return (
               <div className="space-y-1">
@@ -346,7 +352,6 @@ function PodcastDetailPage() {
                  name={field.name}
                  value={field.state.value}
                  onValueChange={(newValue) => {
-                   // Use the captured value from before the change
                    updateDialogueSpeakers(currentHostIdBeforeChange, newValue);
                    field.handleChange(newValue);
                  }}
@@ -414,23 +419,23 @@ function PodcastDetailPage() {
         <>
          <Button
           variant="outline"
-          size="icon"
+          size="sm"
           onClick={handleCancel}
           aria-label="Cancel Edit"
           type="button"
          >
-          <X className="h-4 w-4" />
+          Cancel
          </Button>
          <form.Subscribe selector={(state) => [state.isValid, state.isSubmitting]}>
           {([isValid, isSubmitting]) => (
            <Button
             variant="default"
-            size="icon"
+            size="sm"
             aria-label="Save Changes"
             type="submit"
             disabled={isSubmitting || !isValid || updatePodcastMutation.isPending}
            >
-            {isSubmitting || updatePodcastMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {isSubmitting || updatePodcastMutation.isPending ? <Spinner className="h-4 w-4" /> : 'Save Changes'}
            </Button>
           )}
          </form.Subscribe>
@@ -456,10 +461,10 @@ function PodcastDetailPage() {
            : 'text-primary';
          return (
           <div key={index} className="text-sm flex flex-col sm:flex-row sm:items-start">
-             <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px] truncate`}>
+             <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px]`}>
                 {speakerName}:
              </span>
-             <span className="text-foreground pl-1 sm:pl-0">{segment.line ?? ''}</span>
+             <span className="text-foreground flex-1 pl-0 sm:pl-2">{segment.line ?? ''}</span>
           </div>
          );
         })
@@ -470,35 +475,79 @@ function PodcastDetailPage() {
      ) : (
       <form.Field name="dialogue">
        {(field) => {
-         const currentHostId = form.getFieldValue('hostPersonalityId');
-         const currentCohostId = form.getFieldValue('cohostPersonalityId');
-         const hostNameForEditor = currentHostId ?? 'Unknown';
-         const cohostNameForEditor = currentCohostId ?? 'Unknown';
+          const dialogue = Array.isArray(field.state.value) ? field.state.value : [];
+          const currentlyEditingSegment = editingSegmentIndex !== null ? dialogue[editingSegmentIndex] : null;
+
+          const handleSegmentLineChange = (newLine: string) => {
+            if (editingSegmentIndex !== null) {
+              handleUpdateSegment(editingSegmentIndex, { ...dialogue[editingSegmentIndex], line: newLine });
+            }
+          };
+
+          const handleSaveSegmentEdit = () => {
+            setEditingSegmentIndex(null);
+          };
+
+          const handleCancelSegmentEdit = () => {
+            if (editingSegmentIndex !== null && podcast?.transcript?.content?.[editingSegmentIndex]) {
+                const originalSegment = podcast.transcript.content[editingSegmentIndex] as DialogueSegment;
+                handleUpdateSegment(editingSegmentIndex, originalSegment);
+            }
+            setEditingSegmentIndex(null);
+          };
+
+          const getSegmentSpeakerName = (segmentSpeakerId: string | null | undefined) => {
+              return getPersonalityName(segmentSpeakerId);
+          };
 
          return (
-           <div className="space-y-3">
-             <div className="space-y-2 max-h-[50vh] overflow-y-auto rounded-md border border-input bg-background p-2">
-               {(field.state.value || []).map((segment: DialogueSegment, index: number) => (
-                 <DialogueSegmentEditor
-                   key={index}
-                   index={index}
-                   segment={segment}
-                   onSpeakerChange={(idx, speaker) => handleUpdateSegment(idx, { ...segment, speaker })}
-                   onLineChange={(idx, line) => handleUpdateSegment(idx, { ...segment, line })}
-                   onDelete={() => handleRemoveSegment(index)}
-                   hostName={hostNameForEditor}
-                   cohostName={cohostNameForEditor}
-                 />
-               ))}
+           <div className="space-y-4">
+              {currentlyEditingSegment && (
+                <div className="border border-input rounded-md p-4 space-y-3 bg-background">
+                    <h4 className="text-lg font-semibold text-foreground">Editing Segment {editingSegmentIndex !== null ? editingSegmentIndex + 1 : ''}</h4>
+                    <div className="text-sm text-muted-foreground">Speaker: {getSegmentSpeakerName(currentlyEditingSegment.speaker)}</div>
+                    <Textarea
+                        ref={editingTextareaRef}
+                        value={currentlyEditingSegment.line}
+                        onChange={(e) => handleSegmentLineChange(e.target.value)}
+                        placeholder="Edit dialogue line..."
+                        className="bg-input text-sm min-h-[80px] resize-none leading-snug"
+                    />
+                </div>
+              )}
+             <div className="space-y-2 max-h-[50vh] overflow-y-auto rounded-md border border-input bg-background p-4">
+               {dialogue.length > 0 ? (
+                  dialogue.map((segment: DialogueSegment, index: number) => {
+                    const speakerName = getSegmentSpeakerName(segment.speaker);
+                    const isHost = segment.speaker === typedPodcast.hostPersonalityId;
+                    const isCohost = segment.speaker === typedPodcast.cohostPersonalityId;
+                    const speakerColorClass = isHost
+                        ? 'text-indigo-400'
+                        : isCohost
+                        ? 'text-teal-400'
+                        : 'text-primary';
+                    const isSelected = index === editingSegmentIndex;
+
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "text-sm flex flex-col sm:flex-row sm:items-start p-2 rounded-md cursor-pointer",
+                          isSelected ? "bg-accent/30 border border-accent" : "border border-transparent hover:bg-accent/20"
+                        )}
+                        onClick={() => setEditingSegmentIndex(index)}
+                      >
+                        <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px]`}>
+                          {speakerName}:
+                        </span>
+                        <span className="text-foreground flex-1 pl-0 sm:pl-2">{segment.line || 'Empty line'}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-muted-foreground italic">No transcript segments to edit.</p>
+                )}
              </div>
-             <Button
-               variant="outline"
-               size="sm"
-               type="button"
-               onClick={handleAddSegment}
-             >
-               Add Segment
-             </Button>
            </div>
          );
        }}
