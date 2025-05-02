@@ -7,7 +7,6 @@ import { BaseLLM, type LLMInterface } from './base_llm';
 
 export interface CustomOpenAIClientConfig {
   BASE_URL: string;
-  API_VERSION: string;
   BEARER_TOKEN_URL: string;
   BEARER_TOKEN_CLIENT_ID: string;
   BEARER_TOKEN_SCOPE: string;

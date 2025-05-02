@@ -5,7 +5,7 @@ import { GeminiClient } from "./gemini";
 import { OpenAIClient } from "./openai";
 
 
-export type SupportedLLMProviders = "openai" | "gemini" | "anthropic";
+export type SupportedLLMProviders = "openai" | "gemini" | "custom-openai";
 
 
 interface OpenAIOptions {

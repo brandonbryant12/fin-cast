@@ -1,5 +1,9 @@
+import { createLogger, type AppLogger } from '@repo/logger';
+import { createSecretsManager } from '@repo/secrets';
 import * as v from 'valibot';
 import type { SupportedLLMProviders } from '@repo/llm';
+
+
 
 const DEFAULT_SERVER_PORT = 3035;
 const DEFAULT_SERVER_HOST = 'localhost';
@@ -37,7 +41,6 @@ export const envSchema = v.object({
   OPENAI_API_KEY: v.optional(v.string()),
   OPENAI_BASE_URL: v.optional(v.pipe(v.string(), v.url())),
   GEMINI_API_KEY: v.optional(v.string()),
-  // ANTHROPIC_API_KEY: v.optional(v.string()),
 
   TTS_PROVIDER: v.pipe(
     v.optional(v.picklist(supportedTTSProviders, 'TTS_PROVIDER must be one of: openai, azure'), 'openai'),
@@ -67,6 +70,87 @@ export const envSchema = v.object({
     v.picklist(['0', '1'], 'must be "0" or "1"'),
     '1'
   ),
+  // Secrets Manager Config - Required if secretsManager is 'enabled'
+  SECRETS_API_URL: v.optional(v.pipe(v.string(), v.url())),
+  SECRETS_OAUTH_URL: v.optional(v.pipe(v.string(), v.url())),
+  SECRETS_OAUTH_CLIENT_ID: v.optional(v.string()),
+  SECRETS_OAUTH_CLIENT_SECRET: v.optional(v.string()),
+  // Flag to enable/disable secrets manager
+  SECRETS_MANAGER_ENABLED: v.pipe(
+    v.optional(v.string(), 'false'),
+    v.transform(value => typeof value === 'string' && value.toLowerCase() === 'true'),
+    v.boolean()
+  ),
 });
 
-export const env = v.parse(envSchema, process.env);
+
+
+
+async function loadEnvInternal(logger: AppLogger) {
+    logger.info('Loading environment variables...');
+    let rawEnv: Record<string, string | undefined> = { ...process.env };
+
+    const secretsManagerEnabled = process.env?.SECRETS_MANAGER_ENABLED?.toLowerCase() === 'true';
+
+    if (secretsManagerEnabled) {
+        logger.info('SecretsManager is enabled. Attempting to fetch secrets...');
+
+        const apiUrl = process.env.SECRETS_API_URL;
+        const oauthUrl = process.env.SECRETS_OAUTH_URL;
+        const oauthClientId = process.env.SECRETS_OAUTH_CLIENT_ID;
+        const oauthClientSecret = process.env.SECRETS_OAUTH_CLIENT_SECRET;
+
+        if (!apiUrl || !oauthUrl || !oauthClientId || !oauthClientSecret) {
+             logger.error('Missing required environment variables for SecretsManager: SECRETS_API_URL, SECRETS_OAUTH_URL, SECRETS_OAUTH_CLIENT_ID, SECRETS_OAUTH_CLIENT_SECRET');
+            
+        } else {
+            try {
+                const secretsManager = createSecretsManager({
+                    apiUrl,
+                    oauthUrl,
+                    oauthClientId,
+                    oauthClientSecret,
+                    proxy: process.env.HTTPS_PROXY || process.env.HTTP_PROXY,
+                    rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED === '1',
+                    logger: logger.child({ service: 'SecretsManagerClient' })
+                });
+                const apiSecrets = await secretsManager.load();
+                logger.info(`Fetched ${Object.keys(apiSecrets).length} secrets from API.`);
+                // Merge fetched secrets, giving them precedence over process.env
+                rawEnv = {
+                    ...rawEnv,
+                    ...apiSecrets,
+                };
+            } catch (error) {
+                logger.error({ err: error }, 'Failed to fetch secrets from SecretsManager. Proceeding with existing environment variables only.');
+            }
+        }
+    } else {
+        logger.info('SecretsManager is disabled (SECRETS_MANAGER_ENABLED is not "true"). Using local environment variables only.');
+    }
+
+    try {
+        const parsedEnv = v.parse(envSchema, rawEnv);
+        logger.info('Successfully loaded and validated environment variables.');
+        return parsedEnv;
+    } catch (error: any) {
+         logger.error({ errors: error.issues }, 'Failed to validate environment variables.');
+         if (error instanceof v.ValiError) {
+
+            const messages = error.issues.map(issue => `${issue.path?.map((p: any) => p.key).join('.') || 'root'}: ${issue.message} (received: ${JSON.stringify(issue.input)})`);
+            console.error('Environment validation errors:\n' + messages.join('\n'));
+         }
+         throw new Error('Environment validation failed.'); 
+    }
+}
+
+export async function setupEnv() {
+  const logger = createLogger({ 
+    level: process.env.LOG_LEVEL as any || 'info', 
+    prettyPrint: process.env.NODE_ENV !== 'production' 
+  });
+  const env = await loadEnvInternal(logger);
+  return { env, logger };
+}
+
+export type Env = v.InferOutput<typeof envSchema>;

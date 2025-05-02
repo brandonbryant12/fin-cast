@@ -32,7 +32,7 @@ catalogs:
       version: 2.1.2
     '@radix-ui/react-slot':
       specifier: ^1.1.2
-      version: 1.1.2
+      version: 1.2.0
     '@radix-ui/react-toast':
       specifier: ^1.2.6
       version: 1.2.6
@@ -240,6 +240,9 @@ importers:
       '@repo/podcast':
         specifier: workspace:*
         version: link:../../packages/podcast
+      '@repo/secrets':
+        specifier: workspace:*
+        version: link:../../packages/secrets
       '@repo/tts':
         specifier: workspace:*
         version: link:../../packages/tts
@@ -681,6 +684,43 @@ importers:
         specifier: 'catalog:'
         version: 5.8.3
 
+  packages/secrets:
+    dependencies:
+      '@repo/logger':
+        specifier: workspace:*
+        version: link:../logger
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.7
+      https-proxy-agent:
+        specifier: ^7.0.6
+        version: 7.0.6
+      superagent:
+        specifier: ^10.2.0
+        version: 10.2.0
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tools/eslint
+      '@repo/prettier-config':
+        specifier: workspace:*
+        version: link:../../tools/prettier
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../tools/typescript
+      '@types/superagent':
+        specifier: ^8.1.9
+        version: 8.1.9
+      eslint:
+        specifier: 'catalog:'
+        version: 9.24.0(jiti@2.4.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+
   packages/tts:
     dependencies:
       microsoft-cognitiveservices-speech-sdk:
@@ -764,7 +804,7 @@ importers:
         version: 1.2.4(@types/react-dom@19.1.1(@types/react@19.1.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@radix-ui/react-slot':
         specifier: 'catalog:'
-        version: 1.1.2(@types/react@19.1.0)(react@19.1.0)
+        version: 1.2.0(@types/react@19.1.0)(react@19.1.0)
       '@radix-ui/react-tabs':
         specifier: ^1.1.4
         version: 1.1.4(@types/react-dom@19.1.1(@types/react@19.1.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

@@ -27,7 +27,8 @@
     "@repo/webscraper": "workspace:*",
     "@repo/podcast": "workspace:*",
     "hono": "catalog:",
-    "valibot": "catalog:"
+    "valibot": "catalog:",
+    "@repo/secrets": "workspace:*"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
