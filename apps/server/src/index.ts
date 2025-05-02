@@ -53,7 +53,7 @@ async function startServer() {
           !env.CUSTOM_OPENAI_BEARER_TOKEN_CLIENT_ID ||
           !env.CUSTOM_OPENAI_BEARER_TOKEN_SCOPE ||
           !env.CUSTOM_OPENAI_BEARER_TOKEN_USERNAME ||
-          !env.CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD ||
+          !env.CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD
         ) {
           logger.error('LLM_PROVIDER is "custom-openai", but one or more required environment variables are not set.');
           return null;
