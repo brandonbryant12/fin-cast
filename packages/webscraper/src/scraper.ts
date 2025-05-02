@@ -25,16 +25,17 @@ export class ScraperError extends Error {
  * Factory function to create a Scraper instance.
  * @returns An object implementing the Scraper interface.
  */
-export const createScraper = (): Scraper => {
+export const createScraper = (options: ScraperOptions = {}): Scraper => {
+  const timeoutMs = options.timeout ?? 15000; 
+  const logger: AppLogger | Console = options.logger ?? console;
+  const allowUnsignedCerts = options.allowUnsignedCerts === true;
+  const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+
   /**
    * Internal scrape implementation.
    */
-  const scrape = async (url: string, options?: ScraperOptions): Promise<string> => {
+  const scrape = async (url: string): Promise<string> => {
     const controller = new AbortController();
-    const timeoutMs = options?.timeout ?? 15000; // Default 15 seconds timeout
-    const logger: AppLogger | Console = options?.logger ?? console; // Use passed logger or fallback to console
-
-    const defaultUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
     let req = superagent
       .get(url)
@@ -52,7 +53,6 @@ export const createScraper = (): Scraper => {
 
     // Proxy and agent support
     let agent: any = undefined;
-    const allowUnsignedCerts = options?.allowUnsignedCerts === true;
     if (options?.proxy) {
       const { HttpsProxyAgent } = await import('https-proxy-agent');
       let proxyUrl: string;
@@ -107,7 +107,7 @@ export const createScraper = (): Scraper => {
       let statusCode: number | undefined;
       let cause: unknown = error;
 
-      if (error && typeof error === 'object' && 'status' in error) {
+      if (error instanceof Error && 'status' in error && typeof (error as any).status === 'number') {
         statusCode = (error as any).status;
         errorMessage += ` Status: ${statusCode ?? 'N/A'}.`;
         if ((error as any).code) errorMessage += ` Code: ${(error as any).code}.`;
@@ -116,7 +116,7 @@ export const createScraper = (): Scraper => {
           url,
           code: (error as any).code,
           status: statusCode,
-          err: (error as any).message
+          err: (error as Error).message
         }, errorMessage);
       } else if (error instanceof Error && error.name === 'AbortError') {
         errorMessage = `Scraping timed out for URL: ${url} after ${timeoutMs}ms.`;

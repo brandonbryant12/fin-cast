@@ -64,7 +64,7 @@ export class PodcastGenerationService {
 
             // --- Scrape Content ---
             logger.info('Scraping content...');
-            const html = await this.scraper.scrape(sourceUrl, { logger });
+            const html = await this.scraper.scrape(sourceUrl);
             logger.info('Scraping successful.');
 
             // --- Generate Script ---

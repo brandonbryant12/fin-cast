@@ -90,22 +90,10 @@ export class CustomOpenAIClient extends BaseLLM implements LLMInterface {
         ? { messages: [{ role: 'user', content: request }] }
         : { messages: request };
 
-    // Apply options like temperature, maxTokens if provided
-    const { ...apiOptions } = options ?? {};
-    if (Object.keys(apiOptions).length > 0) {
-        Object.assign(body, apiOptions);
-    }
-
     try {
       const res = await req.send(body);
-      // Extract content - note: fence stripping is now handled by BaseLLM.postProcessRaw
       const rawContent = res.body?.choices?.[0]?.message?.content ?? null;
-
-      // Usage data extraction would depend on the specific custom API response format
-      // Example placeholder:
-      const usage = undefined; // TODO: Adapt if usage info is available
-
-      return { content: rawContent, usage: usage, error: undefined, structuredOutput: undefined };
+      return { content: rawContent };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[Custom OpenAI Client] Error: ${msg}`, { error: err });

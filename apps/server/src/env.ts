@@ -62,6 +62,11 @@ export const envSchema = v.object({
   CUSTOM_OPENAI_BEARER_TOKEN_PASSWORD: v.optional(v.string()),
   HTTP_PROXY: v.optional(v.string()),
   HTTPS_PROXY: v.optional(v.string()),
+
+  NODE_TLS_REJECT_UNAUTHORIZED: v.optional(
+    v.picklist(['0', '1'], 'must be "0" or "1"'),
+    '1'
+  ),
 });
 
 export const env = v.parse(envSchema, process.env);

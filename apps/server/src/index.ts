@@ -124,7 +124,11 @@ const auth = createAuth({
   db,
   webUrl: env.PUBLIC_WEB_URL,
 });
-const scraper = createScraper();
+const scraper = createScraper({
+  logger,
+  proxy: env.HTTPS_PROXY ?? env.HTTP_PROXY,
+  allowUnsignedCerts: env.NODE_TLS_REJECT_UNAUTHORIZED === '0',
+});
 
 const tts = initializeTTSService();
 

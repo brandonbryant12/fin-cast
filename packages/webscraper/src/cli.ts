@@ -20,8 +20,6 @@ program
 program
   .argument('<url>', 'The URL to scrape')
   .option('-t, --timeout <milliseconds>', 'Request timeout in milliseconds', '15000')
-  // Add options for proxy if needed by the CLI, reading from env vars or flags
-  // .option('-p, --proxy <proxy_url>', 'HTTP/HTTPS proxy URL')
   .action(async (url: string, options: { timeout: string /*, proxy?: string */ }) => {
     const timeoutMs = parseInt(options.timeout, 10);
     if (isNaN(timeoutMs)) {
@@ -29,33 +27,12 @@ program
     }
     const effectiveTimeout = isNaN(timeoutMs) ? 15000 : timeoutMs;
 
-    // Basic proxy parsing example (improve as needed)
-    // let proxyConfig: ScraperOptions['proxy'];
-    // if (options.proxy) {
-    //   try {
-    //     const proxyUrl = new URL(options.proxy);
-    //     proxyConfig = {
-    //       protocol: proxyUrl.protocol.slice(0, -1), // remove ':'
-    //       host: proxyUrl.hostname,
-    //       port: parseInt(proxyUrl.port, 10),
-    //       // Add auth parsing if necessary
-    //     };
-    //     logger.info({ proxy: { host: proxyUrl.hostname, port: proxyUrl.port } }, 'Using proxy via CLI option');
-    //   } catch (e) {
-    //     logger.error({ proxyInput: options.proxy, err: e }, 'Invalid proxy URL provided via CLI');
-    //     process.exit(1);
-    //   }
-    // }
-
     console.info({ url, timeout: effectiveTimeout }, 'Starting scrape via CLI');
 
     const scraper = createScraper();
 
     try {
-      const html = await scraper.scrape(url, {
-        timeout: effectiveTimeout,
-        // proxy: proxyConfig
-      });
+      const html = await scraper.scrape(url);
       console.info({ url, length: html.length, preview: html.substring(0, 500) + '...' }, 'Scrape successful');
       console.log(html);
     } catch (error) {

@@ -21,9 +21,8 @@ export interface Scraper {
   /**
    * Fetches and cleans the primary textual content from a given URL.
    * @param url The URL of the page to scrape.
-   * @param options Optional configuration including proxy, headers, timeout, and logger.
    * @returns A promise that resolves with the cleaned text content as a string.
    * @throws Throws a ScraperError if the fetch or processing fails.
    */
-  scrape: (url: string, options?: ScraperOptions) => Promise<string>;
+  scrape: (url: string) => Promise<string>;
 } 
