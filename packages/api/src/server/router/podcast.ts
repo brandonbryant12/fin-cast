@@ -82,7 +82,7 @@ export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => 
         }),
 
     myPodcasts: protectedProcedure
-        .query(async ({ ctx }): Promise<SelectPodcast[]> => {
+        .query(async ({ ctx }) => {
             const userId = ctx.session.user.id;
             const procedureLogger = ctx.logger.child({ userId, procedure: 'myPodcasts' });
             try {

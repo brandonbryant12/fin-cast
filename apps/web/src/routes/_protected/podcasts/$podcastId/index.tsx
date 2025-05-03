@@ -1,5 +1,4 @@
 import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from '@repo/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/card';
 import { Input } from '@repo/ui/components/input';
@@ -17,7 +16,7 @@ import { useForm } from '@tanstack/react-form';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { AlertCircle, Terminal, Pencil, Play, Pause } from 'lucide-react';
+import { AlertCircle, Terminal, Pencil, Play, Pause, LinkIcon } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
@@ -29,6 +28,7 @@ import { authClient } from '@/clients/authClient';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { useVoices, type PersonalityInfo, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
+import { PodcastTags } from '@/routes/-components/common/podcast-tags';
 import Spinner from '@/routes/-components/common/spinner';
 import { StarRatingDisplay } from '@/routes/-components/common/star-rating-display';
 
@@ -46,16 +46,6 @@ export const Route = createFileRoute('/_protected/podcasts/$podcastId/')({
  component: PodcastDetailPage,
  validateSearch: (search: Record<string, unknown>): Record<string, unknown> => { return {} },
 });
-
-
-const chipColorClasses = [
-  "bg-teal-600 hover:bg-teal-700 text-white",
-  "bg-sky-600 hover:bg-sky-700 text-white",
-  "bg-amber-600 hover:bg-amber-700 text-white",
-  "bg-rose-600 hover:bg-rose-700 text-white",
-  "bg-violet-600 hover:bg-violet-700 text-white",
-  "bg-lime-600 hover:bg-lime-700 text-white",
-];
 
 
 function PodcastDetailPage() {
@@ -306,21 +296,7 @@ function PodcastDetailPage() {
         <>
           <CardTitle className="text-3xl font-bold text-foreground">{typedPodcast.title}</CardTitle>
           
-          <div className={cn("flex space-x-2 flex-shrink-0", isEditing && "mt-7")}>
-              {/* Use fetched tags, ensure tags is an array */}
-              {(typedPodcast.tags ?? []).map((tagObj, index) => (
-                  <Badge
-                      key={tagObj.tag} // Use tag string as key
-                      variant="outline"
-                      className={cn(
-                          "border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                          chipColorClasses[index % chipColorClasses.length]
-                      )}
-                  >
-                      {tagObj.tag} {/* Display the tag string */}
-                  </Badge>
-              ))}
-          </div>
+          <PodcastTags tags={typedPodcast.tags} className="pt-1" />
 
           {/* Add Star Rating Display here, after tags */}
           <div className="flex items-center mt-2 mb-3">
@@ -339,7 +315,23 @@ function PodcastDetailPage() {
             </CardDescription>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
+          {/* Display Source URL if available */}
+          {typedPodcast.sourceType === 'url' && typedPodcast.sourceDetail && (typedPodcast.sourceDetail.startsWith('http://') || typedPodcast.sourceDetail.startsWith('https://')) && (
+             <div className="pt-3 flex items-center gap-1.5">
+               <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <a
+                  href={typedPodcast.sourceDetail}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-sky-500 hover:text-sky-400 hover:underline truncate"
+                  title={typedPodcast.sourceDetail}
+                >
+                  {typedPodcast.sourceDetail}
+                </a>
+             </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-4">
               <Button
                   variant="outline"
                   size="icon"

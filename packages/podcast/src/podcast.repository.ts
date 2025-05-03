@@ -1,6 +1,5 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
-import { type Tag } from '@repo/db/schema'; // Import Tag type
 import type { PersonalityId } from './personalities/personalities';
 import type { DatabaseInstance } from '@repo/db/client';
 
@@ -8,6 +7,10 @@ type SelectTranscript = typeof schema.transcript.$inferSelect;
 type FullPodcast = typeof schema.podcast.$inferSelect;
 
 export type PodcastSummary = FullPodcast;
+
+export type PodcastSummaryWithTags = FullPodcast & {
+  tags: { tag: string }[];
+};
 
 export type PodcastWithTranscript = FullPodcast & {
     transcript: SelectTranscript | null;
@@ -21,7 +24,6 @@ export interface DialogueSegment {
     line: string;
 }
 
-// Type definition for the partial update payload, ensuring type safety
 type PodcastUpdatePayload = Partial<Omit<FullPodcast, 'id' | 'userId' | 'createdAt' | 'sourceType' | 'sourceDetail'> & { summary?: string | null }>;
 
 
@@ -196,22 +198,23 @@ export class PodcastRepository {
       }
     }
   
-    async findPodcastsByUser(userId: string): Promise<PodcastSummary[]> {
+    async findPodcastsByUser(userId: string): Promise<PodcastSummaryWithTags[]> {
       const results = await this.db.query.podcast.findMany({
         where: eq(schema.podcast.userId, userId),
           orderBy: desc(schema.podcast.createdAt),
-          // Keep existing columns selection
           columns: { id: true, userId: true, title: true, summary: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true },
           with: {
-            tags: { // Include related tags
+            tags: {
               columns: {
                 tag: true,
               }
             }
           }
         });
-        // Map results to include tags as a simple string array
-        return results.map(p => ({ ...p, tags: p.tags?.map(t => t.tag) ?? [] }));
+        return results.map(p => ({
+            ...p,
+            tags: p.tags?.map(t => ({ tag: t.tag })) ?? [],
+        }));
       }
 
     async getPodcastAudioUrl(userId: string, podcastId: string): Promise<string | null | undefined> {

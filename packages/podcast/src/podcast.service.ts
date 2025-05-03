@@ -9,7 +9,7 @@ import { createAudioService } from './audio.service';
 import { DialogueSynthesisService } from './dialogue-synthesis.service';
 import { PersonalityId, enrichPersonalities, type PersonalityInfo } from './personalities/personalities';
 import { PodcastGenerationService } from './podcast-generation.service';
-import { PodcastRepository, type PodcastSummary, type PodcastWithTranscript } from './podcast.repository';
+import { PodcastRepository, type PodcastSummary, type PodcastWithTranscript, type PodcastSummaryWithTags } from './podcast.repository';
 
 
 const DialogueSegmentSchema = v.object({
@@ -94,7 +94,7 @@ export class PodcastService {
         return initialPodcastSummary;
     }
 
-    async getMyPodcasts(userId: string): Promise<PodcastSummary[]> {
+    async getMyPodcasts(userId: string): Promise<PodcastSummaryWithTags[]> {
         return this.podcastRepository.findPodcastsByUser(userId);
     }
 

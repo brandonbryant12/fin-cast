@@ -1,17 +1,23 @@
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
-    Loader2,
-    AlertTriangle,
-    Play,
-    Pause,
-    Trash2,
-    Info,
+  Loader2,
+  AlertTriangle,
+  Play,
+  Pause,
+  Trash2,
+  Info,
+  LinkIcon,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import type { AppRouter } from '@repo/api/server';
 import type { inferRouterOutputs } from '@trpc/server';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
+import { trpc } from '@/router';
+import { PodcastTags } from '@/routes/-components/common/podcast-tags';
+import { StarRatingDisplay } from '@/routes/-components/common/star-rating-display';
 
 
 type PodcastListOutput = inferRouterOutputs<AppRouter>['podcasts']['myPodcasts'];
@@ -41,8 +47,6 @@ const formatDuration = (seconds: number | null): string | null => {
 };
 
 export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
-    // Removed isExpanded state
-
     const {
         activePodcast,
         isPlaying: isContextPlaying,
@@ -64,14 +68,28 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
         errorMessage,
     } = podcast;
 
+    const reviewsQueryOptions = trpc.reviews.byEntityId.queryOptions({ entityId: id, contentType: 'podcast' });
+    const { data: reviews, isLoading: isLoadingReviews } = useQuery(reviewsQueryOptions);
+
+    const { averageRating, totalReviews } = useMemo(() => {
+      if (!reviews || reviews.length === 0) {
+          return { averageRating: 0, totalReviews: 0 };
+        }
+        const totalStars = reviews.reduce((sum, review) => sum + review.stars, 0);
+        const avg = totalStars / reviews.length;
+        return { averageRating: avg, totalReviews: reviews.length };
+     }, [reviews]);
+
+
     const isActive = activePodcast?.id === id;
     const shouldShowPauseIcon = isActive && isContextPlaying;
     const isProcessing = status === 'processing';
 
-    // Removed podcastByIdQuery
-
     const formattedDate = formatDate(createdAt);
     const formattedDuration = formatDuration(durationSeconds);
+
+    // Determine the hover title based on source type
+    const hoverTitle = sourceType === 'url' && sourceDetail ? `Source: ${sourceDetail}` : undefined;
 
     const getStatusIndicator = () => {
         switch (status) {
@@ -90,33 +108,6 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
         }
     };
 
-    const renderSecondaryContent = () => {
-        if (sourceType === 'url' && sourceDetail) {
-            const looksLikeUrl = sourceDetail.startsWith('http://') || sourceDetail.startsWith('https://');
-            if (looksLikeUrl) {
-                 return (
-                    <a
-                        href={sourceDetail}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sky-400 hover:text-sky-300 hover:underline truncate"
-                        title={sourceDetail}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {sourceDetail}
-                    </a>
-                );
-            } else {
-                return <span className="block truncate" title={sourceDetail}>{sourceDetail}</span>;
-            }
-        } else if (description) {
-            return <span className="block truncate" title={description}>{description}</span>;
-        } else if (sourceType) {
-             return <span className="block truncate" title={sourceType}>{`${sourceType}${sourceDetail ? `: ${sourceDetail}` : ''}`}</span>;
-        } else {
-            return <span className="text-gray-500">No details</span>;
-        }
-    };
 
     const handlePlayPauseClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -139,70 +130,97 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
 
     return (
         <div
+            title={hoverTitle}
             className={cn(
                 'flex flex-col p-4 rounded-md border transition-colors duration-150',
                 status === 'failed' ? 'border-red-500/30 bg-red-900/10' : 'border-slate-700',
                 isActive ? 'bg-slate-700/70' : 'bg-slate-800/50'
             )}
         >
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-start justify-between w-full">
                 <div className="flex items-center space-x-4 flex-1 min-w-0">
-                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">{getStatusIndicator()}</div>
+                    <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center pt-1">{getStatusIndicator()}</div>
                     <div className="flex-1 min-w-0">
                         <p className="text-base font-medium text-white truncate" title={title || 'Untitled Podcast'}>
                             {title || 'Untitled Podcast'}
                         </p>
-                        <p className="text-sm text-gray-400 min-w-0 overflow-hidden">
-                           {renderSecondaryContent()}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            {formattedDate} {formattedDuration ? `| ${formattedDuration}` : ''}
-                        </p>
+                        <div className="mt-1.5">
+                           <PodcastTags tags={podcast.tags} />
+                         </div>
+                        {!isLoadingReviews && totalReviews > 0 && (
+                            <div className="mt-1.5 flex items-center">
+                             <StarRatingDisplay
+                                rating={averageRating}
+                                totalReviews={totalReviews}
+                                showText={true}
+                                size={14}
+                              />
+                            </div>
+                        )}
                         {status === 'failed' && errorMessage && (
                             <p className="text-xs text-red-400 mt-1 truncate" title={errorMessage}>{errorMessage}</p>
                         )}
                     </div>
                 </div>
-                <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-                     {status === 'success' && (
-                        <Button
-                            variant="ghost" size="icon"
-                            onClick={handlePlayPauseClick}
-                            className={cn(
-                                'text-gray-300 hover:text-white hover:bg-slate-700',
-                            )}
-                            aria-label={shouldShowPauseIcon ? 'Pause Podcast' : 'Play Podcast'}
-                        >
-                            {shouldShowPauseIcon ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        </Button>
-                    )}
-                    <Link
-                        to="/podcasts/$podcastId"
-                        params={{ podcastId: id }}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label="View Details" // Changed label
-                        aria-disabled={isProcessing}
-                        className={cn(isProcessing && 'pointer-events-none')}
-                    >
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
-                            disabled={isProcessing}
-                            aria-hidden="true"
-                        >
-                            <Info className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <Button
-                         variant="ghost" size="icon"
-                         onClick={(e) => {
-                            e.stopPropagation();
-                             onDelete(id);
-                         }}
-                         className="text-red-500 hover:text-red-400 hover:bg-red-900/30" aria-label="Delete Podcast">
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                <div className="flex flex-col items-end space-y-1 ml-2 flex-shrink-0">
+                  <div className="flex items-center space-x-1">
+                      {status === 'success' && (
+                          <Button
+                              variant="ghost" size="icon"
+                              onClick={handlePlayPauseClick}
+                              className={cn(
+                                  'text-gray-300 hover:text-white hover:bg-slate-700',
+                              )}
+                              aria-label={shouldShowPauseIcon ? 'Pause Podcast' : 'Play Podcast'}
+                          >
+                              {shouldShowPauseIcon ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                      )}
+                      {sourceType === 'url' && sourceDetail && (sourceDetail.startsWith('http://') || sourceDetail.startsWith('https://')) && (
+                         <Button
+                              variant="ghost"
+                              size="icon"
+                              asChild
+                              className="text-sky-400 hover:text-sky-300 hover:bg-slate-700"
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label="View Source URL"
+                          >
+                             <a href={sourceDetail} target="_blank" rel="noopener noreferrer">
+                               <LinkIcon className="h-4 w-4" />
+                             </a>
+                         </Button>
+                      )}
+                      <Link
+                          to="/podcasts/$podcastId"
+                          params={{ podcastId: id }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="View Details"
+                          aria-disabled={isProcessing}
+                          className={cn(isProcessing && 'pointer-events-none')}
+                      >
+                          <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
+                              disabled={isProcessing}
+                              aria-hidden="true"
+                          >
+                              <Info className="h-4 w-4" />
+                          </Button>
+                      </Link>
+                      <Button
+                           variant="ghost" size="icon"
+                           onClick={(e) => {
+                               e.stopPropagation();
+                                onDelete(id);
+                           }}
+                           className="text-red-500 hover:text-red-400 hover:bg-red-900/30" aria-label="Delete Podcast">
+                          <Trash2 className="h-4 w-4" />
+                      </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 text-right pr-1">
+                       {formattedDate} {formattedDuration ? `| ${formattedDuration}` : ''}
+                  </p>
                 </div>
             </div>
         </div>
