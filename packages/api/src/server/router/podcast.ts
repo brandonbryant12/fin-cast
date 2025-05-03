@@ -40,18 +40,20 @@ const UpdatePodcastInput = v.pipe(
     v.object({
         podcastId: v.pipe(v.string(), v.uuid('Invalid podcast ID format')),
         title: v.optional(v.pipe(v.string(), v.minLength(1, 'Title cannot be empty.'))),
+        summary: v.optional(v.pipe(v.string(), v.minLength(1, 'Summary cannot be empty.'))), // Added summary
         content: v.optional(v.pipe(v.array(DialogueSegmentSchema), v.minLength(1, 'Podcast content must contain at least one segment.'))),
         hostPersonalityId: v.optional(v.enum(PersonalityId, 'Invalid host personality selected')),
         cohostPersonalityId: v.optional(v.enum(PersonalityId, 'Invalid co-host personality selected')),
-    }),
-    v.check(
+      }),
+      v.check(
         (input) =>
             input.title !== undefined ||
+            input.summary !== undefined || // Added summary check
             input.content !== undefined ||
             input.hostPersonalityId !== undefined ||
             input.cohostPersonalityId !== undefined,
-        'At least one field (title, content, hostPersonalityId, cohostPersonalityId) must be provided for update.'
-    )
+          'At least one field (title, summary, content, hostPersonalityId, cohostPersonalityId) must be provided for update.'
+        )
 );
 
 

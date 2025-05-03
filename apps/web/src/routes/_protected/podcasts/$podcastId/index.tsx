@@ -80,11 +80,12 @@ function PodcastDetailPage() {
  const form = useForm({
   defaultValues: {
    title: podcast?.title,
+   summary: podcast?.summary,
    hostPersonalityId: podcast?.hostPersonalityId,
    cohostPersonalityId: podcast?.cohostPersonalityId,
    dialogue: podcast?.transcript?.content as DialogueSegment[],
-  },
-  onSubmit: async ({ value }) => {
+ },
+ onSubmit: async ({ value }) => {
    const originalData = podcast as PodcastOutput | null | undefined;
    if (!originalData) {
     toast.error("Failed to save: Original data unavailable.");
@@ -103,7 +104,7 @@ function PodcastDetailPage() {
    const changes: Partial<UpdatePodcastInputType> = {};
 
    if (value.title !== originalData.title) {
-    changes.title = value.title;
+     changes.title = value.title;
    }
    if (value.hostPersonalityId !== originalData.hostPersonalityId) {
     changes.hostPersonalityId = value.hostPersonalityId as PersonalityId;
@@ -145,10 +146,11 @@ function PodcastDetailPage() {
    if (!data) {
     return;
    }
-   form.reset({
-     title: data.title || '',
-     hostPersonalityId: data.hostPersonalityId || undefined,
-     cohostPersonalityId: data.cohostPersonalityId || undefined,
+    form.reset({
+      title: data.title || '',
+      summary: data.summary || '',
+      hostPersonalityId: data.hostPersonalityId || undefined,
+      cohostPersonalityId: data.cohostPersonalityId || undefined,
      dialogue: Array.isArray(data.transcript?.content) ? data.transcript.content : [],
    });
  }, [form]);
@@ -303,6 +305,13 @@ function PodcastDetailPage() {
               ))}
           </div>
 
+          {/* Display Summary */}
+          {typedPodcast.summary && (
+            <CardDescription className="text-muted-foreground pt-2 text-base">
+              {typedPodcast.summary}
+            </CardDescription>
+          )}
+
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
               <Button
                   variant="outline"
@@ -338,11 +347,28 @@ function PodcastDetailPage() {
               placeholder="Enter podcast title"
              />
             </div>
-           )}
+            )}
+          </form.Field>
+           {/* Summary Edit Field */}
+           <form.Field name="summary" key={`summary-${isEditing}`}>
+             {(field) => (
+               <div className="space-y-1 pt-2">
+                 <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Podcast Summary</Label>
+                 <Textarea
+                   id={field.name}
+                   name={field.name}
+                   value={field.state.value ?? ''}
+                   onBlur={field.handleBlur}
+                   onChange={(e) => field.handleChange(e.target.value)}
+                   className="bg-input min-h-[60px]"
+                   placeholder="Enter a brief summary..."
+                 />
+               </div>
+             )}
           </form.Field>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-           <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
-            {(field) => {
+            <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
+              {(field) => {
              const currentHostIdBeforeChange = field.state.value;
              return (
               <div className="space-y-1">

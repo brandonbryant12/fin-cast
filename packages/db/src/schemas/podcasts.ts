@@ -26,7 +26,8 @@ export const podcast = pgTable('podcast', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 256 }).notNull(),
-  description: text('description'),
+  summary: text('summary'), // Added summary field
+  description: text('description'), // Kept description, maybe repurpose later or remove if summary replaces it fully
   status: podcastStatusEnum('status').notNull().default('processing'),
   sourceType: text('source_type'),
   sourceDetail: text('source_detail'),
@@ -53,4 +54,3 @@ export const podcastRelations = relations(podcast, ({ one, many }) => ({
 
 export const Podcast = createSelectSchema(podcast);
 export const NewPodcast = createInsertSchema(podcast); 
-

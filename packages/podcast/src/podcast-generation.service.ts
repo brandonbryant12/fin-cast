@@ -99,8 +99,7 @@ export class PodcastGenerationService {
                   logger.info('No tags returned by LLM to add.');
                 }
       
-                // Process audio and finalize
-                await this._processAudioAndFinalize(podcastId, scriptData.dialogue, hostPersonalityId, cohostPersonalityId, scriptData.title);
+                await this._processAudioAndFinalize(podcastId, scriptData.dialogue, hostPersonalityId, cohostPersonalityId, scriptData.title, scriptData.summary);
       
               } else {
                 const errorMsg = llmResponse?.error ?? 'LLM did not return valid structured output.';
@@ -139,11 +138,11 @@ export class PodcastGenerationService {
 
         try {
             if (dialogueContent.length === 0) {
-                throw new Error('Cannot regenerate audio: No dialogue content provided or found.');
+              throw new Error('Cannot regenerate audio: No dialogue content provided or found.');
             }
-            await this._processAudioAndFinalize(podcastId, dialogueContent, hostPersonalityId, cohostPersonalityId, title);
+            await this._processAudioAndFinalize(podcastId, dialogueContent, hostPersonalityId, cohostPersonalityId, title, undefined);
             logger.info('Background audio regeneration finished successfully.');
-        } catch (error: unknown) {
+          } catch (error: unknown) {
             const errorMessage = this._formatErrorMessage(error, 'Background regeneration failed');
             logger.error({ err: error, errorMessage }, 'Background podcast audio regeneration failed.');
             try {
@@ -164,8 +163,9 @@ export class PodcastGenerationService {
         hostPersonalityId: PersonalityId,
         cohostPersonalityId: PersonalityId,
         finalTitle?: string,
+        finalSummary?: string,
     ): Promise<void> {
-        const logger = this.logger.child({ podcastId, method: '_processAudioAndFinalize' });
+      const logger = this.logger.child({ podcastId, method: '_processAudioAndFinalize' });
         logger.info('Starting audio processing and finalization.');
 
         let finalAudioBase64: string | undefined | null = null;
@@ -217,11 +217,12 @@ export class PodcastGenerationService {
             logger.info('Updating database with generated audio data and success status.');
             await this.podcastRepository.updatePodcast(podcastId, {
                 ...(finalTitle && { title: finalTitle }),
+                ...(finalSummary && { summary: finalSummary }),
                 audioUrl: finalAudioBase64,
                 durationSeconds: durationSeconds,
                 status: 'success',
                 errorMessage: null,
-                generatedAt: new Date(), // Mark generation time
+                generatedAt: new Date(),
             });
             logger.info('Database update successful.');
 

@@ -114,11 +114,12 @@ export class PodcastService {
     async updatePodcast(userId: string, input: {
         podcastId: string,
         title?: string | undefined,
+        summary?: string | undefined, // Added summary
         content?: any,
         hostPersonalityId?: PersonalityId | undefined
         cohostPersonalityId?: PersonalityId | undefined
-    }): Promise<{ success: boolean }> {
-        const { podcastId, title, content, hostPersonalityId, cohostPersonalityId } = input;
+      }): Promise<{ success: boolean }> {
+        const { podcastId, title, summary, content, hostPersonalityId, cohostPersonalityId } = input; // Added summary
         const logger = this.logger.child({ userId, podcastId, method: 'updatePodcast' });
 
         logger.info('Fetching podcast for update and authorization check.');
@@ -162,11 +163,12 @@ export class PodcastService {
             updatedAt: new Date(),
             errorMessage: null, // Clear previous errors on new update attempt
         };
-
+  
         if (title !== undefined) initialUpdatePayload.title = title;
+        if (summary !== undefined) initialUpdatePayload.summary = summary; // Added summary
         if (hostPersonalityId !== undefined) initialUpdatePayload.hostPersonalityId = hostPersonalityId;
         if (cohostPersonalityId !== undefined) initialUpdatePayload.cohostPersonalityId = cohostPersonalityId;
-
+  
         if (needsRegeneration) {
             logger.info('Regeneration required. Setting status to processing and clearing audio fields.');
             initialUpdatePayload.status = 'processing';
@@ -203,8 +205,8 @@ export class PodcastService {
                 dialogueToRegenerate,
                 finalHostId,
                 finalCohostId,
-                title
-            ).catch((err) => {
+                title,
+              ).catch((err) => {
                 logger.error({ err, podcastId }, "Background podcast regeneration task failed after initiation.");
             });
         }

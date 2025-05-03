@@ -11,7 +11,7 @@ export type PodcastSummary = FullPodcast;
 
 export type PodcastWithTranscript = FullPodcast & {
     transcript: SelectTranscript | null;
-    tags: { tag: string }[]; // Updated to include tags
+    tags: { tag: string }[];y
 };
 
 export type PodcastStatus = FullPodcast['status'];
@@ -22,7 +22,7 @@ export interface DialogueSegment {
 }
 
 // Type definition for the partial update payload, ensuring type safety
-type PodcastUpdatePayload = Partial<Omit<FullPodcast, 'id' | 'userId' | 'createdAt' | 'sourceType' | 'sourceDetail'>>;
+type PodcastUpdatePayload = Partial<Omit<FullPodcast, 'id' | 'userId' | 'createdAt' | 'sourceType' | 'sourceDetail'> & { summary?: string | null }>;
 
 
 export class PodcastRepository {
@@ -102,7 +102,7 @@ export class PodcastRepository {
             where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
             // Explicitly list columns to omit audioUrl by default if it's large/not always needed
             columns: {
-                id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true,
+              id: true, userId: true, title: true, summary: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true,
             },
             with: {
                 transcript: { // Eager load transcript content
@@ -150,8 +150,7 @@ export class PodcastRepository {
         }
         if ('generatedAt' in updateData && updateData.generatedAt === undefined) {
           updateData.generatedAt = null;
-        }
-
+        }    
         const result = await this.db.update(schema.podcast)
             .set(updateData)
             .where(eq(schema.podcast.id, podcastId))
@@ -202,7 +201,7 @@ export class PodcastRepository {
         where: eq(schema.podcast.userId, userId),
           orderBy: desc(schema.podcast.createdAt),
           // Keep existing columns selection
-          columns: { id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true },
+          columns: { id: true, userId: true, title: true, summary: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true },
           with: {
             tags: { // Include related tags
               columns: {
