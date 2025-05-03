@@ -26,6 +26,7 @@
     "@repo/logger": "workspace:*",
     "@repo/webscraper": "workspace:*",
     "@repo/podcast": "workspace:*",
+    "@repo/reviews": "workspace:*",
     "hono": "catalog:",
     "valibot": "catalog:",
     "@repo/secrets": "workspace:*"

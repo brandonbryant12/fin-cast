@@ -1,17 +1,23 @@
 {
-  "name": "@repo/api",
-  "license": "MIT",
+  "name": "@repo/reviews",
   "version": "0.1.0",
   "private": true,
+  "description": "Package for handling reviews",
+  "license": "MIT",
+  "sideEffects": false,
   "type": "module",
   "exports": {
-    "./client": {
-      "types": "./dist/src/client/index.d.ts",
-      "default": "./src/client/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     },
-    "./server": {
-      "types": "./dist/src/server/index.d.ts",
-      "default": "./src/server/index.ts"
+     "./service": {
+      "types": "./src/review.service.ts",
+      "default": "./src/review.service.ts"
+    },
+    "./router": {
+       "types": "./src/review.router.ts",
+      "default": "./src/review.router.ts"
     }
   },
   "scripts": {
@@ -22,29 +28,20 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
-  "prettier": "@repo/prettier-config",
   "dependencies": {
-    "@repo/auth": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/tts": "workspace:*",
     "@repo/logger": "workspace:*",
-    "@repo/webscraper": "workspace:*",
-    "@repo/podcast": "workspace:*",
-    "@repo/reviews": "workspace:*",
-    "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
-    "superjson": "catalog:",
-    "url-join": "catalog:",
     "valibot": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/prettier-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
     "eslint": "catalog:",
-    "pino-pretty": "^10.3.1",
     "prettier": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:"
-  }
+    "typescript": "catalog:"
+  },
+  "prettier": "@repo/prettier-config"
 }

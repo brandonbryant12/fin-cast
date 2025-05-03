@@ -18,16 +18,19 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AlertCircle, Terminal, Pencil, Play, Pause } from 'lucide-react';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
 import type { AppRouter } from '@repo/api/server';
 import type { TRPCClientErrorLike } from '@trpc/client';
 import type { inferRouterOutputs, inferProcedureInput } from '@trpc/server';
+import { LeaveReviewModal } from '../-components/leave-review-modal';
+import { authClient } from '@/clients/authClient';
 import { useAudioPlayer } from '@/contexts/audio-player-context';
 import { useVoices, type PersonalityInfo, PersonalityId } from '@/contexts/voices-context';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
+import { StarRatingDisplay } from '@/routes/-components/common/star-rating-display';
 
 const DialogueSegmentSchema = v.object({
  speaker: v.string(),
@@ -58,14 +61,30 @@ const chipColorClasses = [
 function PodcastDetailPage() {
  const { podcastId } = Route.useParams();
  const [isEditing, setIsEditing] = useState(false);
- const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
-  const editingTextareaRef = useRef<HTMLTextAreaElement>(null);
- const queryClient = useQueryClient();
 
+ const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
+ const editingTextareaRef = useRef<HTMLTextAreaElement>(null);
+ const queryClient = useQueryClient();
+ const { data: session } = authClient.useSession();
+
+ const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+ const reviewsQueryOptions = trpc.reviews.byEntityId.queryOptions({ entityId: podcastId, contentType: 'podcast' });
+ const { data: reviews } = useQuery(reviewsQueryOptions);
+
+  const { averageRating, totalReviews } = useMemo(() => {
+    if (!reviews || reviews.length === 0) {
+       return { averageRating: 0, totalReviews: 0, currentUserHasReviewed: false };
+     }
+     const totalStars = reviews.reduce((sum, review) => sum + review.stars, 0);
+     const avg = totalStars / reviews.length;
+     const hasReviewed = reviews.some(review => review.userId === session?.user?.id);
+     return { averageRating: avg, totalReviews: reviews.length, currentUserHasReviewed: hasReviewed };
+   }, [reviews, session?.user?.id]);
  const podcastQueryOptions = trpc.podcasts.byId.queryOptions({ id: podcastId });
  const { data: podcast, isLoading: isLoadingPodcast, isError: isPodcastError, error: podcastError } = useQuery(podcastQueryOptions);
  const { availableVoices, isLoadingVoices } = useVoices();
- const {
+
+  const {
     activePodcast,
     isPlaying: isContextPlaying,
     loadTrack,
@@ -120,7 +139,6 @@ function PodcastDetailPage() {
    }
 
    if (Object.keys(changes).length === 0) {
-    toast.info("No changes detected.");
     setIsEditing(false);
     return;
    }
@@ -161,11 +179,6 @@ function PodcastDetailPage() {
     }
   }, [editingSegmentIndex]);
 
-
- const handleRemoveSegment = (index: number) => {
-  const currentDialogue = form.getFieldValue('dialogue') || [];
-  form.setFieldValue('dialogue', currentDialogue.filter((_: any, i: number) => i !== index));
- };
 
  const handleUpdateSegment = (index: number, updatedSegment: DialogueSegment) => {
   const currentDialogue = form.getFieldValue('dialogue') || [];
@@ -238,7 +251,7 @@ function PodcastDetailPage() {
  };
 
  if (isLoadingPodcast || isLoadingVoices) {
-  return <div className="flex justify-center items-center h-64"><Spinner className="h-16 w-16" /></div>;
+  return <div className="flex justify-center items-center h-64"><Spinner /></div>;
  }
 
  if (isPodcastError) {
@@ -272,6 +285,10 @@ function PodcastDetailPage() {
  const isCurrentPodcastPlaying = activePodcast?.id === typedPodcast.id && isContextPlaying;
  const canPlayPodcast = typedPodcast.status === 'success' && !!typedPodcast.audioUrl;
 
+ const handleReviewSuccess = () => {
+   queryClient.invalidateQueries({ queryKey: reviewsQueryOptions.queryKey });
+ };
+
  return (
   <form
    onSubmit={(e) => {
@@ -288,8 +305,8 @@ function PodcastDetailPage() {
        {!isEditing ? (
         <>
           <CardTitle className="text-3xl font-bold text-foreground">{typedPodcast.title}</CardTitle>
-
-          <div className="flex flex-wrap gap-2">
+          
+          <div className={cn("flex space-x-2 flex-shrink-0", isEditing && "mt-7")}>
               {/* Use fetched tags, ensure tags is an array */}
               {(typedPodcast.tags ?? []).map((tagObj, index) => (
                   <Badge
@@ -303,6 +320,16 @@ function PodcastDetailPage() {
                       {tagObj.tag} {/* Display the tag string */}
                   </Badge>
               ))}
+          </div>
+
+          {/* Add Star Rating Display here, after tags */}
+          <div className="flex items-center mt-2 mb-3">
+            <StarRatingDisplay
+              rating={averageRating}
+              totalReviews={totalReviews}
+              showText={true}
+              size={18}
+            />
           </div>
 
           {/* Display Summary */}
@@ -329,13 +356,13 @@ function PodcastDetailPage() {
               <CardDescription className="text-muted-foreground text-sm">
                   Host: {currentHostName} | Co-host: {currentCohostName}
               </CardDescription>
-          </div>
-        </>
-       ) : (
-        <>
-          <form.Field name="title" key={`title-${isEditing}`}>
-           {(field) => (
-            <div className="space-y-1">
+              </div>
+            </>
+        ) : (
+          <>
+           <form.Field name="title" key={`title-${isEditing}`}>
+            {(field) => (
+             <div className="space-y-1">
              <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Podcast Title</Label>
              <Input
               id={field.name}
@@ -348,25 +375,15 @@ function PodcastDetailPage() {
              />
             </div>
             )}
-          </form.Field>
-           {/* Summary Edit Field */}
-           <form.Field name="summary" key={`summary-${isEditing}`}>
-             {(field) => (
-               <div className="space-y-1 pt-2">
-                 <Label htmlFor={field.name} className="text-sm font-medium text-muted-foreground">Podcast Summary</Label>
-                 <Textarea
-                   id={field.name}
-                   name={field.name}
-                   value={field.state.value ?? ''}
-                   onBlur={field.handleBlur}
-                   onChange={(e) => field.handleChange(e.target.value)}
-                   className="bg-input min-h-[60px]"
-                   placeholder="Enter a brief summary..."
-                 />
-               </div>
-             )}
-          </form.Field>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+           </form.Field>
+           {/* Display Summary in Read-Only Mode */}
+           {typedPodcast.summary && (
+             <div className="space-y-1 pt-2">
+               <Label className="text-sm font-medium text-muted-foreground">Podcast Summary</Label>
+               <p className="text-muted-foreground text-base pt-1">{typedPodcast.summary}</p>
+             </div>
+           )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <form.Field name="hostPersonalityId" key={`host-${isEditing}`}>
               {(field) => {
              const currentHostIdBeforeChange = field.state.value;
@@ -431,15 +448,28 @@ function PodcastDetailPage() {
       </div>
       <div className="flex space-x-2 flex-shrink-0">
        {!isEditing ? (
-        <Button
-         variant="outline"
-         size="icon"
-         onClick={handleEditClick}
-         disabled={isProcessing}
-         aria-label="Edit Podcast"
-        >
-         <Pencil className="h-4 w-4" />
-        </Button>
+        <>
+         {/* Add Review Button next to edit button */}
+         {session?.user?.id && !reviews?.some(review => review.userId === session.user.id) && (
+          <Button
+           variant="outline"
+           size="sm"
+           onClick={() => setIsReviewModalOpen(true)}
+           aria-label="Leave Review"
+          >
+           Leave Review
+          </Button>
+         )}
+         <Button
+          variant="outline"
+          size="icon"
+          onClick={handleEditClick}
+          disabled={isProcessing}
+          aria-label="Edit Podcast"
+         >
+          <Pencil className="h-4 w-4" />
+         </Button>
+        </>
        ) : (
         <>
          <Button
@@ -504,21 +534,13 @@ function PodcastDetailPage() {
           const currentlyEditingSegment = editingSegmentIndex !== null ? dialogue[editingSegmentIndex] : null;
 
           const handleSegmentLineChange = (newLine: string) => {
-            if (editingSegmentIndex !== null) {
-              handleUpdateSegment(editingSegmentIndex, { ...dialogue[editingSegmentIndex], line: newLine });
+            if (editingSegmentIndex !== null && dialogue[editingSegmentIndex]) {
+              const updatedSegment: DialogueSegment = { 
+                speaker: dialogue[editingSegmentIndex].speaker, 
+                line: newLine 
+              };
+              handleUpdateSegment(editingSegmentIndex, updatedSegment);
             }
-          };
-
-          const handleSaveSegmentEdit = () => {
-            setEditingSegmentIndex(null);
-          };
-
-          const handleCancelSegmentEdit = () => {
-            if (editingSegmentIndex !== null && podcast?.transcript?.content?.[editingSegmentIndex]) {
-                const originalSegment = podcast.transcript.content[editingSegmentIndex] as DialogueSegment;
-                handleUpdateSegment(editingSegmentIndex, originalSegment);
-            }
-            setEditingSegmentIndex(null);
           };
 
           const getSegmentSpeakerName = (segmentSpeakerId: string | null | undefined) => {
@@ -570,7 +592,7 @@ function PodcastDetailPage() {
                     );
                   })
                 ) : (
-                  <p className="text-muted-foreground italic">No transcript segments to edit.</p>
+                  <p className="text-muted-foreground italic">No transcript segments available for editing.</p>
                 )}
              </div>
            </div>
@@ -580,6 +602,13 @@ function PodcastDetailPage() {
      )}
     </CardContent>
    </Card>
+    <LeaveReviewModal
+       podcastId={podcastId}
+       podcastTitle={typedPodcast.title ?? 'this podcast'}
+       open={isReviewModalOpen}
+       setOpen={setIsReviewModalOpen}
+       onSuccess={handleReviewSuccess}
+    />
   </form>
  );
 }

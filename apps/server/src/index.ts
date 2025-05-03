@@ -5,6 +5,7 @@ import { createAuth } from '@repo/auth/server';
 import { createDb } from '@repo/db/client';
 import { createLLMService, type LLMServiceConfig } from '@repo/llm';
 import { createPodcastService } from '@repo/podcast';
+import { createReviewService } from '@repo/reviews';
 import { createTtsService } from '@repo/tts';
 import { createScraper } from '@repo/webscraper';
 import { Hono } from 'hono';
@@ -154,7 +155,11 @@ async function startServer() {
     tts, 
     isRunningInDocker: env.IS_RUNNING_IN_DOCKER 
   });
-  const api = createApi({ auth, db, logger: logger.child({ service: 'api' }), podcast, tts });
+  const reviewService = createReviewService({
+     db,
+     logger: logger.child({ service: 'review' }),
+  });
+  const api = createApi({ auth, db, logger: logger.child({ service: 'api' }), podcast, tts, reviewService });
 
   const app = new Hono<{ Variables: { user: any; session: any; }}>({
     strict: false

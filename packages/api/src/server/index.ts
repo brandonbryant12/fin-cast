@@ -1,3 +1,4 @@
+import { type ReviewService } from '@repo/reviews'; // Added
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
@@ -5,13 +6,15 @@ import type { PodcastService } from '@repo/podcast';
 import type { TTSService } from '@repo/tts';
 import { createPodcastRouter } from './router/podcast';
 import { createPostRouter } from './router/post';
+import { createReviewRouter } from './router/review';
 import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
 
 
-export const createAppRouter = ({ podcast }: { podcast: PodcastService}) => {
+export const createAppRouter = ({ podcast, reviewService }: { podcast: PodcastService, reviewService: ReviewService }) => {
   return router({
     post: createPostRouter(),
     podcasts: createPodcastRouter({ podcast }),
+    reviews: createReviewRouter({ reviewService }),
   });
 };
 
@@ -23,16 +26,17 @@ interface CreateApiOptions {
   logger: AppLogger;
   tts: TTSService;
   podcast: PodcastService;
+  reviewService: ReviewService;
 }
 
-// Updated createApi function
 export const createApi = ({
   auth,
   db,
   logger,
   podcast,
+  reviewService,
 }: CreateApiOptions) => {
-  const mainRouter = createAppRouter({ podcast });
+  const mainRouter = createAppRouter({ podcast, reviewService });
   return {
     trpcRouter: mainRouter,
     createTRPCContext: ({ headers }: { headers: Headers }) =>
