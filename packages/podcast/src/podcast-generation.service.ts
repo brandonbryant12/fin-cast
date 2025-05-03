@@ -85,13 +85,24 @@ export class PodcastGenerationService {
 
             if (llmResponse.structuredOutput && !llmResponse.error) {
                 scriptData = llmResponse.structuredOutput;
-                logger.info('LLM returned valid structured output. Updating transcript and processing audio.');
-
+                logger.info('LLM returned valid structured output. Updating transcript, tags, and processing audio.');
+      
+                // Update transcript
                 await this.podcastRepository.updateTranscriptContent(podcastId, scriptData.dialogue);
                 logger.info('Transcript content updated in database.');
+      
+                // Add tags
+                if (scriptData.tags && scriptData.tags.length > 0) {
+                  await this.podcastRepository.addTagsForPodcast(podcastId, scriptData.tags);
+                  logger.info(`Added ${scriptData.tags.length} tags to the database.`);
+                } else {
+                  logger.info('No tags returned by LLM to add.');
+                }
+      
+                // Process audio and finalize
                 await this._processAudioAndFinalize(podcastId, scriptData.dialogue, hostPersonalityId, cohostPersonalityId, scriptData.title);
-
-            } else {
+      
+              } else {
                 const errorMsg = llmResponse?.error ?? 'LLM did not return valid structured output.';
                 logger.error({ llmError: errorMsg, llmResponse }, 'LLM script generation failed.');
                 throw new Error(`Podcast script generation failed: ${errorMsg}`);

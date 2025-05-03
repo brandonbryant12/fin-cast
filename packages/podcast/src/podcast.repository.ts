@@ -1,5 +1,6 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
+import { type Tag } from '@repo/db/schema'; // Import Tag type
 import type { PersonalityId } from './personalities/personalities';
 import type { DatabaseInstance } from '@repo/db/client';
 
@@ -10,6 +11,7 @@ export type PodcastSummary = FullPodcast;
 
 export type PodcastWithTranscript = FullPodcast & {
     transcript: SelectTranscript | null;
+    tags: { tag: string }[]; // Updated to include tags
 };
 
 export type PodcastStatus = FullPodcast['status'];
@@ -107,9 +109,14 @@ export class PodcastRepository {
                     columns: {
                         content: true, podcastId: true, id: true, createdAt: true, updatedAt: true, format: true
                     }
+                },
+                tags: { // Eager load tags
+                  columns: {
+                    tag: true,
+                  }
                 }
-            }
-        });
+              }
+            });
 
         if (!result) {
             return null;
@@ -119,8 +126,9 @@ export class PodcastRepository {
         return {
             ...result,
             transcript: result.transcript ?? null,
-        };
-    }
+            tags: result.tags ?? [], // Include tags, defaulting to empty array
+          };
+        }
 
 
     async updatePodcast(
@@ -168,15 +176,44 @@ export class PodcastRepository {
             console.warn(`Transcript for podcast ID ${podcastId} not found for update.`);
         }
     }
-
-    async findPodcastsByUser(userId: string): Promise<PodcastSummary[]> {
-        const results = await this.db.query.podcast.findMany({
-            where: eq(schema.podcast.userId, userId),
-            orderBy: desc(schema.podcast.createdAt),
-            columns: { id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true }
-        });
-        return results;
+  
+    /**
+     * Adds multiple tags for a specific podcast.
+     * @param podcastId The ID of the podcast.
+     * @param tags An array of tag strings to add.
+     */
+    async addTagsForPodcast(podcastId: string, tags: string[]): Promise<void> {
+      if (tags.length === 0) {
+        return; // Nothing to insert
+      }
+      const tagRecords = tags.map(tag => ({ podcastId, tag }));
+      try {
+        // Use onConflictDoNothing to avoid errors if a tag already exists for the podcast
+        await this.db.insert(schema.tag).values(tagRecords).onConflictDoNothing();
+      } catch (error) {
+        console.error(`Failed to add tags for podcast ${podcastId}:`, error);
+        // Optionally re-throw or handle more gracefully
+        throw new Error(`Could not add tags for podcast ${podcastId}`);
+      }
     }
+  
+    async findPodcastsByUser(userId: string): Promise<PodcastSummary[]> {
+      const results = await this.db.query.podcast.findMany({
+        where: eq(schema.podcast.userId, userId),
+          orderBy: desc(schema.podcast.createdAt),
+          // Keep existing columns selection
+          columns: { id: true, userId: true, title: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true },
+          with: {
+            tags: { // Include related tags
+              columns: {
+                tag: true,
+              }
+            }
+          }
+        });
+        // Map results to include tags as a simple string array
+        return results.map(p => ({ ...p, tags: p.tags?.map(t => t.tag) ?? [] }));
+      }
 
     async getPodcastAudioUrl(userId: string, podcastId: string): Promise<string | null | undefined> {
         const result = await this.db.query.podcast.findFirst({
@@ -201,9 +238,10 @@ export class PodcastRepository {
                     throw new Error('Unauthorized delete');
                 }
 
-                // Delete transcript first (or handle cascade delete in DB schema)
+                // Delete related records first (or handle cascade delete in DB schema)
                 await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
-
+                await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId)); // Delete tags
+        
                 // Then delete podcast
                 const result = await tx
                     .delete(schema.podcast)

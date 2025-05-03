@@ -15,6 +15,8 @@ const dialogueSegmentSchema = v.object({
     line: v.pipe(v.string(), v.minLength(1, "Dialogue line cannot be empty.")),
 });
 const outputSchema = v.object({
+    summary: v.pipe(v.string(), v.maxLength(300), v.minLength(1)),
+    tags:  v.pipe(v.array(v.string()), v.minLength(1, "Must contain at least one tag.")),
     title: v.pipe(v.string(), v.minLength(1, "Title cannot be empty.")),
     dialogue: v.pipe(v.array(dialogueSegmentSchema), v.minLength(1, "Dialogue must contain at least one segment.")),
 });
@@ -27,7 +29,7 @@ export const generatePodcastScriptPrompt = Prompt.define<Params, GeneratePodcast
     outputSchema: { parse: (input: unknown) => v.parse(outputSchema, input) },
     defaultOptions: {
         temperature: 0.70,
-        maxTokens: 1000,
+        maxTokens: 3000,
     },
     template: (params: Params): string => {
         const { htmlContent, hostName, hostPersonalityDescription, cohostName, cohostPersonalityDescription } = params;
@@ -42,8 +44,12 @@ You are an expert podcast script writer. Your task is to create an engaging podc
 **CRITICAL OUTPUT REQUIREMENT:**
 Your entire response MUST be a single, valid JSON object. Do NOT include any text, explanation, markdown formatting, or anything else before or after the JSON object. The JSON object must strictly adhere to the following structure:
 
+generate 3 tags that represent the main ideas of the topic and include a short summary no more than 240 characters.
+
 {
   "title": "string",
+  "tags": ["string"],
+  "summary": "string",
   "dialogue": [
     {
       "speaker":  ${hostName} | ${cohostName},

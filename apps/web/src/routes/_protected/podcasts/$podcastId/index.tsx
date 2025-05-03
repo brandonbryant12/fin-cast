@@ -18,7 +18,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AlertCircle, Terminal, Pencil, Play, Pause } from 'lucide-react';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
 import type { AppRouter } from '@repo/api/server';
@@ -33,10 +33,9 @@ const DialogueSegmentSchema = v.object({
  speaker: v.string(),
  line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
 });
-
 type DialogueSegment = v.InferInput<typeof DialogueSegmentSchema>;
 
-type PodcastOutput = inferRouterOutputs<AppRouter>['podcasts']['byId'];
+type PodcastOutput = NonNullable<inferRouterOutputs<AppRouter>['podcasts']['byId']>;
 
 type UpdatePodcastInputType = inferProcedureInput<AppRouter['podcasts']['update']>;
 
@@ -45,7 +44,6 @@ export const Route = createFileRoute('/_protected/podcasts/$podcastId/')({
  validateSearch: (search: Record<string, unknown>): Record<string, unknown> => { return {} },
 });
 
-const staticKeyTopics = ["Market Analysis", "AI Impact", "Q1 Earnings", "Federal Reserve", "Tech Stocks", "Global Economy"];
 
 const chipColorClasses = [
   "bg-teal-600 hover:bg-teal-700 text-white",
@@ -290,16 +288,17 @@ function PodcastDetailPage() {
           <CardTitle className="text-3xl font-bold text-foreground">{typedPodcast.title}</CardTitle>
 
           <div className="flex flex-wrap gap-2">
-              {staticKeyTopics.map((topic, index) => (
+              {/* Use fetched tags, ensure tags is an array */}
+              {(typedPodcast.tags ?? []).map((tagObj, index) => (
                   <Badge
-                      key={topic}
+                      key={tagObj.tag} // Use tag string as key
                       variant="outline"
                       className={cn(
                           "border-transparent px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                           chipColorClasses[index % chipColorClasses.length]
                       )}
                   >
-                      {topic}
+                      {tagObj.tag} {/* Display the tag string */}
                   </Badge>
               ))}
           </div>

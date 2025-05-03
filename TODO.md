@@ -1,18 +1,12 @@
 
 
-## Infra 
-
-- Set up a managed db remove the db service from remote compose
-
-- set up protected branches 
-
-
-## UI 
-
-- make UI reactive, adjust the style guide
 
 
 ## new feature
+
+- Modify the prompt to return tags and a short summary, integrates this into the front end. 
+
+- Prompt Registry/Manager, white listed emails can edit the prompt 
 
 - Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
 

@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm';
+import { relations } from 'drizzle-orm'; 
 import {
   integer,
   pgEnum,
@@ -11,6 +11,7 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-valibot';
 
 import { user } from './auth';
+import { tag } from './tags';
 import { transcript } from './transcripts';
 
 export const podcastStatusEnum = pgEnum('podcast_status', [
@@ -42,14 +43,14 @@ export const podcast = pgTable('podcast', {
     .$onUpdate(() => new Date()),
 });
 
-export const podcastRelations = relations(podcast, ({ one }) => ({
+export const podcastRelations = relations(podcast, ({ one, many }) => ({
   transcript: one(transcript, {
     fields: [podcast.id],
     references: [transcript.podcastId],
   }),
+  tags: many(tag),
 }));
 
 export const Podcast = createSelectSchema(podcast);
 export const NewPodcast = createInsertSchema(podcast); 
-
 
