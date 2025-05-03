@@ -11,7 +11,7 @@ export type PodcastSummary = FullPodcast;
 
 export type PodcastWithTranscript = FullPodcast & {
     transcript: SelectTranscript | null;
-    tags: { tag: string }[];y
+    tags: { tag: string }[];
 };
 
 export type PodcastStatus = FullPodcast['status'];
