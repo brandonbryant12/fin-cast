@@ -7,7 +7,7 @@ import { ReviewRepository } from './review.repository';
 
 export const AddReviewInputSchema = v.object({
     entityId: v.pipe(v.string(), v.uuid('Invalid entity ID format.')),
-    contentType: v.literal('podcast', 'Only podcast reviews are currently supported'),
+    contentType: v.union([v.literal('podcast'), v.literal('app')], 'Invalid content type. Must be "podcast" or "app".'),
     stars: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(5)),
     feedback: v.optional(v.pipe(v.string(), v.maxLength(400, 'Feedback cannot exceed 400 characters.'))),
 });
@@ -15,7 +15,7 @@ export type AddReviewInput = v.InferInput<typeof AddReviewInputSchema>;
 
 export const GetReviewsInputSchema = v.object({
     entityId: v.pipe(v.string(), v.uuid('Invalid entity ID format.')),
-    contentType: v.literal('podcast', 'Only podcast reviews are currently supported'),
+    contentType: v.union([v.literal('podcast'), v.literal('app')], 'Invalid content type. Must be "podcast" or "app".'),
 });
 export type GetReviewsInput = v.InferInput<typeof GetReviewsInputSchema>;
 

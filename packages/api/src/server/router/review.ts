@@ -1,19 +1,27 @@
+import { reviewContentTypeEnum } from '@repo/db/schema';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 
 import type { ReviewService } from '@repo/reviews';
 import { protectedProcedure, router } from '../trpc';
 
+const ValibotContentTypeEnum = reviewContentTypeEnum.enumValues.reduce((acc, value) => {
+  acc[value] = value;
+  return acc;
+}, {} as Record<typeof reviewContentTypeEnum.enumValues[number], typeof reviewContentTypeEnum.enumValues[number]>);
+
+const ContentTypeSchema = v.optional(v.enum(ValibotContentTypeEnum, 'Invalid content type'), 'podcast');
+
 export const AddReviewInputSchema = v.object({
   entityId: v.pipe(v.string(), v.uuid('Invalid entity ID format')),
-  contentType: v.literal('podcast', 'Only podcast reviews are currently supported'),
+  contentType: ContentTypeSchema,
   stars: v.pipe(v.number(), v.minValue(1, 'Rating must be at least 1'), v.maxValue(5, 'Rating cannot exceed 5')),
   feedback: v.optional(v.string()),
 });
 
 export const GetReviewsInputSchema = v.object({
   entityId: v.pipe(v.string(), v.uuid('Invalid entity ID format')),
-  contentType: v.literal('podcast', 'Only podcast reviews are currently supported'),
+  contentType: ContentTypeSchema,
 });
 
 export const createReviewRouter = ({ reviewService }: { reviewService: ReviewService }) => {
@@ -30,8 +38,10 @@ export const createReviewRouter = ({ reviewService }: { reviewService: ReviewSer
         try {
           procedureLogger.info('Calling ReviewService.addReview');
           const result = await reviewService.addReview(userId, {
-            ...input,
-            contentType: 'podcast', // Ensure correct type
+              entityId: input.entityId,
+              contentType: input.contentType, 
+              stars: input.stars,
+              feedback: input.feedback,
           });
           procedureLogger.info('Review added successfully');
           return result;
@@ -58,7 +68,7 @@ export const createReviewRouter = ({ reviewService }: { reviewService: ReviewSer
           procedureLogger.info('Calling ReviewService.getReviews');
           const results = await reviewService.getReviews({
             entityId: input.entityId,
-            contentType: 'podcast',
+            contentType: input.contentType, 
           });
           procedureLogger.info({ count: results.length }, 'Successfully fetched reviews');
           return results;

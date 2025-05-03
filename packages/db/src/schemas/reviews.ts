@@ -5,24 +5,23 @@ import * as v from 'valibot';
 
 import { user } from './auth';
 
-export const reviewContentTypeEnum = pgEnum('review_content_type', ['podcast']);
+export const reviewContentTypeEnum = pgEnum('review_content_type', ['podcast', 'app']);
 
 export const review = pgTable('review', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  entityId: uuid('entity_id').notNull(), // Assuming podcast ID is UUID
+  entityId: uuid('entity_id').notNull(),
   contentType: reviewContentTypeEnum('content_type').notNull().default('podcast'),
-  stars: integer('stars').notNull(), // Validation (1-5) will be in application logic/API input
-  feedback: text('feedback'), // Max length validation in API input
+  stars: integer('stars').notNull(),
+  feedback: text('feedback'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
 }, (table) => ({
-    // Optional: Add index if querying by entityId and contentType is frequent
     entityIdx: uniqueIndex('review_entity_idx').on(table.entityId, table.contentType, table.userId),
 }));
 
