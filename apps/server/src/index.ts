@@ -2,7 +2,9 @@ import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
 import { createApi } from '@repo/api/server';
 import { createAuth } from '@repo/auth/server';
+import { asc, eq } from '@repo/db';
 import { createDb } from '@repo/db/client';
+import * as schema from '@repo/db/schema';
 import { createLLMService, type LLMServiceConfig } from '@repo/llm';
 import { createPodcastService } from '@repo/podcast';
 import { createReviewService } from '@repo/reviews';
@@ -126,6 +128,31 @@ async function startServer() {
 
   const llm = initializeLLMService(env);
   const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
+
+  // --- Set oldest user as admin ---
+  try {
+    logger.info('Checking for oldest user to potentially set as admin...');
+    const oldestUser = await db.query.user.findFirst({
+      orderBy: asc(schema.user.createdAt),
+      columns: { id: true, isAdmin: true },
+    });
+
+    if (oldestUser) {
+      if (!oldestUser.isAdmin) {
+        await db.update(schema.user).set({ isAdmin: true }).where(eq(schema.user.id, oldestUser.id));
+        logger.info({ userId: oldestUser.id }, 'Oldest user found and set as admin.');
+      } else {
+        logger.info({ userId: oldestUser.id }, 'Oldest user is already an admin.');
+      }
+    } else {
+      logger.info('No users found in the database.');
+    }
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to check or update oldest user admin status.');
+    // Decide if this should be fatal or just logged
+  }
+  // ---------------------------------
+
   const auth = createAuth({ 
     authSecret: env.SERVER_AUTH_SECRET, 
     db, 

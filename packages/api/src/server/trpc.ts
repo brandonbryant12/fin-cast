@@ -1,5 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
+import { eq } from '@repo/db';
+import * as schema from '@repo/db/schema';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
@@ -15,6 +17,7 @@ export interface TRPCContext {
   db: DatabaseInstance;
   session: AuthInstance['$Infer']['Session'] | null;
   logger: AppLogger;
+  isAdmin: boolean;
 }
 
 export const createTRPCContext = async ({
@@ -26,10 +29,26 @@ export const createTRPCContext = async ({
   const session = await auth.api.getSession({
     headers,
   });
+
+  let isAdmin = false;
+  if (session?.user) {
+    try {
+      const userResult = await db.query.user.findFirst({
+        where: (users, { eq }) => eq(users.id, session.user.id),
+        columns: { isAdmin: true },
+      });
+      isAdmin = userResult?.isAdmin ?? false;
+    } catch (error) {
+      logger.error({ err: error, userId: session.user.id }, "Failed to fetch user admin status during context creation");
+      isAdmin = false;
+    }
+  }
+
   return {
     db,
     session,
     logger,
+    isAdmin,
   };
 };
 
@@ -76,3 +95,17 @@ export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
     },
   });
 });
+
+const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
+  if (!ctx.isAdmin) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Requires admin privileges' });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      session: ctx.session!,
+    },
+  });
+});
+
+export const adminProcedure = protectedProcedure.use(enforceUserIsAdmin);
