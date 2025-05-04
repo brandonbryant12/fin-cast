@@ -158,7 +158,7 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
                                                 activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
                                                 onClick={onLinkClick}
                                             >
-                                                <Settings className={cn(iconClass, 'h-4 w-4')} /> App
+                                                <Settings className={cn(iconClass, 'h-4 w-4')} /> Podcasts
                                             </Link>
                                             <Link
                                                 to="/admin/users"
