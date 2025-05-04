@@ -1,5 +1,6 @@
-import { count, desc, eq, sql, and } from '@repo/db';
+import { count, desc, eq, sql, and, avg } from '@repo/db';
 import * as schema from '@repo/db/schema';
+import { review, user } from '@repo/db/schema';
 import { APP_ENTITY_ID } from '@repo/reviews';
 import * as v from 'valibot';
 import { adminProcedure, router } from '../trpc';
@@ -118,5 +119,105 @@ export const createAdminRouter = () => {
       throw new Error('An unknown error occurred while updating admin status.');
     }
    }),
+   getReviewsPaginated: adminProcedure
+    .input(v.object({ // Reusing GetUsersPaginatedInput structure, consider renaming/making generic
+     page: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
+     pageSize: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(50)), 10),
+    }))
+    .query(async ({ ctx, input }) => {
+     const { page, pageSize } = input;
+     const offset = (page - 1) * pageSize;
+
+     const procedureLogger = ctx.logger.child({ procedure: 'admin.getReviewsPaginated', page, pageSize });
+     procedureLogger.info('Fetching paginated reviews for admin');
+
+     try {
+      const reviewsData = await ctx.db.query.review.findMany({
+       orderBy: desc(schema.review.createdAt),
+       limit: pageSize,
+       offset: offset,
+       with: {
+        user: {
+         columns: {
+          name: true,
+          email: true,
+         },
+        },
+       },
+      });
+
+      const totalReviewsResult = await ctx.db.select({
+       count: count(schema.review.id),
+      }).from(schema.review);
+
+      const totalCount = totalReviewsResult[0]?.count ?? 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      procedureLogger.info({ reviewCount: reviewsData.length, totalCount, totalPages }, 'Successfully fetched paginated reviews');
+
+      return {
+       reviews: reviewsData,
+       pagination: {
+        currentPage: page,
+        pageSize: pageSize,
+        totalCount: totalCount,
+        totalPages: totalPages,
+       },
+      };
+     } catch (error) {
+      procedureLogger.error({ err: error }, 'Failed to fetch paginated reviews');
+      throw new Error('Failed to fetch reviews');
+      }
+     }),
+  getReviewStats: adminProcedure
+    .query(async ({ ctx }) => {
+      const procedureLogger = ctx.logger.child({ procedure: 'admin.getReviewStats' });
+      procedureLogger.info('Fetching review statistics');
+
+      try {
+        const appStatsPromise = ctx.db.select({
+            average: avg(schema.review.stars),
+            count: count(schema.review.id),
+          })
+          .from(schema.review)
+          .where(eq(schema.review.contentType, 'app'));
+
+        const podcastStatsPromise = ctx.db.select({
+            average: avg(schema.review.stars),
+            count: count(schema.review.id),
+          })
+          .from(schema.review)
+          .where(eq(schema.review.contentType, 'podcast'));
+
+        const [appResult, podcastResult] = await Promise.all([appStatsPromise, podcastStatsPromise]);
+
+        const appStats = appResult[0] ?? { average: null, count: 0 };
+        const podcastStats = podcastResult[0] ?? { average: null, count: 0 };
+
+        // Drizzle avg returns string | null, parse it
+        const parseAvg = (avgStr: string | null): number => {
+            if (avgStr === null || avgStr === undefined) return 0;
+            try {
+                return parseFloat(avgStr);
+            } catch {
+                return 0;
+            }
+        };
+
+        const stats = {
+          appAvgRating: parseAvg(appStats.average),
+          appReviewCount: appStats.count,
+          podcastAvgRating: parseAvg(podcastStats.average),
+          podcastReviewCount: podcastStats.count,
+        };
+
+        procedureLogger.info({ stats }, 'Successfully fetched review statistics');
+        return stats;
+
+      } catch (error) {
+        procedureLogger.error({ err: error }, 'Failed to fetch review statistics');
+        throw new Error('Failed to fetch review statistics');
+      }
+    }),
  });
 };
