@@ -14,7 +14,7 @@ import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
 
 export const createAppRouter = ({ podcast, reviewService }: { podcast: PodcastService, reviewService: ReviewService }) => {
  return router({
-  admin: createAdminRouter(),
+  admin: createAdminRouter({ podcast }),
   auth: createAuthRouter(),
   post: createPostRouter(),
   podcasts: createPodcastRouter({ podcast }),

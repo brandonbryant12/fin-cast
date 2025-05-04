@@ -21,12 +21,16 @@ import { StarRatingDisplay } from '@/routes/-components/common/star-rating-displ
 
 
 type PodcastListOutput = inferRouterOutputs<AppRouter>['podcasts']['myPodcasts'];
+type AdminPodcastListOutput = inferRouterOutputs<AppRouter>['admin']['getAllPodcastsPaginated']['podcasts'];
 
-export type Podcast = PodcastListOutput[number];
+// Combine types to represent a podcast from either source
+export type Podcast = PodcastListOutput[number] & Partial<AdminPodcastListOutput[number]>;
+
 
 interface PodcastListItemProps {
     podcast: Podcast;
     onDelete: (id: string) => void;
+    isAdminView?: boolean; // Flag to indicate if it's used in admin context
 }
 
 const formatDate = (dateInput: Date | string | null): string => {
@@ -46,7 +50,7 @@ const formatDuration = (seconds: number | null): string | null => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
+export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListItemProps) {
     const {
         activePodcast,
         isPlaying: isContextPlaying,
@@ -59,13 +63,13 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
         id,
         status,
         title,
-        description,
         sourceType,
         sourceDetail,
         createdAt,
         audioUrl,
         durationSeconds,
         errorMessage,
+        user
     } = podcast;
 
     const reviewsQueryOptions = trpc.reviews.byEntityId.queryOptions({ entityId: id, contentType: 'podcast' });
@@ -144,6 +148,11 @@ export function PodcastListItem({ podcast, onDelete }: PodcastListItemProps) {
                         <p className="text-base font-medium text-white truncate" title={title || 'Untitled Podcast'}>
                             {title || 'Untitled Podcast'}
                         </p>
+                                {isAdminView && user && (
+                                  <p className="text-xs text-muted-foreground mt-1" title={user.email ?? ''}>
+                                      Created by: {user.name ?? 'Unknown'} ({user.email ?? 'No Email'})
+                                  </p>
+                                )}
                         <div className="mt-1.5">
                            <PodcastTags tags={podcast.tags} />
                          </div>

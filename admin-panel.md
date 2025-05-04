@@ -174,7 +174,7 @@ This plan outlines the steps to implement the core administrator section, includ
             }
             ```
         * **Nested Routes:** Create routes within `/_admin` for the specific admin features. These will render the stub components.
-            * `/_admin/app/index.tsx`
+            * `/_admin/podcasts/index.tsx`
             * `/_admin/users/index.tsx`
             * `/_admin/reviews/index.tsx`
             * `/_admin/prompts/index.tsx`
@@ -233,7 +233,7 @@ This plan outlines the steps to implement the core administrator section, includ
                       </CollapsibleTrigger>
                       <CollapsibleContent className="pl-4 pt-1 space-y-1 border-l border-muted ml-[18px]">
                          <Button variant="ghost" className="w-full justify-start h-8" asChild>
-                            <Link to="/admin/app" className="flex items-center space-x-2 text-sm [&.active]:font-bold">
+                            <Link to="/admin/podcasts" className="flex items-center space-x-2 text-sm [&.active]:font-bold">
                               <Settings className="h-4 w-4" />
                               <span>App</span>
                             </Link>
@@ -296,14 +296,14 @@ This plan outlines the steps to implement the core administrator section, includ
 
 * **Requirement:** Provide a placeholder page for App Management within the admin section.
 * **Implementation:**
-    * **UI (`apps/web/src/routes/_admin/app/index.tsx`):**
+    * **UI (`apps/web/src/routes/_admin/podcasts/index.tsx`):**
         * Create the route component.
         * Render a simple `div` or heading.
             ```typescript
-            // apps/web/src/routes/_admin/app/index.tsx
+            // apps/web/src/routes/_admin/podcasts/index.tsx
             import { createFileRoute } from '@tanstack/react-router';
 
-            export const Route = createFileRoute('/_admin/app/')({
+            export const Route = createFileRoute('/_admin/podcasts/')({
               component: AdminAppPage,
             });
 

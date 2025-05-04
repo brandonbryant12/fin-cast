@@ -262,4 +262,37 @@ export class PodcastRepository {
             return { success: false, error: message };
         }
     }
+
+    async adminDeletePodcast(podcastId: string): Promise<{ success: boolean; deletedId: string } | { success: boolean; error: string }> {
+      // This method assumes the caller (admin service) has already verified permissions.
+      // It deletes the podcast regardless of userId.
+      try {
+        const deletedResult = await this.db.transaction(async (tx) => {
+          // Delete related records first (or handle cascade delete in DB schema)
+          await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
+          await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId));
+          await tx.delete(schema.review).where(and(
+              eq(schema.review.entityId, podcastId),
+              eq(schema.review.contentType, 'podcast')
+          ));
+
+          // Then delete podcast
+          const result = await tx
+            .delete(schema.podcast)
+            .where(eq(schema.podcast.id, podcastId))
+            .returning({ deletedId: schema.podcast.id });
+
+          if (!result || result.length === 0 || !result[0]?.deletedId) {
+            // Podcast might have already been deleted, consider this success or failure based on needs
+            throw new Error('Podcast not found or failed to confirm deletion.');
+          }
+          return result[0].deletedId;
+        });
+        return { success: true, deletedId: deletedResult };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown deletion error';
+        console.error(`Admin failed to delete podcast ${podcastId}: ${message}`);
+        return { success: false, error: message };
+      }
+    }
 } 

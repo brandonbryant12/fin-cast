@@ -45,6 +45,10 @@ export const podcast = pgTable('podcast', {
 });
 
 export const podcastRelations = relations(podcast, ({ one, many }) => ({
+  user: one(user, {
+    fields: [podcast.userId],
+    references: [user.id],
+  }),
   transcript: one(transcript, {
     fields: [podcast.id],
     references: [transcript.podcastId],

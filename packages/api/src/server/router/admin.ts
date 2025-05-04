@@ -1,15 +1,27 @@
 import { count, desc, eq, sql, and, avg } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import { APP_ENTITY_ID } from '@repo/reviews';
+import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
+import type { PodcastService } from '@repo/podcast';
 import { adminProcedure, router } from '../trpc';
 
 const GetUsersPaginatedInput = v.object({
   page: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
   pageSize: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(50)), 10),
- });
+});
 
-export const createAdminRouter = () => {
+const GetAllPodcastsPaginatedInput = v.object({
+  page: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
+  pageSize: v.fallback(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(50)), 10),
+});
+
+const AdminDeletePodcastInput = v.object({
+  id: v.pipe(v.string(), v.uuid('Invalid podcast ID format')),
+});
+
+
+export const createAdminRouter = ({ podcast }: { podcast: PodcastService }) => {
  return router({
   getUsersPaginated: adminProcedure
    .input(GetUsersPaginatedInput)
@@ -217,6 +229,99 @@ export const createAdminRouter = () => {
         procedureLogger.error({ err: error }, 'Failed to fetch review statistics');
         throw new Error('Failed to fetch review statistics');
       }
+    }),
+   getAllPodcastsPaginated: adminProcedure
+    .input(GetAllPodcastsPaginatedInput)
+    .query(async ({ ctx, input }) => {
+     const { page, pageSize } = input;
+     const offset = (page - 1) * pageSize;
+
+     const procedureLogger = ctx.logger.child({ procedure: 'admin.getAllPodcastsPaginated', page, pageSize });
+     procedureLogger.info('Fetching paginated podcasts for admin');
+
+     try {
+     const podcastsDataPromise = ctx.db.query.podcast.findMany({
+      orderBy: desc(schema.podcast.createdAt),
+      limit: pageSize,
+      offset: offset,
+      with: {
+       user: {
+        columns: {
+         id: true,
+         name: true,
+         email: true,
+        },
+       },
+       tags: {
+        columns: {
+         tag: true, 
+        },
+       },
+      },
+     });
+
+      const totalPodcastsPromise = ctx.db.select({
+       count: count(schema.podcast.id),
+      }).from(schema.podcast);
+
+      const [podcastsData, totalPodcastsResult] = await Promise.all([
+       podcastsDataPromise,
+       totalPodcastsPromise,
+      ]);
+
+      const totalCount = totalPodcastsResult[0]?.count ?? 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      procedureLogger.info({ podcastCount: podcastsData.length, totalCount, totalPages }, 'Successfully fetched paginated podcasts');
+
+      const mappedPodcasts = podcastsData.map(p => ({
+        ...p,
+        tags: p.tags ?? [],
+      }));
+
+
+      return {
+       podcasts: mappedPodcasts,
+       pagination: {
+        currentPage: page,
+        pageSize: pageSize,
+        totalCount: totalCount,
+        totalPages: totalPages,
+       },
+      };
+     } catch (error) {
+      procedureLogger.error({ err: error }, 'Failed to fetch paginated podcasts');
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch podcasts' });
+     }
+    }),
+
+   deletePodcast: adminProcedure
+    .input(AdminDeletePodcastInput)
+    .mutation(async ({ ctx, input }) => {
+     const { id: podcastId } = input;
+     const procedureLogger = ctx.logger.child({ procedure: 'admin.deletePodcast', podcastId, adminUserId: ctx.session.user.id });
+     procedureLogger.info('Attempting to delete podcast via admin procedure');
+
+     try {
+      // Note: PodcastService.deletePodcast checks ownership. We need an admin version.
+      // Call a dedicated admin delete method in the service/repository.
+      const result = await podcast.adminDeletePodcast(podcastId);
+
+      if (!result.success) {
+       procedureLogger.warn({ error: result.error }, 'Admin podcast deletion failed in service/repo layer.');
+       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to delete podcast.' });
+      }
+
+      procedureLogger.info('Podcast deleted successfully by admin');
+      return { success: true, deletedId: podcastId };
+     } catch (error) {
+      procedureLogger.error({ err: error }, 'Error during admin podcast deletion');
+      if (error instanceof TRPCError) throw error;
+      if (error instanceof Error) {
+       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to delete podcast: ${error.message}`, cause: error });
+      }
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'An unknown error occurred while deleting the podcast.' });
+     }
     }),
  });
 };

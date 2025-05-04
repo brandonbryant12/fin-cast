@@ -153,7 +153,7 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
                                         </CollapsibleTrigger>
                                         <CollapsibleContent className="pl-8 pt-1 space-y-0.5 border-l border-muted ml-[calc(1rem+4px)] mr-4">
                                             <Link
-                                                to="/admin/app"
+                                                to="/admin/podcasts"
                                                 className={cn(defaultLinkClass, 'text-sm h-9 border-l-0 pl-2')}
                                                 activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
                                                 onClick={onLinkClick}

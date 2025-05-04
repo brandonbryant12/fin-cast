@@ -106,6 +106,13 @@ export class PodcastService {
         return this.podcastRepository.deletePodcast(userId, podcastId);
     }
 
+    async adminDeletePodcast(podcastId: string): Promise<{ success: boolean; deletedId?: string; error?: string }> {
+      const logger = this.logger.child({ podcastId, method: 'adminDeletePodcast' });
+      logger.info('Admin request to delete podcast received.');
+      // Directly call repo method that doesn't check user ID
+      return this.podcastRepository.adminDeletePodcast(podcastId);
+    }
+
     /**
      * Initiates an update for a podcast. If audio regeneration is needed,
      * it updates the status to 'processing' and triggers a background task.
