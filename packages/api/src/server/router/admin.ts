@@ -1,6 +1,5 @@
 import { count, desc, eq, sql, and, avg } from '@repo/db';
 import * as schema from '@repo/db/schema';
-import { review, user } from '@repo/db/schema';
 import { APP_ENTITY_ID } from '@repo/reviews';
 import * as v from 'valibot';
 import { adminProcedure, router } from '../trpc';

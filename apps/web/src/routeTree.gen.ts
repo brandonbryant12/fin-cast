@@ -21,7 +21,7 @@ import { Route as PublicLoginImport } from './routes/_public/login'
 import { Route as AdminUsersIndexImport } from './routes/admin/users/index'
 import { Route as AdminReviewsIndexImport } from './routes/admin/reviews/index'
 import { Route as AdminPromptsIndexImport } from './routes/admin/prompts/index'
-import { Route as AdminAppIndexImport } from './routes/admin/app/index'
+import { Route as AdminPodcastsIndexImport } from './routes/admin/podcasts/index'
 import { Route as ProtectedPostsIndexImport } from './routes/_protected/posts/index'
 import { Route as ProtectedPodcastsIndexImport } from './routes/_protected/podcasts/index'
 import { Route as ProtectedNewsFeedIndexImport } from './routes/_protected/news-feed.index'
@@ -89,9 +89,9 @@ const AdminPromptsIndexRoute = AdminPromptsIndexImport.update({
   getParentRoute: () => AdminLayoutRoute,
 } as any)
 
-const AdminAppIndexRoute = AdminAppIndexImport.update({
-  id: '/app/',
-  path: '/app/',
+const AdminPodcastsIndexRoute = AdminPodcastsIndexImport.update({
+  id: '/podcasts/',
+  path: '/podcasts/',
   getParentRoute: () => AdminLayoutRoute,
 } as any)
 
@@ -213,11 +213,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedPostsIndexImport
       parentRoute: typeof ProtectedLayoutImport
     }
-    '/admin/app/': {
-      id: '/admin/app/'
-      path: '/app'
-      fullPath: '/admin/app'
-      preLoaderRoute: typeof AdminAppIndexImport
+    '/admin/podcasts/': {
+      id: '/admin/podcasts/'
+      path: '/podcasts'
+      fullPath: '/admin/podcasts'
+      preLoaderRoute: typeof AdminPodcastsIndexImport
       parentRoute: typeof AdminLayoutImport
     }
     '/admin/prompts/': {
@@ -298,7 +298,7 @@ const PublicLayoutRouteWithChildren = PublicLayoutRoute._addFileChildren(
 
 interface AdminLayoutRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminAppIndexRoute: typeof AdminAppIndexRoute
+  AdminPodcastsIndexRoute: typeof AdminPodcastsIndexRoute
   AdminPromptsIndexRoute: typeof AdminPromptsIndexRoute
   AdminReviewsIndexRoute: typeof AdminReviewsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
@@ -306,7 +306,7 @@ interface AdminLayoutRouteChildren {
 
 const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
-  AdminAppIndexRoute: AdminAppIndexRoute,
+  AdminPodcastsIndexRoute: AdminPodcastsIndexRoute,
   AdminPromptsIndexRoute: AdminPromptsIndexRoute,
   AdminReviewsIndexRoute: AdminReviewsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
@@ -327,7 +327,7 @@ export interface FileRoutesByFullPath {
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
-  '/admin/app': typeof AdminAppIndexRoute
+  '/admin/podcasts': typeof AdminPodcastsIndexRoute
   '/admin/prompts': typeof AdminPromptsIndexRoute
   '/admin/reviews': typeof AdminReviewsIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
@@ -345,7 +345,7 @@ export interface FileRoutesByTo {
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
-  '/admin/app': typeof AdminAppIndexRoute
+  '/admin/podcasts': typeof AdminPodcastsIndexRoute
   '/admin/prompts': typeof AdminPromptsIndexRoute
   '/admin/reviews': typeof AdminReviewsIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
@@ -366,7 +366,7 @@ export interface FileRoutesById {
   '/_protected/news-feed/': typeof ProtectedNewsFeedIndexRoute
   '/_protected/podcasts/': typeof ProtectedPodcastsIndexRoute
   '/_protected/posts/': typeof ProtectedPostsIndexRoute
-  '/admin/app/': typeof AdminAppIndexRoute
+  '/admin/podcasts/': typeof AdminPodcastsIndexRoute
   '/admin/prompts/': typeof AdminPromptsIndexRoute
   '/admin/reviews/': typeof AdminReviewsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
@@ -387,7 +387,7 @@ export interface FileRouteTypes {
     | '/news-feed'
     | '/podcasts'
     | '/posts'
-    | '/admin/app'
+    | '/admin/podcasts'
     | '/admin/prompts'
     | '/admin/reviews'
     | '/admin/users'
@@ -404,7 +404,7 @@ export interface FileRouteTypes {
     | '/news-feed'
     | '/podcasts'
     | '/posts'
-    | '/admin/app'
+    | '/admin/podcasts'
     | '/admin/prompts'
     | '/admin/reviews'
     | '/admin/users'
@@ -423,7 +423,7 @@ export interface FileRouteTypes {
     | '/_protected/news-feed/'
     | '/_protected/podcasts/'
     | '/_protected/posts/'
-    | '/admin/app/'
+    | '/admin/podcasts/'
     | '/admin/prompts/'
     | '/admin/reviews/'
     | '/admin/users/'
@@ -487,7 +487,7 @@ export const routeTree = rootRoute
       "filePath": "admin/layout.tsx",
       "children": [
         "/admin/",
-        "/admin/app/",
+        "/admin/podcasts/",
         "/admin/prompts/",
         "/admin/reviews/",
         "/admin/users/"
@@ -521,8 +521,8 @@ export const routeTree = rootRoute
       "filePath": "_protected/posts/index.tsx",
       "parent": "/_protected"
     },
-    "/admin/app/": {
-      "filePath": "admin/app/index.tsx",
+    "/admin/podcasts/": {
+      "filePath": "admin/podcasts/index.tsx",
       "parent": "/admin"
     },
     "/admin/prompts/": {
