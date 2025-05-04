@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@repo/ui/components/card';
+import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_admin/app/')({
+export const Route = createFileRoute('/admin/app/')({
   component: AdminAppPage,
 });
 

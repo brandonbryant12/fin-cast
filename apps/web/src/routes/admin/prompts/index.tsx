@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@repo/ui/components/card';
 
-export const Route = createFileRoute('/_admin/prompts/')({
+export const Route = createFileRoute('/admin/prompts/')({
   component: AdminPromptsPage,
 });
 

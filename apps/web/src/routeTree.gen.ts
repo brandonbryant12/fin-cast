@@ -11,11 +11,17 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as AdminLayoutImport } from './routes/admin/layout'
 import { Route as PublicLayoutImport } from './routes/_public/layout'
 import { Route as ProtectedLayoutImport } from './routes/_protected/layout'
 import { Route as IndexImport } from './routes/index'
+import { Route as AdminIndexImport } from './routes/admin/index'
 import { Route as PublicRegisterImport } from './routes/_public/register'
 import { Route as PublicLoginImport } from './routes/_public/login'
+import { Route as AdminUsersIndexImport } from './routes/admin/users/index'
+import { Route as AdminReviewsIndexImport } from './routes/admin/reviews/index'
+import { Route as AdminPromptsIndexImport } from './routes/admin/prompts/index'
+import { Route as AdminAppIndexImport } from './routes/admin/app/index'
 import { Route as ProtectedPostsIndexImport } from './routes/_protected/posts/index'
 import { Route as ProtectedPodcastsIndexImport } from './routes/_protected/podcasts/index'
 import { Route as ProtectedNewsFeedIndexImport } from './routes/_protected/news-feed.index'
@@ -24,6 +30,12 @@ import { Route as ProtectedPostsPostidIndexImport } from './routes/_protected/po
 import { Route as ProtectedPodcastsPodcastIdIndexImport } from './routes/_protected/podcasts/$podcastId/index'
 
 // Create/Update Routes
+
+const AdminLayoutRoute = AdminLayoutImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const PublicLayoutRoute = PublicLayoutImport.update({
   id: '/_public',
@@ -41,6 +53,12 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AdminIndexRoute = AdminIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+
 const PublicRegisterRoute = PublicRegisterImport.update({
   id: '/register',
   path: '/register',
@@ -51,6 +69,30 @@ const PublicLoginRoute = PublicLoginImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => PublicLayoutRoute,
+} as any)
+
+const AdminUsersIndexRoute = AdminUsersIndexImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+
+const AdminReviewsIndexRoute = AdminReviewsIndexImport.update({
+  id: '/reviews/',
+  path: '/reviews/',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+
+const AdminPromptsIndexRoute = AdminPromptsIndexImport.update({
+  id: '/prompts/',
+  path: '/prompts/',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+
+const AdminAppIndexRoute = AdminAppIndexImport.update({
+  id: '/app/',
+  path: '/app/',
+  getParentRoute: () => AdminLayoutRoute,
 } as any)
 
 const ProtectedPostsIndexRoute = ProtectedPostsIndexImport.update({
@@ -115,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLayoutImport
       parentRoute: typeof rootRoute
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminLayoutImport
+      parentRoute: typeof rootRoute
+    }
     '/_public/login': {
       id: '/_public/login'
       path: '/login'
@@ -128,6 +177,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof PublicRegisterImport
       parentRoute: typeof PublicLayoutImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexImport
+      parentRoute: typeof AdminLayoutImport
     }
     '/_protected/home/': {
       id: '/_protected/home/'
@@ -156,6 +212,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/posts'
       preLoaderRoute: typeof ProtectedPostsIndexImport
       parentRoute: typeof ProtectedLayoutImport
+    }
+    '/admin/app/': {
+      id: '/admin/app/'
+      path: '/app'
+      fullPath: '/admin/app'
+      preLoaderRoute: typeof AdminAppIndexImport
+      parentRoute: typeof AdminLayoutImport
+    }
+    '/admin/prompts/': {
+      id: '/admin/prompts/'
+      path: '/prompts'
+      fullPath: '/admin/prompts'
+      preLoaderRoute: typeof AdminPromptsIndexImport
+      parentRoute: typeof AdminLayoutImport
+    }
+    '/admin/reviews/': {
+      id: '/admin/reviews/'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsIndexImport
+      parentRoute: typeof AdminLayoutImport
+    }
+    '/admin/users/': {
+      id: '/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersIndexImport
+      parentRoute: typeof AdminLayoutImport
     }
     '/_protected/podcasts/$podcastId/': {
       id: '/_protected/podcasts/$podcastId/'
@@ -212,15 +296,41 @@ const PublicLayoutRouteWithChildren = PublicLayoutRoute._addFileChildren(
   PublicLayoutRouteChildren,
 )
 
+interface AdminLayoutRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminAppIndexRoute: typeof AdminAppIndexRoute
+  AdminPromptsIndexRoute: typeof AdminPromptsIndexRoute
+  AdminReviewsIndexRoute: typeof AdminReviewsIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
+}
+
+const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminAppIndexRoute: AdminAppIndexRoute,
+  AdminPromptsIndexRoute: AdminPromptsIndexRoute,
+  AdminReviewsIndexRoute: AdminReviewsIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
+}
+
+const AdminLayoutRouteWithChildren = AdminLayoutRoute._addFileChildren(
+  AdminLayoutRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof PublicLayoutRouteWithChildren
+  '/admin': typeof AdminLayoutRouteWithChildren
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
+  '/admin/': typeof AdminIndexRoute
   '/home': typeof ProtectedHomeIndexRoute
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
+  '/admin/app': typeof AdminAppIndexRoute
+  '/admin/prompts': typeof AdminPromptsIndexRoute
+  '/admin/reviews': typeof AdminReviewsIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
   '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
@@ -230,10 +340,15 @@ export interface FileRoutesByTo {
   '': typeof PublicLayoutRouteWithChildren
   '/login': typeof PublicLoginRoute
   '/register': typeof PublicRegisterRoute
+  '/admin': typeof AdminIndexRoute
   '/home': typeof ProtectedHomeIndexRoute
   '/news-feed': typeof ProtectedNewsFeedIndexRoute
   '/podcasts': typeof ProtectedPodcastsIndexRoute
   '/posts': typeof ProtectedPostsIndexRoute
+  '/admin/app': typeof AdminAppIndexRoute
+  '/admin/prompts': typeof AdminPromptsIndexRoute
+  '/admin/reviews': typeof AdminReviewsIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
   '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
 }
@@ -243,12 +358,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedLayoutRouteWithChildren
   '/_public': typeof PublicLayoutRouteWithChildren
+  '/admin': typeof AdminLayoutRouteWithChildren
   '/_public/login': typeof PublicLoginRoute
   '/_public/register': typeof PublicRegisterRoute
+  '/admin/': typeof AdminIndexRoute
   '/_protected/home/': typeof ProtectedHomeIndexRoute
   '/_protected/news-feed/': typeof ProtectedNewsFeedIndexRoute
   '/_protected/podcasts/': typeof ProtectedPodcastsIndexRoute
   '/_protected/posts/': typeof ProtectedPostsIndexRoute
+  '/admin/app/': typeof AdminAppIndexRoute
+  '/admin/prompts/': typeof AdminPromptsIndexRoute
+  '/admin/reviews/': typeof AdminReviewsIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
   '/_protected/podcasts/$podcastId/': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/_protected/posts/$postid/': typeof ProtectedPostsPostidIndexRoute
 }
@@ -258,12 +379,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
+    | '/admin'
     | '/login'
     | '/register'
+    | '/admin/'
     | '/home'
     | '/news-feed'
     | '/podcasts'
     | '/posts'
+    | '/admin/app'
+    | '/admin/prompts'
+    | '/admin/reviews'
+    | '/admin/users'
     | '/podcasts/$podcastId'
     | '/posts/$postid'
   fileRoutesByTo: FileRoutesByTo
@@ -272,10 +399,15 @@ export interface FileRouteTypes {
     | ''
     | '/login'
     | '/register'
+    | '/admin'
     | '/home'
     | '/news-feed'
     | '/podcasts'
     | '/posts'
+    | '/admin/app'
+    | '/admin/prompts'
+    | '/admin/reviews'
+    | '/admin/users'
     | '/podcasts/$podcastId'
     | '/posts/$postid'
   id:
@@ -283,12 +415,18 @@ export interface FileRouteTypes {
     | '/'
     | '/_protected'
     | '/_public'
+    | '/admin'
     | '/_public/login'
     | '/_public/register'
+    | '/admin/'
     | '/_protected/home/'
     | '/_protected/news-feed/'
     | '/_protected/podcasts/'
     | '/_protected/posts/'
+    | '/admin/app/'
+    | '/admin/prompts/'
+    | '/admin/reviews/'
+    | '/admin/users/'
     | '/_protected/podcasts/$podcastId/'
     | '/_protected/posts/$postid/'
   fileRoutesById: FileRoutesById
@@ -298,12 +436,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedLayoutRoute: typeof ProtectedLayoutRouteWithChildren
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
+  AdminLayoutRoute: typeof AdminLayoutRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedLayoutRoute: ProtectedLayoutRouteWithChildren,
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
+  AdminLayoutRoute: AdminLayoutRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -318,7 +458,8 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_protected",
-        "/_public"
+        "/_public",
+        "/admin"
       ]
     },
     "/": {
@@ -342,6 +483,16 @@ export const routeTree = rootRoute
         "/_public/register"
       ]
     },
+    "/admin": {
+      "filePath": "admin/layout.tsx",
+      "children": [
+        "/admin/",
+        "/admin/app/",
+        "/admin/prompts/",
+        "/admin/reviews/",
+        "/admin/users/"
+      ]
+    },
     "/_public/login": {
       "filePath": "_public/login.tsx",
       "parent": "/_public"
@@ -349,6 +500,10 @@ export const routeTree = rootRoute
     "/_public/register": {
       "filePath": "_public/register.tsx",
       "parent": "/_public"
+    },
+    "/admin/": {
+      "filePath": "admin/index.tsx",
+      "parent": "/admin"
     },
     "/_protected/home/": {
       "filePath": "_protected/home/index.tsx",
@@ -365,6 +520,22 @@ export const routeTree = rootRoute
     "/_protected/posts/": {
       "filePath": "_protected/posts/index.tsx",
       "parent": "/_protected"
+    },
+    "/admin/app/": {
+      "filePath": "admin/app/index.tsx",
+      "parent": "/admin"
+    },
+    "/admin/prompts/": {
+      "filePath": "admin/prompts/index.tsx",
+      "parent": "/admin"
+    },
+    "/admin/reviews/": {
+      "filePath": "admin/reviews/index.tsx",
+      "parent": "/admin"
+    },
+    "/admin/users/": {
+      "filePath": "admin/users/index.tsx",
+      "parent": "/admin"
     },
     "/_protected/podcasts/$podcastId/": {
       "filePath": "_protected/podcasts/$podcastId/index.tsx",

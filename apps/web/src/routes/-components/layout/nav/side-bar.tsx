@@ -1,5 +1,5 @@
 import { Button } from '@repo/ui/components/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@repo/ui/components/collapsible'; // Assuming path based on shadcn setup
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@repo/ui/components/collapsible';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -13,7 +13,7 @@ import {
     Users,
     MessageSquareText,
     Settings,
-    FileText, // Using FileText for Prompts for now
+    FileText,
     ChevronsUpDown,
     type LucideIcon,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ import type { AuthSession } from '@/clients/authClient';
 import UserAvatar from './user-avatar';
 import { trpc } from '@/router';
 import { LeaveAppReviewModal } from '@/routes/-components/layout/nav/leave-app-review-modal';
-// Corrected path assuming it's in the same directory or adjust as needed
+
 
 const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
 interface NavItemBase {
@@ -56,7 +56,16 @@ interface SidebarProps {
 
 export function Sidebar({ session, onLinkClick }: SidebarProps) {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-    const [isAdminOpen, setIsAdminOpen] = useState(false); // Add state for admin collapsible
+    const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+    const { data: adminStatusData } = useQuery(
+     trpc.auth.isAdminStatus.queryOptions(undefined, {
+      enabled: !!session?.user?.id,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+     })
+    );
+    const isAdmin = adminStatusData?.isAdmin ?? false;
 
     const appReviewsQuery = trpc.reviews.byEntityId.queryOptions(
         { entityId: APP_ENTITY_ID, contentType: 'app' },
@@ -78,12 +87,10 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
     const iconClass = 'mr-3 h-5 w-5';
 
     if (!session || !session.user) {
-        console.error('Sidebar rendered without a valid session.');
         return null;
     }
 
     const user = session.user;
-    console.log({ session })
 
     return (
         <>
@@ -129,8 +136,7 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
                                 ),
                             )}
 
-                            {/* Conditional Admin Section */}
-                            {session?.user?.isAdmin && (
+                            {isAdmin && (
                                 <li className="pt-2">
                                     <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
                                         <CollapsibleTrigger asChild>
@@ -197,8 +203,8 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
             </aside>
             {session?.user && (
                 <LeaveAppReviewModal
-                   open={isReviewModalOpen}
-                   setOpen={setIsReviewModalOpen}
+                    open={isReviewModalOpen}
+                    setOpen={setIsReviewModalOpen}
                 />
              )}
         </>
