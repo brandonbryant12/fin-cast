@@ -4,6 +4,8 @@ import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
 import type { PodcastService } from '@repo/podcast';
 import type { TTSService } from '@repo/tts';
+import { createAdminRouter } from './router/admin';
+import { createAuthRouter } from './router/auth';
 import { createPodcastRouter } from './router/podcast';
 import { createPostRouter } from './router/post';
 import { createReviewRouter } from './router/review';
@@ -11,11 +13,13 @@ import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
 
 
 export const createAppRouter = ({ podcast, reviewService }: { podcast: PodcastService, reviewService: ReviewService }) => {
-  return router({
-    post: createPostRouter(),
-    podcasts: createPodcastRouter({ podcast }),
-    reviews: createReviewRouter({ reviewService }),
-  });
+ return router({
+  admin: createAdminRouter(),
+  auth: createAuthRouter(),
+  post: createPostRouter(),
+  podcasts: createPodcastRouter({ podcast }),
+  reviews: createReviewRouter({ reviewService }),
+ });
 };
 
 export type AppRouter = ReturnType<typeof createAppRouter>;

@@ -1,4 +1,5 @@
 import { Button } from '@repo/ui/components/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@repo/ui/components/collapsible';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -8,13 +9,20 @@ import {
     Minus,
     Newspaper,
     Star,
+    ShieldCheck,
+    Users,
+    MessageSquareText,
+    Settings,
+    FileText,
+    ChevronsUpDown,
     type LucideIcon,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import type { AuthSession } from '@/clients/authClient';
+import UserAvatar from './user-avatar';
 import { trpc } from '@/router';
 import { LeaveAppReviewModal } from '@/routes/-components/layout/nav/leave-app-review-modal';
-import UserAvatar from '@/routes/-components/layout/nav/user-avatar';
+
 
 const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
 interface NavItemBase {
@@ -48,6 +56,16 @@ interface SidebarProps {
 
 export function Sidebar({ session, onLinkClick }: SidebarProps) {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+    const { data: adminStatusData } = useQuery(
+     trpc.auth.isAdminStatus.queryOptions(undefined, {
+      enabled: !!session?.user?.id,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+     })
+    );
+    const isAdmin = adminStatusData?.isAdmin ?? false;
 
     const appReviewsQuery = trpc.reviews.byEntityId.queryOptions(
         { entityId: APP_ENTITY_ID, contentType: 'app' },
@@ -69,7 +87,6 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
     const iconClass = 'mr-3 h-5 w-5';
 
     if (!session || !session.user) {
-        console.error('Sidebar rendered without a valid session.');
         return null;
     }
 
@@ -118,6 +135,60 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
                                     </li>
                                 ),
                             )}
+
+                            {isAdmin && (
+                                <li className="pt-2">
+                                    <Collapsible open={isAdminOpen} onOpenChange={setIsAdminOpen}>
+                                        <CollapsibleTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className={cn(defaultLinkClass, 'w-full justify-between hover:bg-sidebar-accent')}
+                                            >
+                                                <span className="flex items-center">
+                                                    <ShieldCheck className={iconClass} />
+                                                    Admin
+                                                </span>
+                                                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent className="pl-8 pt-1 space-y-0.5 border-l border-muted ml-[calc(1rem+4px)] mr-4">
+                                            <Link
+                                                to="/admin/app"
+                                                className={cn(defaultLinkClass, 'text-sm h-9 border-l-0 pl-2')}
+                                                activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
+                                                onClick={onLinkClick}
+                                            >
+                                                <Settings className={cn(iconClass, 'h-4 w-4')} /> App
+                                            </Link>
+                                            <Link
+                                                to="/admin/users"
+                                                className={cn(defaultLinkClass, 'text-sm h-9 border-l-0 pl-2')}
+                                                activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
+                                                onClick={onLinkClick}
+                                            >
+                                                <Users className={cn(iconClass, 'h-4 w-4')} /> Users
+                                            </Link>
+                                            <Link
+                                                to="/admin/reviews"
+                                                className={cn(defaultLinkClass, 'text-sm h-9 border-l-0 pl-2')}
+                                                activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
+                                                onClick={onLinkClick}
+                                            >
+                                                <MessageSquareText className={cn(iconClass, 'h-4 w-4')} /> Reviews
+                                            </Link>
+                                            <Link
+                                                to="/admin/prompts"
+                                                className={cn(defaultLinkClass, 'text-sm h-9 border-l-0 pl-2')}
+                                                activeProps={{ className: cn(defaultLinkClass, activeLinkClass, 'text-sm h-9 border-l-0 pl-2') }}
+                                                onClick={onLinkClick}
+                                            >
+                                                <FileText className={cn(iconClass, 'h-4 w-4')} /> Prompts
+                                            </Link>
+                                        </CollapsibleContent>
+                                    </Collapsible>
+                                </li>
+                            )}
+
                         </ul>
                     </nav>
                 </div>
@@ -132,8 +203,8 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
             </aside>
             {session?.user && (
                 <LeaveAppReviewModal
-                   open={isReviewModalOpen}
-                   setOpen={setIsReviewModalOpen}
+                    open={isReviewModalOpen}
+                    setOpen={setIsReviewModalOpen}
                 />
              )}
         </>
