@@ -17,25 +17,23 @@ import {
  TableHeader,
  TableRow,
 } from '@repo/ui/components/table';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate, stripSearchParams, type SearchSchemaInput } from '@tanstack/react-router';
-import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, ShieldCheck, ShieldOff } from 'lucide-react';
 import * as v from 'valibot';
+import { authClient } from '@/clients/authClient';
 import { trpc } from '@/router';
 import Spinner from '@/routes/-components/common/spinner';
+import { StarRatingDisplay } from '@/routes/-components/common/star-rating-display';
 
-// Define search schema for pagination
-
-// Input Schema (raw URL params)
 const adminUsersSearchInputSchema = v.object({
- page: v.optional(v.string()), // page=... as string, or missing
+ page: v.optional(v.string()),
 });
 export type AdminUsersSearchInput = v.InferInput<typeof adminUsersSearchInputSchema>;
 
-// Processed Schema (validated, defaulted, transformed type for component use)
 const adminUsersSearchProcessedSchema = v.object({
  page: v.pipe(
-  v.optional(v.string(), '1'), // Default '1' if missing
+  v.optional(v.string(), '1'),
   v.transform(Number),
   v.number(),
   v.integer(),
@@ -44,18 +42,15 @@ const adminUsersSearchProcessedSchema = v.object({
 });
 export type AdminUsersSearchOutput = v.InferOutput<typeof adminUsersSearchProcessedSchema>;
 
-// Define default values (matching Input Schema)
 const adminUsersSearchDefaults: Required<AdminUsersSearchInput> = {
- page: '1', // Default is string '1'
+ page: '1',
 };
 
 export const Route = createFileRoute('/admin/users/')({
- // Validate the raw input against the Input Schema
  validateSearch: (input: SearchSchemaInput): AdminUsersSearchInput => {
   return v.parse(adminUsersSearchInputSchema, input);
  },
  search: {
-  // Apply defaults matching the Input Schema before validation
   middlewares: [stripSearchParams(adminUsersSearchDefaults)],
  },
  component: AdminUsersPage,
@@ -63,22 +58,33 @@ export const Route = createFileRoute('/admin/users/')({
 
 function AdminUsersPage() {
  const navigate = useNavigate({ from: Route.fullPath });
- // useSearch provides the Processed/Output type after middleware/validation
  const { page }: AdminUsersSearchOutput = Route.useSearch();
- const pageSize = 10; // Or make this configurable
+ const pageSize = 10;
+ const queryClient = useQueryClient();
+ const { data: session } = authClient.useSession();
 
  const usersQuery = useQuery(
   trpc.admin.getUsersPaginated.queryOptions(
    { page, pageSize },
    {
-    placeholderData: (prev) => prev, // Keep previous data while loading new page
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (prev) => prev,
+    staleTime: 5 * 60 * 1000,
    },
-  ),
+   ),
  );
 
+ const setUserAdminStatusMutation = useMutation({
+    ...trpc.admin.setUserAdminStatus.mutationOptions(),
+   onSuccess: () => {
+     queryClient.invalidateQueries(trpc.admin.getUsersPaginated.queryOptions({ page, pageSize }));
+   },
+   onError: (error) => {
+     console.error("Failed to update admin status:", error);
+     alert(`Error: ${error.message}`);
+   },
+ });
+
  const handlePageChange = (newPage: number) => {
-  // Ensure newPage is at least 1
   const validNewPage = Math.max(1, newPage);
   navigate({ search: (prev) => ({ ...prev, page: validNewPage }) });
  };
@@ -126,10 +132,12 @@ function AdminUsersPage() {
         <TableHead>Email</TableHead>
         <TableHead className="text-center">Admin</TableHead>
         <TableHead className="text-center">Podcasts</TableHead>
-        <TableHead className="text-right">Created At</TableHead>
+         <TableHead className="text-center">App Rating</TableHead>
+         <TableHead className="text-right">Created At</TableHead>
+         <TableHead className="text-center">Actions</TableHead>
        </TableRow>
-      </TableHeader>
-      <TableBody>
+     </TableHeader>
+     <TableBody>
        {usersQuery.data.users.length > 0 ? (
         usersQuery.data.users.map((user) => (
          <TableRow key={user.id}>
@@ -143,15 +151,38 @@ function AdminUsersPage() {
            )}
           </TableCell>
           <TableCell className="text-center">{user.successfulPodcastCount}</TableCell>
-          <TableCell className="text-right">{formatDate(user.createdAt)}</TableCell>
+          <TableCell className="flex justify-center">
+             <StarRatingDisplay rating={user.appReviewStars} size={14} showText={false} />
+           </TableCell>
+           <TableCell className="text-right">{formatDate(user.createdAt)}</TableCell>
+           <TableCell className="text-center">
+             {session?.user?.id !== user.id && (
+               <Button
+                 variant={user.isAdmin ? "destructive" : "outline"}
+                 size="sm"
+                 onClick={() => setUserAdminStatusMutation.mutate({ userId: user.id, isAdmin: !user.isAdmin })}
+                 disabled={setUserAdminStatusMutation.isPending}
+                 title={user.isAdmin ? "Remove Admin Privileges" : "Grant Admin Privileges"}
+               >
+                 {setUserAdminStatusMutation.isPending && setUserAdminStatusMutation.variables?.userId === user.id ? (
+                   <Spinner className="mr-2 h-4 w-4 animate-spin" />
+                 ) : user.isAdmin ? (
+                   <ShieldOff className="mr-2 h-4 w-4" />
+                 ) : (
+                   <ShieldCheck className="mr-2 h-4 w-4" />
+                 )}
+                 {user.isAdmin ? 'Revoke Admin' : 'Make Admin'}
+               </Button>
+             )}
+           </TableCell>
          </TableRow>
-        ))
-       ) : (
-        <TableRow>
-         <TableCell colSpan={5} className="h-24 text-center">
-          No users found.
+       ))
+     ) : (
+       <TableRow>
+         <TableCell colSpan={7} className="h-24 text-center">
+           No users found.
          </TableCell>
-        </TableRow>
+       </TableRow>
        )}
       </TableBody>
      </Table>
