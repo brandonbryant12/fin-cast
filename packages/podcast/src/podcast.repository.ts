@@ -44,12 +44,12 @@ export class PodcastRepository {
             const [podcastRecord] = await tx.insert(schema.podcast).values({
                 userId,
                 title: `Podcast from ${sourceUrl}`,
-                status: 'processing', // Start as processing
+                status: 'processing',
                 sourceType: 'url',
                 sourceDetail: sourceUrl,
                 hostPersonalityId: hostId,
                 cohostPersonalityId: cohostId,
-            }).returning(); // Return all columns
+            }).returning();
 
             if (!podcastRecord?.id) {
                 throw new Error('Failed to create podcast entry.');
@@ -57,7 +57,7 @@ export class PodcastRepository {
 
             await tx.insert(schema.transcript).values({
                 podcastId: podcastRecord.id,
-                content: [], // Start with empty transcript content
+                content: [],
             });
 
             return podcastRecord;
@@ -81,7 +81,6 @@ export class PodcastRepository {
         } else if (status === 'failed') {
             updateData.errorMessage = errorMessage ?? 'Unknown error';
         } else {
-            // For 'processing' or other statuses, clear the error message
             updateData.errorMessage = null;
         }
 
@@ -91,7 +90,6 @@ export class PodcastRepository {
             .returning({ id: schema.podcast.id });
 
         if (result.length === 0) {
-            // Log or handle the case where the podcast wasn't found for status update
             console.warn(`Podcast with ID ${podcastId} not found for status update.`);
         }
     }
@@ -99,20 +97,19 @@ export class PodcastRepository {
     /**
      * Finds a podcast by ID, ensuring it belongs to the specified user, and includes transcript data.
      */
-    async findPodcastByIdAndUser(userId: string, podcastId: string): Promise<PodcastWithTranscript | null> {
+    async findPodcastById(podcastId: string): Promise<PodcastWithTranscript | null> {
         const result = await this.db.query.podcast.findFirst({
-            where: and(eq(schema.podcast.id, podcastId), eq(schema.podcast.userId, userId)),
-            // Explicitly list columns to omit audioUrl by default if it's large/not always needed
+            where: and(eq(schema.podcast.id, podcastId)),
             columns: {
               id: true, userId: true, title: true, summary: true, description: true, status: true, sourceType: true, sourceDetail: true, durationSeconds: true, errorMessage: true, generatedAt: true, hostPersonalityId: true, cohostPersonalityId: true, createdAt: true, updatedAt: true, audioUrl: true,
             },
             with: {
-                transcript: { // Eager load transcript content
+                transcript: {
                     columns: {
                         content: true, podcastId: true, id: true, createdAt: true, updatedAt: true, format: true
                     }
                 },
-                tags: { // Eager load tags
+                tags: {
                   columns: {
                     tag: true,
                   }
@@ -124,28 +121,25 @@ export class PodcastRepository {
             return null;
         }
 
-        // Drizzle includes the relation under the 'with' key name
         return {
             ...result,
             transcript: result.transcript ?? null,
-            tags: result.tags ?? [], // Include tags, defaulting to empty array
+            tags: result.tags ?? [],
           };
         }
 
 
     async updatePodcast(
         podcastId: string,
-        data: PodcastUpdatePayload // Use the defined type for safety
+        data: PodcastUpdatePayload
     ): Promise<void> {
         const updateData: any = { ...data };
-
-        // Ensure updatedAt is always set on update
         updateData.updatedAt = new Date();
         if ('audioUrl' in updateData && updateData.audioUrl === undefined) {
-          updateData.audioUrl = null; // Ensure undefined becomes null in DB
+          updateData.audioUrl = null;
         }
         if ('durationSeconds' in updateData && updateData.durationSeconds === undefined) {
-          updateData.durationSeconds = null; // Ensure undefined becomes null
+          updateData.durationSeconds = null;
         }
         if ('errorMessage' in updateData && updateData.errorMessage === undefined) {
            updateData.errorMessage = null;
@@ -233,10 +227,15 @@ export class PodcastRepository {
                     columns: { id: true, userId: true },
                 });
 
+                const user = await tx.query.user.findFirst({
+                  where: eq(schema.user.id, userId),
+                  columns: { isAdmin: true }
+                });
+
                 if (!podcast) {
                     throw new Error(`Podcast not found: ${podcastId}`);
                 }
-                if (podcast.userId !== userId) {
+                if (podcast.userId !== userId && !user?.isAdmin) {
                     throw new Error('Unauthorized delete');
                 }
 

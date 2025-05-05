@@ -104,7 +104,7 @@ export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => 
             const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'byId' });
             try {
                 procedureLogger.info('Calling PodcastService.getPodcastById');
-                const result = await podcast.getPodcastById(userId, podcastId);
+                const result = await podcast.getPodcastById(podcastId);
                 procedureLogger.info('Successfully fetched podcast by ID via service');
                 return result;
             } catch(error) {

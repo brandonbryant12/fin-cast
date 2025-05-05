@@ -98,8 +98,8 @@ export class PodcastService {
         return this.podcastRepository.findPodcastsByUser(userId);
     }
 
-    async getPodcastById(userId: string, podcastId: string): Promise<PodcastWithTranscript | null> {
-        return this.podcastRepository.findPodcastByIdAndUser(userId, podcastId);
+    async getPodcastById(podcastId: string): Promise<PodcastWithTranscript | null> {
+        return this.podcastRepository.findPodcastById(podcastId);
     }
 
     async deletePodcast(userId: string, podcastId: string): Promise<{ success: boolean; deletedId?: string; error?: string }> {
@@ -126,11 +126,11 @@ export class PodcastService {
         hostPersonalityId?: PersonalityId | undefined
         cohostPersonalityId?: PersonalityId | undefined
       }): Promise<{ success: boolean }> {
-        const { podcastId, title, summary, content, hostPersonalityId, cohostPersonalityId } = input; // Added summary
+        const { podcastId, title, summary, content, hostPersonalityId, cohostPersonalityId } = input;
         const logger = this.logger.child({ userId, podcastId, method: 'updatePodcast' });
 
         logger.info('Fetching podcast for update and authorization check.');
-        const currentPodcast = await this.podcastRepository.findPodcastByIdAndUser(userId, podcastId);
+        const currentPodcast = await this.podcastRepository.findPodcastById(podcastId);
 
         if (!currentPodcast) {
             logger.warn('Podcast not found or user not authorized.');
