@@ -1,7 +1,8 @@
 #!/bin/bash
-# Example Run: export DOMAIN_NAME="example.com" && sudo ./scripts/setup-nginx-self-signed.sh
 
 set -e
+
+YOUR_DOMAIN="example.com" 
 
 CERT_DIR="/etc/ssl/private"
 CERT_NAME="nginx-selfsigned-$(date +%F)"
@@ -15,13 +16,14 @@ SSL_KEY_PATH="${CERT_DIR}/${CERT_NAME}.key"
 DHPARAM_PATH="${CERT_DIR}/dhparam.pem"
 DHPARAM_BITS=2048
 
-if [ -z "$DOMAIN_NAME" ]; then
-    echo "[ERROR] DOMAIN_NAME environment variable is not set. Please set it (e.g., export DOMAIN_NAME=\"example.com\")." >&2
-    exit 1
+if [ -z "$YOUR_DOMAIN" ] || [ "$YOUR_DOMAIN" == "example.com" ]; then
+    echo "[WARNING] The YOUR_DOMAIN variable at the top of the script is set to '${YOUR_DOMAIN}'." >&2
+    echo "[WARNING] Please edit the script and set it to your actual domain name." >&2
 fi
-TARGET_DOMAIN_NAME="${DOMAIN_NAME}"
-NGINX_SN="${NGINX_SERVER_NAME:-$TARGET_DOMAIN_NAME}"
-PROXY_PASS_URL="${PROXY_TARGET:-http://127.0.0.1:8085}"
+TARGET_DOMAIN_NAME="${YOUR_DOMAIN}"
+
+NGINX_SN="${NGINX_SERVER_NAME:-$TARGET_DOMAIN_NAME}" 
+PROXY_PASS_URL="${PROXY_TARGET:-http://127.0.0.1:8085}" 
 CERT_C="${CERT_COUNTRY:-US}"
 CERT_ST="${CERT_STATE:-State}"
 CERT_L="${CERT_LOCALITY:-City}"
@@ -72,9 +74,9 @@ install_package() {
 check_root
 
 log_info "Starting Nginx self-signed cert & reverse proxy setup..."
-log_info "Target Domain (for Cert CN): ${TARGET_DOMAIN_NAME}"
-log_info "Nginx Server Name:           ${NGINX_SN}"
-log_info "Proxy Target:                ${PROXY_PASS_URL}"
+log_info "Target Domain (from script):   ${TARGET_DOMAIN_NAME}"
+log_info "Nginx Server Name:             ${NGINX_SN}"
+log_info "Proxy Target:                  ${PROXY_PASS_URL}"
 
 install_package "openssl"
 install_package "nginx"
