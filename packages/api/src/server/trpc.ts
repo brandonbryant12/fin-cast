@@ -1,7 +1,7 @@
-import { initTRPC, TRPCError } from '@trpc/server';
-import SuperJSON from 'superjson';
 import { eq } from '@repo/db';
 import * as schema from '@repo/db/schema';
+import { initTRPC, TRPCError } from '@trpc/server';
+import SuperJSON from 'superjson';
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { AppLogger } from '@repo/logger';
@@ -60,22 +60,14 @@ export const router = t.router;
 
 const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const start = Date.now();
-  let waitMs = 0;
-  if (t._config.isDev) {
-    waitMs = Math.floor(Math.random() * 400) + 100;
-    await new Promise((resolve) => setTimeout(resolve, waitMs));
-  }
   const result = await next();
   const end = Date.now();
   const durationMs = end - start;
 
-  const logPayload: { path: string; durationMs: number; artificialDelayMs?: number } = {
+  const logPayload: { path: string; durationMs: number; } = {
     path,
     durationMs,
   };
-  if (waitMs > 0) {
-    logPayload.artificialDelayMs = waitMs;
-  }
 
   ctx.logger.info(logPayload, `[TRPC] /${path} executed.`);
 
