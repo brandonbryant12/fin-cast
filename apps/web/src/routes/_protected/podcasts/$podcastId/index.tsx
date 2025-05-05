@@ -16,7 +16,7 @@ import { useForm } from '@tanstack/react-form';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { AlertCircle, Terminal, Pencil, Play, Pause, LinkIcon } from 'lucide-react';
+import { AlertCircle, Terminal, Pencil, Play, Pause, LinkIcon, Search } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { toast } from "sonner";
 import * as v from 'valibot';
@@ -51,6 +51,7 @@ export const Route = createFileRoute('/_protected/podcasts/$podcastId/')({
 function PodcastDetailPage() {
  const { podcastId } = Route.useParams();
  const [isEditing, setIsEditing] = useState(false);
+ const [searchTerm, setSearchTerm] = useState('');
 
  const [editingSegmentIndex, setEditingSegmentIndex] = useState<number | null>(null);
  const editingTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -279,6 +280,28 @@ function PodcastDetailPage() {
    queryClient.invalidateQueries({ queryKey: reviewsQueryOptions.queryKey });
  };
 
+ const highlightMatch = (text: string, highlight: string): React.ReactNode => {
+  if (!highlight.trim()) {
+   return text;
+  }
+  const regex = new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+
+  return (
+   <>
+    {parts.map((part, i) =>
+     regex.test(part) ? (
+      <mark key={i} className="bg-yellow-300 text-black px-0.5 rounded">
+       {part}
+      </mark>
+     ) : (
+      part
+     )
+    )}
+   </>
+  );
+ };
+
  return (
   <form
    onSubmit={(e) => {
@@ -492,12 +515,27 @@ function PodcastDetailPage() {
      </div>
     </CardHeader>
     <CardContent className="pt-6 border-t border-border">
-     <h3 className="text-xl font-semibold mb-4 text-foreground">Transcript</h3>
+     <div className="flex justify-between items-center mb-4">
+       <h3 className="text-xl font-semibold text-foreground">Transcript</h3>
+     </div>
 
      {!isEditing ? (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-background p-4">
+      <>
+        <div className="relative w-full max-w-xs mb-4">
+          <Input
+            type="search"
+            placeholder="Search transcript..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 bg-input"
+          />
+          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-background p-4">
        {Array.isArray(viewDialogue) && viewDialogue.length > 0 ? (
-        viewDialogue.map((segment, index) => {
+        viewDialogue
+         .filter(segment => !searchTerm || segment.line.toLowerCase().includes(searchTerm.toLowerCase()))
+         .map((segment, index) => {
          const speakerName = (segment as any)?.speaker ?? 'Unknown';
          const isHost = speakerName === typedPodcast.hostPersonalityId;
          const isCohost = speakerName === typedPodcast.cohostPersonalityId;
@@ -511,7 +549,7 @@ function PodcastDetailPage() {
              <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px]`}>
                 {speakerName}:
              </span>
-             <span className="text-foreground flex-1 pl-0 sm:pl-2">{segment.line ?? ''}</span>
+             <span className="text-foreground flex-1 pl-0 sm:pl-2">{highlightMatch(segment.line ?? '', searchTerm)}</span>
           </div>
          );
         })
@@ -519,6 +557,7 @@ function PodcastDetailPage() {
         <p className="text-muted-foreground italic">No transcript available.</p>
        )}
       </div>
+      </>
      ) : (
       <form.Field name="dialogue">
        {(field) => {
@@ -541,7 +580,17 @@ function PodcastDetailPage() {
 
          return (
            <div className="space-y-4">
-              {currentlyEditingSegment && (
+             <div className="relative w-full max-w-xs mb-4">
+               <Input
+                 type="search"
+                 placeholder="Search transcript..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="pl-8 bg-input"
+               />
+               <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+             </div>
+             {currentlyEditingSegment && (
                 <div className="border border-input rounded-md p-4 space-y-3 bg-background">
                     <h4 className="text-lg font-semibold text-foreground">Editing Segment {editingSegmentIndex !== null ? editingSegmentIndex + 1 : ''}</h4>
                     <div className="text-sm text-muted-foreground">Speaker: {getSegmentSpeakerName(currentlyEditingSegment.speaker)}</div>
@@ -556,7 +605,10 @@ function PodcastDetailPage() {
               )}
              <div className="space-y-2 max-h-[50vh] overflow-y-auto rounded-md border border-input bg-background p-4">
                {dialogue.length > 0 ? (
-                  dialogue.map((segment: DialogueSegment, index: number) => {
+                  dialogue
+                   .filter(segment => !searchTerm || segment.line.toLowerCase().includes(searchTerm.toLowerCase()))
+                   .map((segment: DialogueSegment, index: number) => {
+                    const originalIndex = dialogue.findIndex(d => d === segment);
                     const speakerName = getSegmentSpeakerName(segment.speaker);
                     const isHost = segment.speaker === typedPodcast.hostPersonalityId;
                     const isCohost = segment.speaker === typedPodcast.cohostPersonalityId;
@@ -571,17 +623,17 @@ function PodcastDetailPage() {
                       <div
                         key={index}
                         className={cn(
-                          "text-sm flex flex-col sm:flex-row sm:items-start p-2 rounded-md cursor-pointer",
-                          isSelected ? "bg-accent/30 border border-accent" : "border border-transparent hover:bg-accent/20"
-                        )}
-                        onClick={() => setEditingSegmentIndex(index)}
-                      >
-                        <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px]`}>
-                          {speakerName}:
-                        </span>
-                        <span className="text-foreground flex-1 pl-0 sm:pl-2">{segment.line || 'Empty line'}</span>
-                      </div>
-                    );
+                           "text-sm flex flex-col sm:flex-row sm:items-start p-2 rounded-md cursor-pointer",
+                           isSelected ? "bg-accent/30 border border-accent" : "border border-transparent hover:bg-accent/20"
+                         )}
+                         onClick={() => setEditingSegmentIndex(originalIndex)}
+                       >
+                         <span className={`font-semibold mr-2 w-full sm:w-auto mb-1 sm:mb-0 ${speakerColorClass} flex-shrink-0 sm:max-w-[150px]`}>
+                           {speakerName}:
+                         </span>
+                         <span className="text-foreground flex-1 pl-0 sm:pl-2">{highlightMatch(segment.line || 'Empty line', searchTerm)}</span>
+                       </div>
+                     );
                   })
                 ) : (
                   <p className="text-muted-foreground italic">No transcript segments available for editing.</p>
