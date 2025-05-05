@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server';
 import { trpcServer } from '@hono/trpc-server';
 import { createApi } from '@repo/api/server';
+import { createAudioService } from  '@repo/audio';
 import { createAuth } from '@repo/auth/server';
 import { asc, eq } from '@repo/db';
 import { createDb } from '@repo/db/client';
@@ -128,6 +129,7 @@ async function startServer() {
 
   const llm = initializeLLMService(env);
   const db = createDb({ databaseUrl: env.SERVER_POSTGRES_URL });
+  const audioService = createAudioService({ isRunningInDocker: env.IS_RUNNING_IN_DOCKER, logger: logger.child({ service: 'audio' })});
 
   // --- Set oldest user as admin ---
   try {
@@ -180,7 +182,8 @@ async function startServer() {
     logger: logger.child({ service: 'podcast' }), 
     scraper, 
     tts, 
-    isRunningInDocker: env.IS_RUNNING_IN_DOCKER 
+    audioService,
+    isRunningInDocker: env.IS_RUNNING_IN_DOCKER,
   });
   const reviewService = createReviewService({
      db,

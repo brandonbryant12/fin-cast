@@ -1,6 +1,6 @@
 import * as v from 'valibot';
-import type { AudioService } from './audio.service';
 import type { DialogueSynthesisService } from './dialogue-synthesis.service';
+import type { AudioService } from '@repo/audio';
 import type { LLMInterface } from '@repo/llm';
 import type { ChatResponse } from '@repo/llm';
 import type { AppLogger } from '@repo/logger';

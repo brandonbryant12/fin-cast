@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
+import type { AudioService } from '@repo/audio';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { LLMInterface } from '@repo/llm';
 import type { AppLogger } from '@repo/logger';
 import type { TTSService, TTSProvider } from '@repo/tts';
 import type { Scraper } from '@repo/webscraper';
-import { createAudioService } from './audio.service';
 import { DialogueSynthesisService } from './dialogue-synthesis.service';
 import { PersonalityId, enrichPersonalities, type PersonalityInfo } from './personalities/personalities';
 import { PodcastGenerationService } from './podcast-generation.service';
@@ -24,6 +24,7 @@ interface PodcastFactoryDependencies {
     scraper: Scraper;
     logger: AppLogger;
     tts: TTSService;
+    audioService: AudioService, 
     isRunningInDocker: boolean;
     podcastGenerationService: PodcastGenerationService;
 }
@@ -244,7 +245,6 @@ export class PodcastService {
 export function createPodcastService(dependencies: Omit<PodcastFactoryDependencies, 'podcastGenerationService' | 'dialogueSynthesisService'>): PodcastService {
     const mainLogger = dependencies.logger;
     const podcastRepository = new PodcastRepository(dependencies.db);
-    const audioService = createAudioService({ logger: mainLogger, isRunningInDocker: dependencies.isRunningInDocker });
     const dialogueSynthesisService = new DialogueSynthesisService({ tts: dependencies.tts, logger: mainLogger });
 
     const podcastGenerationService = new PodcastGenerationService({
@@ -252,7 +252,7 @@ export function createPodcastService(dependencies: Omit<PodcastFactoryDependenci
         scraper: dependencies.scraper,
         llm: dependencies.llm,
         tts: dependencies.tts,
-        audioService,
+        audioService: dependencies.audioService,
         dialogueSynthesisService,
         logger: mainLogger,
     });
@@ -262,7 +262,7 @@ export function createPodcastService(dependencies: Omit<PodcastFactoryDependenci
         podcastRepository,
         podcastGenerationService,
         dependencies.tts,
-        dependencies.isRunningInDocker
+        dependencies.isRunningInDocker,
     );
 
     return podcastService;

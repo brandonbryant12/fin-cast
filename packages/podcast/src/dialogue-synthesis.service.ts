@@ -1,8 +1,10 @@
 import pLimit from 'p-limit';
 import type { AppLogger } from '@repo/logger';
 import type { TTSService } from '@repo/tts';
-import { AUDIO_FORMAT } from './audio.service';
 import { PersonalityId } from './personalities/personalities';
+
+
+const AUDIO_FORMAT = 'mp3';
 
 interface DialogueSegment {
     speaker: string;

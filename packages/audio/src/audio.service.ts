@@ -1,5 +1,3 @@
-// packages/podcast/src/audio.service.ts
-
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as os from 'os';
@@ -11,10 +9,8 @@ export const AUDIO_FORMAT = 'mp3';
 const FFMPEG_PATH = '/usr/bin/ffmpeg';
 const FFPROBE_PATH = '/usr/bin/ffprobe';
 
-// Define the dependencies, including the new flag
-interface AudioServiceDependencies {
+export interface AudioServiceDependencies {
     logger: AppLogger;
-    /** Flag indicating if the service is running within a Docker container */
     isRunningInDocker: boolean;
 }
 
@@ -144,7 +140,6 @@ export class AudioService {
                  ffmpeg(tempFilePath).ffprobe((err: Error | null, metadata?: ffmpeg.FfprobeData) => { // Make Error nullable
                      if (err) {
                          logger.warn({ err: err.message, file: tempFilePath }, 'ffprobe failed to get audio duration.');
-                         // Resolve with 0 instead of rejecting, as per original logic
                          resolveProbe(0);
                          return;
                      }

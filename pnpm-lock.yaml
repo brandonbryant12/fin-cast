@@ -225,6 +225,9 @@ importers:
       '@repo/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@repo/audio':
+        specifier: workspace:*
+        version: link:../../packages/audio
       '@repo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
@@ -457,6 +460,40 @@ importers:
         specifier: ^6.2.5
         version: 6.2.5(@types/node@22.14.0)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)
 
+  packages/audio:
+    dependencies:
+      '@repo/logger':
+        specifier: workspace:*
+        version: link:../logger
+      fluent-ffmpeg:
+        specifier: 2.1.3
+        version: 2.1.3
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tools/eslint
+      '@repo/prettier-config':
+        specifier: workspace:*
+        version: link:../../tools/prettier
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../tools/typescript
+      '@types/fluent-ffmpeg':
+        specifier: 2.1.3
+        version: 2.1.3
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.14.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.24.0(jiti@2.4.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+
   packages/auth:
     dependencies:
       '@repo/db':
@@ -625,6 +662,9 @@ importers:
 
   packages/podcast:
     dependencies:
+      '@repo/audio':
+        specifier: workspace:*
+        version: link:../audio
       '@repo/db':
         specifier: workspace:*
         version: link:../db
