@@ -55,13 +55,7 @@ export const createScraper = (options: ScraperOptions = {}): Scraper => {
     let agent: any = undefined;
     if (options?.proxy) {
       const { HttpsProxyAgent } = await import('https-proxy-agent');
-      let proxyUrl: string;
-      if (typeof options.proxy === 'string') {
-        proxyUrl = options.proxy;
-      } else {
-        const { protocol = 'http', host, port, auth } = options.proxy;
-        proxyUrl = `${protocol}://${auth ? auth + '@' : ''}${host}${port ? ':' + port : ''}`;
-      }
+      const proxyUrl = options.proxy;
       agent = new HttpsProxyAgent(proxyUrl);
       if (allowUnsignedCerts && agent.options) {
         agent.options.rejectUnauthorized = false;
