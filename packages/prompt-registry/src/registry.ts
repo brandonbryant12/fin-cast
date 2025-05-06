@@ -40,8 +40,9 @@ class PromptRegistry {
       if (!row) return undefined; // Handle case where no row is found
       const augmented: CompileCapablePromptVersion = {
         ...row,
+        temperature: typeof row.temperature === 'string' ? parseFloat(row.temperature) : row.temperature,
         compile: <O = unknown>(placeholders: Record<string, unknown>) =>
-          new PromptBuilder(row).compile<O>(placeholders),
+          new PromptBuilder({ ...row, temperature: typeof row.temperature === 'string' ? parseFloat(row.temperature) : row.temperature }).compile<O>(placeholders),
       }
       return augmented
     }
@@ -54,8 +55,9 @@ class PromptRegistry {
     if (!row) return undefined;
     const augmented: CompileCapablePromptVersion = {
       ...row,
+      temperature: typeof row.temperature === 'string' ? parseFloat(row.temperature) : row.temperature,
       compile: <O = unknown>(placeholders: Record<string, unknown>) =>
-        new PromptBuilder(row).compile<O>(placeholders),
+        new PromptBuilder({ ...row, temperature: typeof row.temperature === 'string' ? parseFloat(row.temperature) : row.temperature }).compile<O>(placeholders),
     }
     return augmented
   }
@@ -104,4 +106,4 @@ class PromptRegistry {
 }
 
 export const createPromptRegistry = ({ db }: { db: DatabaseInstance }) => new PromptRegistry(db)
-export type { PromptVersion }
+export type { PromptVersion, CompileCapablePromptVersion }

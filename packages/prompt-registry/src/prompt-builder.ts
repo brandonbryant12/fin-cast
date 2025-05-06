@@ -2,6 +2,7 @@ import type { PromptVersion, PromptRuntime } from './types'
 import { jsonSchemaToValibot } from './json-schema-to-valibot'
 import * as v from 'valibot'
 import Handlebars from 'handlebars'
+import type { CoreMessage } from 'ai'
 
 export class PromptBuilder {
   constructor(private promptVersion: PromptVersion) {}
@@ -21,23 +22,28 @@ export class PromptBuilder {
       ...placeholders,
     });
 
-    const messages = [
+    const messages: CoreMessage[] = [
       { role: 'system' as const, content: `${systemInstructions}\n${schemaInstruction}` },
       { role: 'user' as const, content: `${userInstructions}\n\n${populatedTemplate}` },
-    ];
+    ] as CoreMessage[];
     const schema = jsonSchemaToValibot(this.promptVersion.outputSchema as any)
     return {
       toMessages: () => messages,
       validate: (raw: unknown) => {
-        let data: unknown = raw
+        let data: unknown = raw;
         if (typeof raw === 'string') {
+          let stringToParse = raw;
+          const match = raw.match(/```json\n([\s\S]*?)```/s);
+          if (match && match[1]) {
+            stringToParse = match[1].trim();
+          }
           try {
-            data = JSON.parse(raw)
+            data = JSON.parse(stringToParse);
           } catch {
-            data = raw
+            data = stringToParse; 
           }
         }
-        return v.parse(schema, data) as O
+        return v.parse(schema, data) as O;
       },
     }
   }

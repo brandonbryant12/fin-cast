@@ -1,14 +1,17 @@
+import { createPromptRegistry, type CompileCapablePromptVersion } from '@repo/prompt-registry';
 import * as v from 'valibot';
 import type { DialogueSynthesisService } from './dialogue-synthesis.service';
+import type { PodcastScriptOutput } from './types/podcast-script';
 import type { AudioService } from '@repo/audio';
 import type { LLMInterface } from '@repo/llm';
 import type { ChatResponse } from '@repo/llm';
 import type { AppLogger } from '@repo/logger';
 import type { TTSService } from '@repo/tts';
 import type { Scraper } from '@repo/webscraper';
-import { generatePodcastScriptPrompt, type GeneratePodcastScriptOutput } from './generate-podcast-script-prompt';
+
 import { PersonalityId, getPersonalityInfo} from './personalities/personalities';
 import { type PodcastRepository, type DialogueSegment } from './podcast.repository';
+
 
 interface PodcastGenerationServiceDependencies {
     podcastRepository: PodcastRepository;
@@ -18,6 +21,7 @@ interface PodcastGenerationServiceDependencies {
     audioService: AudioService;
     logger: AppLogger;
     dialogueSynthesisService: DialogueSynthesisService;
+    promptRegistry: ReturnType<typeof createPromptRegistry>;
 }
 
 export class PodcastGenerationService {
@@ -28,6 +32,7 @@ export class PodcastGenerationService {
     private readonly logger: AppLogger;
     private readonly dialogueSynthesisService: DialogueSynthesisService;
     private readonly tts: TTSService;
+    private readonly promptRegistry: ReturnType<typeof createPromptRegistry>;
 
     constructor(dependencies: PodcastGenerationServiceDependencies) {
         this.podcastRepository = dependencies.podcastRepository;
@@ -37,6 +42,7 @@ export class PodcastGenerationService {
         this.audioService = dependencies.audioService;
         this.logger = dependencies.logger.child({ service: 'PodcastGenerationService' });
         this.dialogueSynthesisService = dependencies.dialogueSynthesisService;
+        this.promptRegistry = dependencies.promptRegistry;
         this.logger.info('PodcastGenerationService initialized');
     }
 
@@ -53,7 +59,7 @@ export class PodcastGenerationService {
         const logger = this.logger.child({ podcastId, method: 'generatePodcast', hostPersonalityId, cohostPersonalityId });
         logger.info('Starting background podcast generation orchestration.');
 
-        let llmResponse: ChatResponse<GeneratePodcastScriptOutput> | null = null;
+        let llmResponse: ChatResponse<PodcastScriptOutput> | null = null;
 
         try {
             const hostInfo = getPersonalityInfo(hostPersonalityId, this.tts.getProvider());
@@ -68,20 +74,25 @@ export class PodcastGenerationService {
             logger.info('Scraping successful.');
 
             // --- Generate Script ---
-            logger.info('Running LLM prompt to generate podcast script...');
-            llmResponse = await this.llm.runPrompt(
-                generatePodcastScriptPrompt,
-                {
-                    htmlContent: html,
-                    hostName: hostInfo.name,
-                    hostPersonalityDescription: hostInfo.description,
-                    cohostName: cohostInfo.name,
-                    cohostPersonalityDescription: cohostInfo.description,
-                }
-            );
-            logger.info('LLM prompt execution finished.');
+            logger.info('Fetching prompt definition...');
+            const promptDef = await this.promptRegistry.get('podcast-script-generator', 'active');
+            const runtime = (promptDef as CompileCapablePromptVersion).compile<PodcastScriptOutput>({
+                htmlContent: html,
+                hostName: hostInfo.name,
+                hostPersonalityDescription: hostInfo.description,
+                cohostName: cohostInfo.name,
+                cohostPersonalityDescription: cohostInfo.description,
+            });
+            const messages = runtime.toMessages();
+            logger.info('Calling LLM with compiled prompt...');
+            const raw = await this.llm.chatCompletion(messages, { temperature: promptDef.temperature, maxTokens: promptDef.maxTokens });
+            llmResponse = {
+                ...raw,
+                structuredOutput: raw.content ? runtime.validate(raw.content) : undefined,
+            };
+            logger.info('LLM call finished.');
 
-            let scriptData: GeneratePodcastScriptOutput | undefined;
+            let scriptData: PodcastScriptOutput | undefined;
 
             if (llmResponse.structuredOutput && !llmResponse.error) {
                 scriptData = llmResponse.structuredOutput;

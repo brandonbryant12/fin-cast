@@ -674,6 +674,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../logger
+      '@repo/prompt-registry':
+        specifier: workspace:*
+        version: link:../prompt-registry
       '@repo/tts':
         specifier: workspace:*
         version: link:../tts
@@ -738,6 +741,9 @@ importers:
       '@repo/llm':
         specifier: workspace:*
         version: link:../llm
+      ai:
+        specifier: 4.3.2
+        version: 4.3.2(react@19.1.0)(zod@3.24.2)
       commander:
         specifier: ^12.1.0
         version: 12.1.0

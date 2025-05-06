@@ -1,3 +1,4 @@
+import { createPromptRegistry } from '@repo/prompt-registry';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 import type { AudioService } from '@repo/audio';
@@ -10,7 +11,6 @@ import { DialogueSynthesisService } from './dialogue-synthesis.service';
 import { PersonalityId, enrichPersonalities, type PersonalityInfo } from './personalities/personalities';
 import { PodcastGenerationService } from './podcast-generation.service';
 import { PodcastRepository, type PodcastSummary, type PodcastWithTranscript, type PodcastSummaryWithTags } from './podcast.repository';
-
 
 const DialogueSegmentSchema = v.object({
     speaker: v.string(),
@@ -247,6 +247,7 @@ export function createPodcastService(dependencies: Omit<PodcastFactoryDependenci
     const podcastRepository = new PodcastRepository(dependencies.db);
     const dialogueSynthesisService = new DialogueSynthesisService({ tts: dependencies.tts, logger: mainLogger });
 
+    const promptRegistry = createPromptRegistry({ db: dependencies.db });
     const podcastGenerationService = new PodcastGenerationService({
         podcastRepository,
         scraper: dependencies.scraper,
@@ -255,6 +256,7 @@ export function createPodcastService(dependencies: Omit<PodcastFactoryDependenci
         audioService: dependencies.audioService,
         dialogueSynthesisService,
         logger: mainLogger,
+        promptRegistry,
     });
 
     const podcastService = new PodcastService(

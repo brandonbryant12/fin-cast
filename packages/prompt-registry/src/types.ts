@@ -1,5 +1,7 @@
+import type { CoreMessage } from 'ai'
+
 export interface PromptRuntime<O = unknown> {
-  toMessages(): unknown[]
+  toMessages(): CoreMessage[]
   validate(raw: unknown): O
 }
 
