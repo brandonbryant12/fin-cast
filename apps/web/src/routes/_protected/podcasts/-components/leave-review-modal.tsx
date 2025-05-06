@@ -109,7 +109,10 @@ export function LeaveReviewModal({
             <form.Field
                 name="feedback"
                 validators={{
-                 onChange: reviewSchema.entries.feedback,
+                 onChange: ({ value }) => {
+                   const result = v.safeParse(reviewSchema.entries.feedback, value);
+                   return result.success ? undefined : result.issues[0]?.message;
+                 },
                 }}
                 children={(field) => (
                  <div className="space-y-1">

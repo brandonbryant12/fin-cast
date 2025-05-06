@@ -137,15 +137,15 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
             title={hoverTitle}
             className={cn(
                 'flex flex-col p-4 rounded-md border transition-colors duration-150',
-                status === 'failed' ? 'border-red-500/30 bg-red-900/10' : 'border-slate-700',
-                isActive ? 'bg-slate-700/70' : 'bg-slate-800/50'
+                status === 'failed' ? 'border-destructive/30 bg-destructive/10' : 'border-border',
+                isActive ? 'bg-card/70' : 'bg-card'
             )}
         >
             <div className="flex items-start justify-between w-full">
                 <div className="flex items-center space-x-4 flex-1 min-w-0">
                     <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center pt-1">{getStatusIndicator()}</div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-base font-medium text-white truncate" title={title || 'Untitled Podcast'}>
+                        <p className="text-base font-medium text-foreground truncate" title={title || 'Untitled Podcast'}>
                             {title || 'Untitled Podcast'}
                         </p>
                                 {isAdminView && user && (
@@ -167,7 +167,7 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
                             </div>
                         )}
                         {status === 'failed' && errorMessage && (
-                            <p className="text-xs text-red-400 mt-1 truncate" title={errorMessage}>{errorMessage}</p>
+                            <p className="text-xs text-destructive mt-1 truncate" title={errorMessage}>{errorMessage}</p>
                         )}
                     </div>
                 </div>
@@ -178,7 +178,7 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
                               variant="ghost" size="icon"
                               onClick={handlePlayPauseClick}
                               className={cn(
-                                  'text-gray-300 hover:text-white hover:bg-slate-700',
+                                  'text-muted-foreground hover:text-foreground hover:bg-muted/20',
                               )}
                               aria-label={shouldShowPauseIcon ? 'Pause Podcast' : 'Play Podcast'}
                           >
@@ -190,7 +190,7 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
                               variant="ghost"
                               size="icon"
                               asChild
-                              className="text-sky-400 hover:text-sky-300 hover:bg-slate-700"
+                              className="text-info hover:text-info/80 hover:bg-muted/20"
                               onClick={(e) => e.stopPropagation()}
                               aria-label="View Source URL"
                           >
@@ -210,7 +210,7 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
                           <Button
                               variant="ghost"
                               size="icon"
-                              className="text-gray-400 hover:text-gray-200 hover:bg-slate-700"
+                              className="text-muted-foreground hover:text-foreground hover:bg-muted/20"
                               disabled={isProcessing}
                               aria-hidden="true"
                           >
@@ -223,11 +223,11 @@ export function PodcastListItem({ podcast, onDelete, isAdminView }: PodcastListI
                                e.stopPropagation();
                                 onDelete(id);
                            }}
-                           className="text-red-500 hover:text-red-400 hover:bg-red-900/30" aria-label="Delete Podcast">
+                           className="text-destructive hover:text-destructive/80 hover:bg-destructive/10" aria-label="Delete Podcast">
                           <Trash2 className="h-4 w-4" />
                       </Button>
                   </div>
-                  <p className="text-xs text-gray-500 text-right pr-1">
+                  <p className="text-xs text-muted-foreground text-right pr-1">
                        {formattedDate} {formattedDuration ? `| ${formattedDuration}` : ''}
                   </p>
                 </div>

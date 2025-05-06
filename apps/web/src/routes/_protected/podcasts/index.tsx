@@ -54,12 +54,12 @@ function PodcastsPage() {
     return (
         <div className="space-y-8 pb-24">
             <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-                <h1 className="text-2xl font-bold text-white md:text-3xl">My Podcasts</h1>
+                <h1 className="text-2xl font-bold text-foreground md:text-3xl">My Podcasts</h1>
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                     <DialogTrigger asChild>
                         <Button
                             size="default"
-                            className="w-full md:w-auto bg-teal-500 text-white hover:bg-teal-600 font-semibold rounded-lg px-4 py-2 md:px-6 md:py-3 md:text-base"
+                            className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary-hover font-semibold rounded-lg px-4 py-2 md:px-6 md:py-3 md:text-base"
                         >
                             <Plus className="mr-2 h-5 w-5" />
                             Generate New Podcast
@@ -73,20 +73,20 @@ function PodcastsPage() {
                 </Dialog>
             </div>
 
-            <div className="rounded-lg border border-slate-700 bg-slate-800 p-4 md:p-6">
+            <div className="rounded-lg border border-border bg-card p-4 md:p-6">
                 {podcastsQuery.isLoading ? (
                     <div className="flex justify-center items-center h-40">
                         <Spinner aria-label="Loading podcasts" />
                     </div>
                 ) : podcastsQuery.isError ? (
-                    <div className="text-center py-10 text-red-400">
+                    <div className="text-center py-10 text-destructive">
                         <h2 className="text-xl font-semibold mb-2">Error Loading Podcasts</h2>
                         <p>{podcastsQuery.error.message || 'Could not fetch your podcasts.'}</p>
                     </div>
                 ) : podcastsQuery.data && podcastsQuery.data.length === 0 ? (
                     <div className="text-center py-10 px-4">
-                        <h2 className="text-lg md:text-xl font-semibold text-white mb-2">No Podcasts Yet</h2>
-                        <p className="text-gray-300 mb-6 text-sm md:text-base">
+                        <h2 className="text-lg md:text-xl font-semibold text-foreground mb-2">No Podcasts Yet</h2>
+                        <p className="text-muted-foreground mb-6 text-sm md:text-base">
                             Your generated podcasts will appear here. Click 'Generate New Podcast' to create one.
                         </p>
                     </div>

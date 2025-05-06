@@ -19,10 +19,10 @@ import { GeneratePodcastCard } from './generate-podcast-card';
 export function UnlinkedUserHome() {
   return (
     <div className="container mx-auto flex flex-col items-center px-4 py-16 md:py-24">
-      <h1 className="mb-2 text-center text-4xl font-bold text-white md:text-5xl lg:text-6xl">
+      <h1 className="mb-2 text-center text-4xl font-bold text-foreground md:text-5xl lg:text-6xl">
         Welcome to Fincast!
       </h1>
-      <p className="mb-12 text-center text-lg text-gray-300 md:text-xl">
+      <p className="mb-12 text-center text-lg text-muted-foreground md:text-xl">
         Let's get your financial audio experience started.
       </p>
 
@@ -31,24 +31,24 @@ export function UnlinkedUserHome() {
 
       {/* Section 2: Teaser & Call to Action for Linking Accounts */}
       <div className="mt-16 w-full max-w-4xl text-center">
-        <h2 className="mb-2 text-3xl font-bold text-white md:text-4xl">
+        <h2 className="mb-2 text-3xl font-bold text-foreground md:text-4xl">
           Unlock Personalized Insights & Automation
         </h2>
-        <p className="mb-8 text-lg text-gray-300 md:text-xl">
+        <p className="mb-8 text-lg text-muted-foreground md:text-xl">
           Connect your accounts securely to access these powerful features:
         </p>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Locked Card 1 */}
-          <Card className="border-slate-700 bg-slate-800 text-white opacity-75">
+          <Card className="border-border bg-card text-card-foreground opacity-75">
             <CardHeader>
               <div className="mb-2 text-2xl">🎧🔒</div> {/* Placeholder Icons */}
-              <CardTitle className="text-base text-white">
+              <CardTitle className="text-base text-card-foreground">
                 Smart Financial Podcasts
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-sm text-gray-400">
+              <CardDescription className="text-sm text-muted-foreground">
                 Get personalized audio reports generated automatically from your
                 connected brokerage accounts.
               </CardDescription>
@@ -56,15 +56,15 @@ export function UnlinkedUserHome() {
           </Card>
 
           {/* Locked Card 2 */}
-          <Card className="border-slate-700 bg-slate-800 text-white opacity-75">
+          <Card className="border-border bg-card text-card-foreground opacity-75">
             <CardHeader>
               <div className="mb-2 text-2xl">📊🔒</div> {/* Placeholder Icons */}
-              <CardTitle className="text-base text-white">
+              <CardTitle className="text-base text-card-foreground">
                 Weekly Audio Briefings
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-sm text-gray-400">
+              <CardDescription className="text-sm text-muted-foreground">
                 Receive automated audio summaries of your portfolio's weekly
                 performance once accounts are linked.
               </CardDescription>
@@ -72,15 +72,15 @@ export function UnlinkedUserHome() {
           </Card>
 
           {/* Locked Card 3 */}
-          <Card className="border-slate-700 bg-slate-800 text-white opacity-75">
+          <Card className="border-border bg-card text-card-foreground opacity-75">
             <CardHeader>
               <div className="mb-2 text-2xl">💬🔒</div> {/* Placeholder Icons */}
-              <CardTitle className="text-base text-white">
+              <CardTitle className="text-base text-card-foreground">
                 Conversational AI
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-sm text-gray-400">
+              <CardDescription className="text-sm text-muted-foreground">
                 Ask questions like "How's my portfolio doing?" and get answers
                 based on your connected data.
               </CardDescription>
@@ -88,15 +88,15 @@ export function UnlinkedUserHome() {
           </Card>
 
           {/* Locked Card 4 */}
-          <Card className="border-slate-700 bg-slate-800 text-white opacity-75">
+          <Card className="border-border bg-card text-card-foreground opacity-75">
             <CardHeader>
               <div className="mb-2 text-2xl">🔊🔒</div> {/* Placeholder Icons */}
-              <CardTitle className="text-base text-white">
+              <CardTitle className="text-base text-card-foreground">
                 Voice-First Dashboard
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription className="text-sm text-gray-400">
+              <CardDescription className="text-sm text-muted-foreground">
                 Navigate and manage your linked finances using simple voice
                 commands.
               </CardDescription>
@@ -106,21 +106,21 @@ export function UnlinkedUserHome() {
 
         {/* Primary Call to Action */}
         <div className="mt-12">
-          <p className="mb-4 text-lg text-gray-300">
+          <p className="mb-4 text-lg text-muted-foreground">
             Ready to unlock the full experience?
           </p>
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 size="lg"
-                className="bg-[#14B8A6] px-10 py-4 text-lg font-semibold text-white hover:bg-[#0D9488]"
+                className="bg-primary px-10 py-4 text-lg font-semibold text-primary-foreground hover:bg-primary-hover"
               >
                 Connect Your Accounts Securely
               </Button>
             </DialogTrigger>
-            <DialogContent className="border-slate-700 bg-slate-800 text-white">
+            <DialogContent className="border-border bg-card text-card-foreground">
               <DialogHeader>
-                <DialogTitle className="text-center text-2xl text-white">
+                <DialogTitle className="text-center text-2xl text-card-foreground">
                   Coming Soon! 🚧🛠️
                 </DialogTitle>
               </DialogHeader>

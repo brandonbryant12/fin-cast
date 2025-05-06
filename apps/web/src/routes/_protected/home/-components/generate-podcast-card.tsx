@@ -42,7 +42,7 @@ export function GeneratePodcastCard() {
                     <DialogTrigger asChild>
                         <Button
                             size="lg"
-                            className="mt-4 w-full bg-primary px-8 py-3 text-primary-foreground hover:bg-primary-hover"
+                            className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary-hover"
                             disabled={isLoadingVoices || !!voicesError}
                         >
                             {isLoadingVoices ? <Spinner className="mr-2" /> : null}
