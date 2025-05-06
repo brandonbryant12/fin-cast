@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "properties": {
+    "htmlContent": { "type": "string", "minLength": 1 },
+    "hostName": { "type": "string", "minLength": 1 },
+    "hostPersonalityDescription": { "type": "string", "minLength": 1 },
+    "cohostName": { "type": "string", "minLength": 1 },
+    "cohostPersonalityDescription": { "type": "string", "minLength": 1 }
+  },
+  "required": [
+    "htmlContent",
+    "hostName",
+    "hostPersonalityDescription",
+    "cohostName",
+    "cohostPersonalityDescription"
+  ],
+  "additionalProperties": false
+}

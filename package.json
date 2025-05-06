@@ -28,7 +28,8 @@
     "postclean": "git clean -xdf .cache .turbo node_modules",
     "start": "turbo run start",
     "typecheck": "turbo run typecheck",
-    "ui-add": "turbo run ui-add -F @repo/ui --"
+    "ui-add": "turbo run ui-add -F @repo/ui --",
+    "prompt-registry-cli": "pnpm --filter=@repo/prompt-registry cli"
   },
   "packageManager": "pnpm@10.7.0",
   "prettier": "@repo/prettier-config",

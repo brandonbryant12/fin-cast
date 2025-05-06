@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+for dir in prompt-seeds/*; do
+  if [ -d "$dir" ] && [ -x "$dir/seed.sh" ]; then
+    (cd "$dir" && ./seed.sh)
+  fi
+done
