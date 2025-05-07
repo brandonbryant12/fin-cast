@@ -766,9 +766,27 @@ importers:
         specifier: 'catalog:'
         version: 1.0.0(typescript@5.8.3)
     devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tools/eslint
+      '@repo/prettier-config':
+        specifier: workspace:*
+        version: link:../../tools/prettier
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../tools/typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.14.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.24.0(jiti@2.4.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/reviews:
     dependencies:

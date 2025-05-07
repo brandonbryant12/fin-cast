@@ -20,6 +20,7 @@
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-hover: hsl(var(--primary-hover));
 
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
@@ -71,8 +72,6 @@
   --color-toast-success: hsl(var(--toast-success));
   --color-toast-warning: hsl(var(--toast-warning));
 
-  --color-primary-hover: hsl(var(--primary-hover));
-
   @keyframes accordion-down {
     from {
       height: 0;
@@ -91,57 +90,54 @@
   }
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
   *,
   ::after,
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--color-gray-200, hsl(var(--border)));
   }
 }
 
 @layer base {
   :root {
-    --selected: 350 50% 70%;
-    --nav: 350 50% 80%;
-    --elevated: 0 0% 90%;
+    --background: 0 0% 93%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 7%;
 
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 350 50% 40%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --primary: 350 65% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 350 65% 43%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 120 74.2% 48.9%;
-    --success-foreground: 0 0 0%;
-    --info: 200 88.8% 52%;
-    --info-foreground: 200 20% 98%;
-    --warning: 40 94.2% 61%;
-    --warning-foreground: 40 60% 12%;
+    --secondary: 220 15% 94%;
+    --secondary-foreground: 220 10% 30%;
+    --muted: 220 10% 91%;
+    --muted-foreground: 220 8% 50%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --accent: 350 60% 90%;
+    --accent-foreground: 350 65% 45%;
+
+    --border: 220 12% 88%;
+    --input: 0 0% 100%;
+    --ring: 350 65% 60%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 145 60% 40%;
+    --success-foreground: 0 0% 100%;
+    --info: 205 75% 48%;
+    --info-foreground: 0 0% 100%;
+    --warning: 38 95% 53%;
+    --warning-foreground: 38 60% 15%;
+
+    --selected: 350 65% 88%;
+    --nav: 0 0% 97%;
+    --elevated: 0 0% 97%;
+
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -149,27 +145,26 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
 
-    --toast-error: 0 100% 80%;
-    --toast-info: 220 50% 85%;
-    --toast-loading: 0 0% 90%;
-    --toast-success: 140 50% 80%;
-    --toast-warning: 40 100% 60%;
+    --toast-error: 0 70% 90%;
+    --toast-info: 205 70% 92%;
+    --toast-loading: 0 0% 95%;
+    --toast-success: 145 60% 88%;
+    --toast-warning: 38 90% 85%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 91%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 350 65% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 350 60% 90%;
+    --sidebar-accent-foreground: 350 65% 45%;
+    --sidebar-border: 220 12% 86%;
+    --sidebar-ring: 350 65% 60%;
   }
 
   .dark {
     --selected: 350 50% 30%;
     --nav: 350 50% 40%;
     --elevated: 0 0% 20%;
-
     --background: 222 47% 11%;
     --foreground: 0 0% 98%;
     --card: 215 39% 17%;
@@ -181,20 +176,18 @@
     --primary-hover: 174 82% 31%;
     --secondary: 215 28% 26%;
     --secondary-foreground: 215 20% 91%;
-    --muted: hsl(215 22% 60%);
-    --muted-foreground: hsl(215 20% 30%);
+    --muted: 215 22% 60%;
+    --muted-foreground: 215 20% 75%;
     --accent: 174 72% 41%;
     --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 120 45.8% 26.6%;
-    --success-foreground: 120 20% 98%;
-    --info: 200 60% 35.5%;
-    --info-foreground: 200 20% 98%;
-    --warning: 40 68.9% 42%;
-    --warning-foreground: 40 60% 12%;
-
+    --destructive: 0 75% 70%;
+    --destructive-foreground: 0 60% 25%;
+    --success: 130 65% 70%;
+    --success-foreground: 130 50% 20%;
+    --info: 200 80% 70%;
+    --info-foreground: 200 60% 25%;
+    --warning: 40 90% 70%;
+    --warning-foreground: 40 60% 15%;
     --border: 215 28% 26%;
     --input: 215 28% 26%;
     --ring: 0 0% 83.1%;
@@ -203,13 +196,11 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-
-    --toast-error: 0 100% 30%;
-    --toast-info: 220 50% 30%;
-    --toast-loading: 0 0% 10%;
-    --toast-success: 140 50% 20%;
-    --toast-warning: 40 100% 30%;
-
+    --toast-error: 0 70% 25%;
+    --toast-info: 205 60% 30%;
+    --toast-loading: 0 0% 15%;
+    --toast-success: 145 55% 22%;
+    --toast-warning: 38 70% 35%;
     --sidebar-background: 215 39% 17%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 174 72% 41%;
@@ -217,30 +208,31 @@
     --sidebar-accent: 215 28% 26%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 215 28% 26%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 174 72% 51%;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground border-0 transition-colors duration-200 ease-in-out;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    outline-color: hsl(var(--ring) / 0.5);
   }
 
-  body {
-    @apply bg-background text-foreground border-0;
-    background-color: var(--background);
-    color: var(--foreground);
+  *:focus-visible {
+    outline-color: hsl(var(--ring));
+    outline-style: solid;
+    outline-width: 2px;
+    outline-offset: 2px;
   }
-}
 
-/*
-  ---break---
-*/
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
   body {
     @apply bg-background text-foreground;
   }
