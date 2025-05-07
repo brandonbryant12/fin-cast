@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@repo/ui/components/sheet';
 import { Toaster } from '@repo/ui/components/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
-import { Menu } from 'lucide-react';
+import { Menu, AlertTriangle } from 'lucide-react'; // Added AlertTriangle
 import React, { useState } from 'react';
 import { authClient } from '@/clients/authClient';
 import { AudioProvider } from '@/contexts/audio-player-context';
@@ -15,7 +15,6 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
-// https://tanstack.com/router/v1/docs/framework/react/devtools
 const TanStackRouterDevtools = import.meta.env.PROD
   ? () => null
   : React.lazy(() =>
@@ -35,6 +34,8 @@ function RootComponent() {
       </div>
     );
   }
+
+  const pocWarningMessage = "This is a Proof of Concept (POC) application and is under active development. Please do not enter any Personally Identifiable Information (PII) or confidential data.";
 
   return (
     <AudioProvider>
@@ -61,7 +62,16 @@ function RootComponent() {
                 </Sheet>
               </div>
             )}
-            <div className={cn("pt-12 lg:pt-0")}>
+
+            {/* POC Caution Banner */}
+            <div className="mb-6 flex items-start gap-3 p-4 bg-caution border border-caution-border rounded-md text-sm">
+              <AlertTriangle className="h-5 w-5 text-caution-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <p className="text-caution-foreground font-medium">
+                {pocWarningMessage}
+              </p>
+            </div>
+
+            <div className={cn("pt-12 lg:pt-0")}> {/* Adjusted padding if banner is outside this div */}
                <Outlet />
             </div>
           </main>

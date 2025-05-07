@@ -1,8 +1,8 @@
+import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
 import { Outlet, createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { authClient } from '@/clients/authClient';
 import Spinner from '@/routes/-components/common/spinner';
-import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
 import { AlertCircle, Construction } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { trpc } from '@/router';
@@ -54,18 +54,18 @@ function AdminLayout() {
  }
 
  if (isAuthenticated && isAdmin) {
-  return (
-   <div className="space-y-6">
-    <div className="flex items-center gap-2 p-4 bg-yellow-900/30 border border-yellow-700 rounded-md">
-     <Construction className="h-6 w-6 text-yellow-400"/>
-     <p className="text-yellow-300 text-sm font-medium">
-      Admin Area: Features under development. Proceed with caution.
-     </p>
-    </div>
-    <Outlet />
-   </div>
-  );
- }
+    return (
+     <div className="space-y-6">
+      <div className="flex items-center gap-2 p-4 bg-caution border border-caution-border rounded-md">
+       <Construction className="h-6 w-6 text-caution-foreground"/>
+       <p className="text-caution-foreground text-sm font-medium">
+        Admin Area: Features under development. Proceed with caution.
+       </p>
+      </div>
+      <Outlet />
+     </div>
+    );
+   }
 
  return (
   <div className="flex justify-center items-center h-32">

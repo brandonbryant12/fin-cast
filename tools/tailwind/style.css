@@ -40,6 +40,12 @@
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
 
+  /* New caution theme variables */
+  --color-caution: hsl(var(--caution));
+  --color-caution-foreground: hsl(var(--caution-foreground));
+  --color-caution-border: hsl(var(--caution-border));
+
+
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -134,6 +140,10 @@
     --warning: 38 95% 53%;
     --warning-foreground: 38 60% 15%;
 
+    --caution: 45 90% 88%;
+    --caution-foreground: 45 70% 25%;
+    --caution-border: 45 80% 75%;
+
     --selected: 350 65% 88%;
     --nav: 0 0% 97%;
     --elevated: 0 0% 97%;
@@ -188,6 +198,11 @@
     --info-foreground: 200 60% 25%;
     --warning: 40 90% 70%;
     --warning-foreground: 40 60% 15%;
+
+    --caution: 45 60% 28%; /* Slightly adjusted for better dark mode feel */
+    --caution-foreground: 45 95% 78%;
+    --caution-border: 45 70% 40%;
+
     --border: 215 28% 26%;
     --input: 215 28% 26%;
     --ring: 0 0% 83.1%;
