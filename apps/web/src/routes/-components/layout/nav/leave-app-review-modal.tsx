@@ -11,15 +11,16 @@ import { Label } from '@repo/ui/components/label';
 import { Textarea } from '@repo/ui/components/textarea';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import * as v from 'valibot';
-import { trpc } from '@/router';
+ import { toast } from 'sonner';
+ import * as v from 'valibot';
+import { env } from '@/env';
+ import { trpc } from '@/router';
 import FormFieldInfo from '@/routes/-components/common/form-field-info';
 import Spinner from '@/routes/-components/common/spinner';
 import { StarRatingInput } from '@/routes/-components/common/star-rating-input';
-import { reviewSchema } from '@/validations/review-validation';
+ import { reviewSchema } from '@/validations/review-validation';
 
-const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
+ const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
 
 interface LeaveAppReviewModalProps {
     open: boolean;
@@ -36,9 +37,9 @@ export function LeaveAppReviewModal({
     const appReviewsQueryKey = trpc.reviews.byEntityId.queryOptions({ entityId: APP_ENTITY_ID, contentType: 'app' }).queryKey;
 
     const addReviewMutation = useMutation({
-        ...trpc.reviews.add.mutationOptions(),
-        onSuccess: () => {
-            toast.success('Review Submitted!', { description: `Thanks for rating FinCast.` });
+           ...trpc.reviews.add.mutationOptions(),
+           onSuccess: () => {
+            toast.success('Review Submitted!', { description: `Thanks for rating ${env.PUBLIC_APP_NAME}.` });
             form.reset();
             queryClient.invalidateQueries({ queryKey: appReviewsQueryKey });
             onSuccess?.();
@@ -82,13 +83,13 @@ export function LeaveAppReviewModal({
                         void form.handleSubmit();
                     }}
                 >
-                    <DialogHeader>
-                        <DialogTitle>Review FinCast</DialogTitle>
-                        <DialogDescription>
-                            Rate your overall experience with the FinCast application. Feedback is optional.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                            <DialogHeader>
+                             <DialogTitle>Review {env.PUBLIC_APP_NAME}</DialogTitle>
+                             <DialogDescription>
+                              Rate your overall experience with the {env.PUBLIC_APP_NAME} application. Feedback is optional.
+                             </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
                          <form.Field
                           name="stars"
                           validators={{

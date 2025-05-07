@@ -1,10 +1,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { Command } from 'commander';
-import * as dotenv from 'dotenv';
 import { createDb } from '@repo/db/client';
 import { promptDefinition } from '@repo/db/schema';
+import { Command } from 'commander';
+import * as dotenv from 'dotenv';
 import { eq, and } from 'drizzle-orm';
 import { createPromptRegistry } from './registry';
 

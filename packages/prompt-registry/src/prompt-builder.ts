@@ -1,8 +1,8 @@
-import type { PromptVersion, PromptRuntime } from './types'
-import { jsonSchemaToValibot } from './json-schema-to-valibot'
-import * as v from 'valibot'
-import Handlebars from 'handlebars'
-import type { CoreMessage } from 'ai'
+import Handlebars from 'handlebars';
+import * as v from 'valibot';
+import type { PromptVersion, PromptRuntime } from './types';
+import type { CoreMessage } from 'ai';
+import { jsonSchemaToValibot } from './json-schema-to-valibot';
 
 export class PromptBuilder {
   constructor(private promptVersion: PromptVersion) {}
@@ -14,8 +14,8 @@ export class PromptBuilder {
 
     const userInstructions = this.promptVersion.userInstructions;
 
-    const inputValSchema = jsonSchemaToValibot(this.promptVersion.inputSchema as any)
-    v.parse(inputValSchema, placeholders)
+    const inputValSchema = jsonSchemaToValibot(this.promptVersion.inputSchema as any);
+    v.parse(inputValSchema, placeholders);
 
     const templateCompiler = Handlebars.compile(this.promptVersion.template);
     const populatedTemplate = templateCompiler({
@@ -26,7 +26,7 @@ export class PromptBuilder {
       { role: 'system' as const, content: `${systemInstructions}\n${schemaInstruction}` },
       { role: 'user' as const, content: `${userInstructions}\n\n${populatedTemplate}` },
     ] as CoreMessage[];
-    const schema = jsonSchemaToValibot(this.promptVersion.outputSchema as any)
+    const schema = jsonSchemaToValibot(this.promptVersion.outputSchema as any);
     return {
       toMessages: () => messages,
       validate: (raw: unknown) => {
@@ -45,6 +45,6 @@ export class PromptBuilder {
         }
         return v.parse(schema, data) as O;
       },
-    }
+    };
   }
 }

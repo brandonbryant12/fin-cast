@@ -1,8 +1,9 @@
 import './style.css';
 import { RouterProvider } from '@tanstack/react-router';
 import { ThemeProvider } from 'next-themes';
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import { env } from '@/env';
 import { createRouter } from '@/router';
 
 const ROOT_ELEMENT_ID = 'app';
@@ -15,8 +16,17 @@ if (!rootElement) {
 
 const router = createRouter();
 
+// Function to set document title
+const SetDocumentTitle = () => {
+  useEffect(() => {
+    document.title = env.PUBLIC_APP_NAME;
+  }, []);
+  return null; // This component doesn't render anything itself
+};
+
+
 if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
+ const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
       <ThemeProvider
@@ -26,8 +36,9 @@ if (!rootElement.innerHTML) {
         enableSystem
         disableTransitionOnChange
       >
-        <RouterProvider router={router} />
+       <SetDocumentTitle />
+       <RouterProvider router={router} />
       </ThemeProvider>
-    </React.StrictMode>,
+     </React.StrictMode>,
   );
 }

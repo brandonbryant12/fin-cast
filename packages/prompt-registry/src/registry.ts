@@ -1,8 +1,8 @@
-import { PromptBuilder } from './prompt-builder'
-import type { PromptVersion, CompileCapablePromptVersion } from './types'
-import { promptDefinition, user, type NewPromptDefinition, type PromptDefinition } from '@repo/db/schema'
-import type { DatabaseInstance } from '@repo/db/client'
-import { eq, and, desc, max } from 'drizzle-orm'
+import { promptDefinition, user, type NewPromptDefinition, type PromptDefinition } from '@repo/db/schema';
+import { eq, and, desc, max } from 'drizzle-orm';
+import type { PromptVersion, CompileCapablePromptVersion } from './types';
+import type { DatabaseInstance } from '@repo/db/client';
+import { PromptBuilder } from './prompt-builder';
 
 type PromptDefinitionWithCreatorDetails = PromptDefinition & {
   creatorName: string | null;
@@ -10,14 +10,14 @@ type PromptDefinitionWithCreatorDetails = PromptDefinition & {
 };
 
 class PromptRegistry {
-  private db: DatabaseInstance
+  private db: DatabaseInstance;
   constructor(db: DatabaseInstance) {
-    this.db = db
+    this.db = db;
   }
 
   async get(promptKey: string, version?: number): Promise<CompileCapablePromptVersion> {
-    const row = await this.fetchFromDbInternal(promptKey, version)
-    if (!row) throw new Error(`Prompt not found for key "${promptKey}"`)
+    const row = await this.fetchFromDbInternal(promptKey, version);
+    if (!row) throw new Error(`Prompt not found for key "${promptKey}"`);
     return this.augment(row);
   }
 
@@ -71,25 +71,25 @@ class PromptRegistry {
       ...base,
       compile: <O = unknown>(placeholders: Record<string, unknown>) =>
         new PromptBuilder(base).compile<O>(placeholders),
-    }
+    };
   }
 
   async create(
     data: Omit<NewPromptDefinition, 'id' | 'createdAt' | 'isActive'> & { version: number; activate?: boolean },
   ): Promise<CompileCapablePromptVersion> {
-    const { activate = true, ...values } = data
-    if (!values.promptKey || values.version < 1) throw new Error('invalid prompt key or version')
+    const { activate = true, ...values } = data;
+    if (!values.promptKey || values.version < 1) throw new Error('invalid prompt key or version');
     
     await this.db.transaction(async (tx) => {
       if (activate) {
-        await tx.update(promptDefinition).set({ isActive: false }).where(eq(promptDefinition.promptKey, values.promptKey))
+        await tx.update(promptDefinition).set({ isActive: false }).where(eq(promptDefinition.promptKey, values.promptKey));
       }
-      await tx.insert(promptDefinition).values({ ...values, isActive: activate } as NewPromptDefinition)
-    })
+      await tx.insert(promptDefinition).values({ ...values, isActive: activate } as NewPromptDefinition);
+    });
     // Re-fetch to get the complete data including any joined fields like creatorName/Email
-    const row = await this.fetchFromDbInternal(values.promptKey, values.version)
-    if (!row) throw new Error('failed to create prompt or fetch after creation')
-    return this.augment(row)
+    const row = await this.fetchFromDbInternal(values.promptKey, values.version);
+    if (!row) throw new Error('failed to create prompt or fetch after creation');
+    return this.augment(row);
   }
 
   async createNewVersion(
@@ -100,11 +100,11 @@ class PromptRegistry {
       .select({ value: max(promptDefinition.version) })
       .from(promptDefinition)
       .where(eq(promptDefinition.promptKey, promptKey))
-      .execute()
-    const nextVersion = (latest[0]?.value ?? 0) + 1
+      .execute();
+    const nextVersion = (latest[0]?.value ?? 0) + 1;
     
     // The create method will handle fetching and augmenting
-    return this.create({ ...data, promptKey, version: nextVersion, activate: data.activate })
+    return this.create({ ...data, promptKey, version: nextVersion, activate: data.activate });
   }
 
   async listAll(): Promise<CompileCapablePromptVersion[]> {
@@ -169,16 +169,16 @@ class PromptRegistry {
 
   async setActive(promptKey: string, version: number): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.update(promptDefinition).set({ isActive: false }).where(eq(promptDefinition.promptKey, promptKey))
+      await tx.update(promptDefinition).set({ isActive: false }).where(eq(promptDefinition.promptKey, promptKey));
       const res = await tx
         .update(promptDefinition)
         .set({ isActive: true })
         .where(and(eq(promptDefinition.promptKey, promptKey), eq(promptDefinition.version, version)))
-        .returning({ id: promptDefinition.id })
-      if (res.length === 0) throw new Error('prompt not found')
-    })
+        .returning({ id: promptDefinition.id });
+      if (res.length === 0) throw new Error('prompt not found');
+    });
   }
 }
 
-export const createPromptRegistry = ({ db }: { db: DatabaseInstance }) => new PromptRegistry(db)
-export type { PromptRegistry, PromptVersion, CompileCapablePromptVersion }
+export const createPromptRegistry = ({ db }: { db: DatabaseInstance }) => new PromptRegistry(db);
+export type { PromptRegistry, PromptVersion, CompileCapablePromptVersion };

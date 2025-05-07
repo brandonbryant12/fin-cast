@@ -14,6 +14,8 @@ export const envSchema = v.object({
    * usually required for deploying a repository to Github/Gitlab pages.
    */
   PUBLIC_BASE_PATH: v.pipe(v.optional(v.string(), '/'), v.startsWith('/')),
+
+  PUBLIC_APP_NAME:  v.pipe(v.string()),
 });
 
 export const env = v.parse(envSchema, import.meta.env);

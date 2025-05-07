@@ -16,15 +16,16 @@ import {
     FileText,
     ChevronsUpDown,
     type LucideIcon,
-} from 'lucide-react';
-import { useState, useMemo } from 'react';
-import type { AuthSession } from '@/clients/authClient';
+ } from 'lucide-react';
+ import { useState, useMemo } from 'react';
+ import type { AuthSession } from '@/clients/authClient';
 import UserAvatar from './user-avatar';
-import { trpc } from '@/router';
-import { LeaveAppReviewModal } from '@/routes/-components/layout/nav/leave-app-review-modal';
+import { env } from '@/env';
+ import { trpc } from '@/router';
+ import { LeaveAppReviewModal } from '@/routes/-components/layout/nav/leave-app-review-modal';
 
 
-const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
+ const APP_ENTITY_ID = '00000000-0000-0000-0000-000000000000';
 interface NavItemBase {
     type?: 'link' | 'separator';
 }
@@ -95,12 +96,12 @@ export function Sidebar({ session, onLinkClick }: SidebarProps) {
     return (
         <>
             <aside className="w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col h-full">
-                <div>
+                   <div>
                     <div className="p-4 h-16 flex items-center gap-2 border-b border-sidebar-border">
-                        <h1 className="text-2xl font-bold text-sidebar-foreground">FinCast</h1>
+                     <h1 className="text-2xl font-bold text-sidebar-foreground">{env.PUBLIC_APP_NAME}</h1>
                     </div>
                     <nav className="mt-2">
-                        <ul>
+                     <ul>
                             {session?.user && !currentUserHasReviewedApp && !isLoadingReviews && (
                                 <li>
                                     <Button
