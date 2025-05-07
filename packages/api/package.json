@@ -28,6 +28,7 @@
     "@repo/db": "workspace:*",
     "@repo/tts": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@repo/prompt-registry":  "workspace:*",
     "@repo/webscraper": "workspace:*",
     "@repo/podcast": "workspace:*",
     "@repo/reviews": "workspace:*",

@@ -75,7 +75,7 @@ export class PodcastGenerationService {
 
             // --- Generate Script ---
             logger.info('Fetching prompt definition...');
-            const promptDef = await this.promptRegistry.get('podcast-script-generator', 'active');
+            const promptDef = await this.promptRegistry.get('podcast-script-generator');
             const runtime = (promptDef as CompileCapablePromptVersion).compile<PodcastScriptOutput>({
                 htmlContent: html,
                 hostName: hostInfo.name,

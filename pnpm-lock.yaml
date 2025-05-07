@@ -410,6 +410,9 @@ importers:
       '@repo/podcast':
         specifier: workspace:*
         version: link:../podcast
+      '@repo/prompt-registry':
+        specifier: workspace:*
+        version: link:../prompt-registry
       '@repo/reviews':
         specifier: workspace:*
         version: link:../reviews

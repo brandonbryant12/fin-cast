@@ -8,7 +8,7 @@ export interface PromptRuntime<O = unknown> {
 export interface PromptVersion {
   id: number
   promptKey: string
-  version: string
+  version: number
   template: string
   userInstructions: string
   outputSchema: unknown

@@ -1,3 +1,4 @@
+import { createPromptRegistry } from '@repo/prompt-registry';
 import { type ReviewService } from '@repo/reviews'; // Added
 import type { AuthInstance } from '@repo/auth/server';
 import type { DatabaseInstance } from '@repo/db/client';
@@ -8,17 +9,29 @@ import { createAdminRouter } from './router/admin';
 import { createAuthRouter } from './router/auth';
 import { createPodcastRouter } from './router/podcast';
 import { createPostRouter } from './router/post';
+import { createPromptRegistryRouter } from './router/prompt-registry';
 import { createReviewRouter } from './router/review';
 import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
 
 
-export const createAppRouter = ({ podcast, reviewService }: { podcast: PodcastService, reviewService: ReviewService }) => {
+export const createAppRouter = ({
+  podcast,
+  reviewService,
+  db
+}: {
+  podcast: PodcastService,
+  reviewService: ReviewService,
+  db: DatabaseInstance
+}) => {
+  const promptRegistryService = createPromptRegistry({ db });
+
  return router({
   admin: createAdminRouter({ podcast }),
   auth: createAuthRouter(),
   post: createPostRouter(),
   podcasts: createPodcastRouter({ podcast }),
   reviews: createReviewRouter({ reviewService }),
+  promptRegistry: createPromptRegistryRouter({ promptRegistry: promptRegistryService }),
  });
 };
 
@@ -40,7 +53,7 @@ export const createApi = ({
   podcast,
   reviewService,
 }: CreateApiOptions) => {
-  const mainRouter = createAppRouter({ podcast, reviewService });
+  const mainRouter = createAppRouter({ podcast, reviewService, db });
   return {
     trpcRouter: mainRouter,
     createTRPCContext: ({ headers }: { headers: Headers }) =>

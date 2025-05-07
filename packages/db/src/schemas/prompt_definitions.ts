@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'; 
 import {
   boolean,
   integer,
@@ -8,7 +9,8 @@ import {
   text,
   timestamp,
   unique,
-  varchar,
+  uniqueIndex,
+  doublePrecision,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-valibot';
 import * as v from 'valibot';
@@ -20,12 +22,12 @@ export const promptDefinition = pgTable(
   {
     id: serial('id').primaryKey(),
     promptKey: text('prompt_key').notNull(),
-    version: varchar('version', { length: 255 }).notNull(),
-    template: text('template').notNull(), // Handlebars / mustache etc.
+    version: integer('version').notNull(),
+    template: text('template').notNull(),
     inputSchema: jsonb('input_schema').notNull(),
     userInstructions: text('user_instructions').notNull(),
     outputSchema: jsonb('output_schema').notNull(),
-    temperature: numeric('temperature', { precision: 3, scale: 2 }).notNull(),
+    temperature: doublePrecision('temperature').notNull(),
     maxTokens: integer('max_tokens').notNull(),
     isActive: boolean('is_active').default(true).notNull(),
     createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
@@ -36,6 +38,9 @@ export const promptDefinition = pgTable(
       promptKeyVersionUnique: unique('prompt_key_version_unique_idx').on(
         table.promptKey,
         table.version,
+      ),
+      promptKeyActiveUnique: uniqueIndex('prompt_key_active_unique').on(table.promptKey).where(
+        sql`${table.isActive} = true`
       ),
     };
   },
