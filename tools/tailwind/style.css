@@ -181,8 +181,8 @@
     --primary-hover: 174 82% 31%;
     --secondary: 215 28% 26%;
     --secondary-foreground: 215 20% 91%;
-    --muted: 215 21% 35%;
-    --muted-foreground: 215 19% 65%;
+    --muted: hsl(215 22% 60%);
+    --muted-foreground: hsl(215 20% 30%);
     --accent: 174 72% 41%;
     --accent-foreground: 0 0% 98%;
 

@@ -32,8 +32,8 @@ function AdminPromptsPage() {
         {!isLoading && !isError && promptsData && promptsData.length > 0 && promptsData.map((prompt) => (
           <Link
             key={prompt.promptKey}
-            to="/admin/prompts/$promptKey/$version"
-            params={{ promptKey: prompt.promptKey, version: prompt.version }}
+            to="/admin/prompts/$promptKey"
+            params={{ promptKey: prompt.promptKey }}
             className="block hover:bg-muted/50 transition-colors rounded-lg"
           >
             <Card className="bg-card hover:shadow-md">
@@ -42,9 +42,6 @@ function AdminPromptsPage() {
                   <div>
                     <CardTitle className="text-xl font-semibold">{prompt.promptKey}</CardTitle>
                   </div>
-                  <Badge variant="secondary" className="text-sm">
-                    Active: {prompt.version}
-                  </Badge>
                 </div>
               </CardHeader>
             </Card>
