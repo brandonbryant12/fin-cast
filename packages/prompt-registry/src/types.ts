@@ -17,6 +17,8 @@ export interface PromptVersion {
   maxTokens: number
   isActive: boolean
   createdBy: string | null
+  creatorName: string | null;
+  creatorEmail: string | null;
   createdAt: Date
 }
 
