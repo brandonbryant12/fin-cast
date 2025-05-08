@@ -103,8 +103,8 @@ export const createPromptRegistryRouter = ({ promptRegistry }: { promptRegistry:
         createdBy: ctx.session?.user?.id ?? null,
         activate: true
       };
-      await promptRegistry.createNewVersion(promptKey, newData);
-      return { success: true };
+      const newVersion = await promptRegistry.createNewVersion(promptKey, newData);
+      return { success: true, newVersion};
     } catch (error) {
       ctx.logger.error({ err: error, promptKey }, 'Failed to create new prompt version');
       if (error instanceof Error) throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });

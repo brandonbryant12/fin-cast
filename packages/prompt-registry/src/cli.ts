@@ -80,7 +80,7 @@ program
     
     const placeholders = JSON.parse(options.placeholders);
     const prompt = await registry.get(promptKey);
-    const userInstr = options.userInstructions ?? undefined
+    const userInstr = options.userInstructions ?? undefined;
     const runtime = (prompt as any).compile(userInstr, placeholders);
     console.log(JSON.stringify(runtime.toMessages(), null, 2));
     process.exit(0);

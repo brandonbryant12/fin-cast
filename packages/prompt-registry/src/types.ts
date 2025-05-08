@@ -1,4 +1,4 @@
-import type { CoreMessage } from 'ai'
+import type { CoreMessage } from 'ai';
 
 export interface PromptRuntime<O = unknown> {
   toMessages(): CoreMessage[]

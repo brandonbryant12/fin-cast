@@ -85,14 +85,21 @@ function PromptVersionPage() {
 
   const createVersionMutation = useMutation({
     ...trpc.promptRegistry.createNewVersion.mutationOptions(),
-    onSuccess: () => {
+    onSuccess: ({ newVersion }) => {
       queryClient.invalidateQueries({ queryKey: versionsQueryOptions.queryKey });
-      queryClient.invalidateQueries({ queryKey: detailsQueryOptions.queryKey });
       setIsEditing(false);
       setDraftSystemPrompt('');
       setDraftTemplate('');
+
       toast.success('New version published!', {
-        description: 'The new prompt version is now active. Use the "Go to active" button to view it.',
+        description: 'Redirecting to the new active version...',
+      });
+
+      const newVersionString = newVersion.version.toString()
+      navigate({
+        to: `/admin/prompts/$promptKey/${newVersionString}`,
+        params: { promptKey },
+        replace: true,
       });
     },
     onError: (error) => {

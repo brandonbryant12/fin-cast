@@ -1,11 +1,11 @@
 import { Alert, AlertDescription, AlertTitle } from '@repo/ui/components/alert';
+import { useQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
+import { AlertCircle, Construction } from 'lucide-react';
 import { useEffect } from 'react';
 import { authClient } from '@/clients/authClient';
-import Spinner from '@/routes/-components/common/spinner';
-import { AlertCircle, Construction } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { trpc } from '@/router';
+import Spinner from '@/routes/-components/common/spinner';
 
 
 function useIsAdminStatus() {
