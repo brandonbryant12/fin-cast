@@ -29,6 +29,7 @@ import { Route as ProtectedHomeIndexImport } from './routes/_protected/home/inde
 import { Route as AdminPromptsPromptKeyIndexImport } from './routes/admin/prompts/$promptKey/index'
 import { Route as ProtectedPostsPostidIndexImport } from './routes/_protected/posts/$postid/index'
 import { Route as ProtectedPodcastsPodcastIdIndexImport } from './routes/_protected/podcasts/$podcastId/index'
+import { Route as AdminPromptsPromptKeyVersionIndexImport } from './routes/admin/prompts/$promptKey/$version/index'
 
 // Create/Update Routes
 
@@ -139,6 +140,13 @@ const ProtectedPodcastsPodcastIdIndexRoute =
     id: '/podcasts/$podcastId/',
     path: '/podcasts/$podcastId/',
     getParentRoute: () => ProtectedLayoutRoute,
+  } as any)
+
+const AdminPromptsPromptKeyVersionIndexRoute =
+  AdminPromptsPromptKeyVersionIndexImport.update({
+    id: '/prompts/$promptKey/$version/',
+    path: '/prompts/$promptKey/$version/',
+    getParentRoute: () => AdminLayoutRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -271,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPromptsPromptKeyIndexImport
       parentRoute: typeof AdminLayoutImport
     }
+    '/admin/prompts/$promptKey/$version/': {
+      id: '/admin/prompts/$promptKey/$version/'
+      path: '/prompts/$promptKey/$version'
+      fullPath: '/admin/prompts/$promptKey/$version'
+      preLoaderRoute: typeof AdminPromptsPromptKeyVersionIndexImport
+      parentRoute: typeof AdminLayoutImport
+    }
   }
 }
 
@@ -319,6 +334,7 @@ interface AdminLayoutRouteChildren {
   AdminReviewsIndexRoute: typeof AdminReviewsIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
   AdminPromptsPromptKeyIndexRoute: typeof AdminPromptsPromptKeyIndexRoute
+  AdminPromptsPromptKeyVersionIndexRoute: typeof AdminPromptsPromptKeyVersionIndexRoute
 }
 
 const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
@@ -328,6 +344,8 @@ const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
   AdminReviewsIndexRoute: AdminReviewsIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
   AdminPromptsPromptKeyIndexRoute: AdminPromptsPromptKeyIndexRoute,
+  AdminPromptsPromptKeyVersionIndexRoute:
+    AdminPromptsPromptKeyVersionIndexRoute,
 }
 
 const AdminLayoutRouteWithChildren = AdminLayoutRoute._addFileChildren(
@@ -352,6 +370,7 @@ export interface FileRoutesByFullPath {
   '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
   '/admin/prompts/$promptKey': typeof AdminPromptsPromptKeyIndexRoute
+  '/admin/prompts/$promptKey/$version': typeof AdminPromptsPromptKeyVersionIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -371,6 +390,7 @@ export interface FileRoutesByTo {
   '/podcasts/$podcastId': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/posts/$postid': typeof ProtectedPostsPostidIndexRoute
   '/admin/prompts/$promptKey': typeof AdminPromptsPromptKeyIndexRoute
+  '/admin/prompts/$promptKey/$version': typeof AdminPromptsPromptKeyVersionIndexRoute
 }
 
 export interface FileRoutesById {
@@ -393,6 +413,7 @@ export interface FileRoutesById {
   '/_protected/podcasts/$podcastId/': typeof ProtectedPodcastsPodcastIdIndexRoute
   '/_protected/posts/$postid/': typeof ProtectedPostsPostidIndexRoute
   '/admin/prompts/$promptKey/': typeof AdminPromptsPromptKeyIndexRoute
+  '/admin/prompts/$promptKey/$version/': typeof AdminPromptsPromptKeyVersionIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -415,6 +436,7 @@ export interface FileRouteTypes {
     | '/podcasts/$podcastId'
     | '/posts/$postid'
     | '/admin/prompts/$promptKey'
+    | '/admin/prompts/$promptKey/$version'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -433,6 +455,7 @@ export interface FileRouteTypes {
     | '/podcasts/$podcastId'
     | '/posts/$postid'
     | '/admin/prompts/$promptKey'
+    | '/admin/prompts/$promptKey/$version'
   id:
     | '__root__'
     | '/'
@@ -453,6 +476,7 @@ export interface FileRouteTypes {
     | '/_protected/podcasts/$podcastId/'
     | '/_protected/posts/$postid/'
     | '/admin/prompts/$promptKey/'
+    | '/admin/prompts/$promptKey/$version/'
   fileRoutesById: FileRoutesById
 }
 
@@ -515,7 +539,8 @@ export const routeTree = rootRoute
         "/admin/prompts/",
         "/admin/reviews/",
         "/admin/users/",
-        "/admin/prompts/$promptKey/"
+        "/admin/prompts/$promptKey/",
+        "/admin/prompts/$promptKey/$version/"
       ]
     },
     "/_public/login": {
@@ -572,6 +597,10 @@ export const routeTree = rootRoute
     },
     "/admin/prompts/$promptKey/": {
       "filePath": "admin/prompts/$promptKey/index.tsx",
+      "parent": "/admin"
+    },
+    "/admin/prompts/$promptKey/$version/": {
+      "filePath": "admin/prompts/$promptKey/$version/index.tsx",
       "parent": "/admin"
     }
   }

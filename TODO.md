@@ -1,12 +1,22 @@
 
+## Areas to refactor 
 
+- voices context provider? how can we use trpc better here?
+
+- review trpc usages can we get more out of the tool?
+
+- test with react scan
+
+- break down podcast details into sub components 
+
+- analyze useEffect usages specially in prompt details
+
+- Refactor and spend some time on FE 
+
+- use Prompt Definition in LLM package
 
 
 ## new feature
-
-- Modify the prompt to return tags and a short summary, integrates this into the front end. 
-
-- Prompt Registry/Manager, white listed emails can edit the prompt 
 
 - Do not provide audio url on podcast when fetch all.  On play get the audio url from the podcast id 
 
