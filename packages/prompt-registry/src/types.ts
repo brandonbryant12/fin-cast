@@ -1,4 +1,4 @@
-import type { CoreMessage } from 'ai';
+import type { CoreMessage } from 'ai'
 
 export interface PromptRuntime<O = unknown> {
   toMessages(): CoreMessage[]
@@ -10,18 +10,18 @@ export interface PromptVersion {
   promptKey: string
   version: number
   template: string
-  userInstructions: string
+  systemPrompt: string
   outputSchema: unknown
   inputSchema: unknown
   temperature: number
   maxTokens: number
   isActive: boolean
   createdBy: string | null
-  creatorName: string | null;
-  creatorEmail: string | null;
+  creatorName: string | null
+  creatorEmail: string | null
   createdAt: Date
 }
 
 export interface CompileCapablePromptVersion extends PromptVersion {
-  compile: <O = unknown>(placeholders: Record<string, unknown>) => PromptRuntime<O>;
+  compile: <O = unknown>(placeholders: Record<string, unknown>) => PromptRuntime<O>
 }

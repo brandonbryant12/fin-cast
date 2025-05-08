@@ -25,7 +25,7 @@ export const promptDefinition = pgTable(
     version: integer('version').notNull(),
     template: text('template').notNull(),
     inputSchema: jsonb('input_schema').notNull(),
-    userInstructions: text('user_instructions').notNull(),
+    systemPrompt: text('system_prompt').notNull(),
     outputSchema: jsonb('output_schema').notNull(),
     temperature: doublePrecision('temperature').notNull(),
     maxTokens: integer('max_tokens').notNull(),

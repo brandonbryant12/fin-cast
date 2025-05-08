@@ -35,7 +35,7 @@ program
   .requiredOption('--template-file <file>', 'Path to template file')
   .requiredOption('--input-schema <file>', 'Path to JSON input schema file')
   .requiredOption('--output-schema <file>', 'Path to JSON output schema file')
-  .requiredOption('--instructions <text>', 'User instructions text')
+  .requiredOption('--system-prompt <text>', 'System prompt text')
   .requiredOption('--temperature <number>', 'Temperature')
   .requiredOption('--maxTokens <number>', 'Max tokens')
   .option('--activate', 'Activate this version', false)
@@ -51,7 +51,7 @@ program
       template,
       inputSchema,
       outputSchema,
-      userInstructions: opts.instructions,
+      systemPrompt: opts.systemPrompt,
       temperature,
       maxTokens,
       activate: opts.activate,
@@ -66,6 +66,7 @@ program
   .description('Compile a prompt using provided placeholders JSON')
   .option('--version <version>', 'Specific version (integer) or "active"; defaults to active')
   .requiredOption('--placeholders <json>', 'JSON string with placeholders')
+  .option('--user-instructions <text>', 'Optional user instructions')
   .action(async (promptKey, options) => {
     let versionToGet: string | number = options.version ?? 'active';
     if (options.version && options.version !== 'active') {
@@ -79,7 +80,8 @@ program
     
     const placeholders = JSON.parse(options.placeholders);
     const prompt = await registry.get(promptKey);
-    const runtime = (prompt as any).compile(placeholders);
+    const userInstr = options.userInstructions ?? undefined
+    const runtime = (prompt as any).compile(userInstr, placeholders);
     console.log(JSON.stringify(runtime.toMessages(), null, 2));
     process.exit(0);
   });

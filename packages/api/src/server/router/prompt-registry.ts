@@ -15,6 +15,7 @@ const PromptKeyInput = v.object({
 const NewVersionInput = v.object({
   promptKey: v.pipe(v.string(), v.minLength(1, 'Prompt key cannot be empty.')),
   template: v.pipe(v.string(), v.minLength(1, 'Template cannot be empty.')),
+  systemPrompt: v.pipe(v.string(), v.minLength(1, 'System prompt cannot be empty.')),
   temperature: v.pipe(
     v.number('Temperature must be a number.'),
     v.minValue(0.0, 'Temperature must be at least 0.0.'),
@@ -87,7 +88,7 @@ export const createPromptRegistryRouter = ({ promptRegistry }: { promptRegistry:
   createNewVersion: adminProcedure
   .input(NewVersionInput)
   .mutation(async ({ ctx, input }) => {
-    const { promptKey, template, temperature, maxTokens } = input;
+    const { promptKey, template, systemPrompt, temperature, maxTokens } = input;
     ctx.logger.info({ promptKey }, 'Creating new prompt version');
     try {
       const current = await promptRegistry.getDetails(promptKey);
@@ -96,7 +97,7 @@ export const createPromptRegistryRouter = ({ promptRegistry }: { promptRegistry:
         template,
         inputSchema: current.inputSchema as any,
         outputSchema: current.outputSchema as any,
-        userInstructions: current.userInstructions,
+        systemPrompt,
         temperature,
         maxTokens,
         createdBy: ctx.session?.user?.id ?? null,

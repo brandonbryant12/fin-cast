@@ -35,14 +35,13 @@ class PromptRegistry {
         version: promptDefinition.version,
         template: promptDefinition.template,
         inputSchema: promptDefinition.inputSchema,
-        userInstructions: promptDefinition.userInstructions,
         outputSchema: promptDefinition.outputSchema,
         temperature: promptDefinition.temperature,
         maxTokens: promptDefinition.maxTokens,
         isActive: promptDefinition.isActive,
         createdBy: promptDefinition.createdBy,
         createdAt: promptDefinition.createdAt,
-        // Add user fields
+        systemPrompt: promptDefinition.systemPrompt,
         creatorName: user.name,
         creatorEmail: user.email,
       })
@@ -64,7 +63,6 @@ class PromptRegistry {
     return rows[0] as PromptDefinitionWithCreatorDetails | undefined;
   }
 
-  // augment now takes PromptDefinitionWithCreatorDetails
   private augment(row: PromptDefinitionWithCreatorDetails): CompileCapablePromptVersion {
     const base: PromptVersion = { ...row };
     return {
@@ -103,7 +101,6 @@ class PromptRegistry {
       .execute();
     const nextVersion = (latest[0]?.value ?? 0) + 1;
     
-    // The create method will handle fetching and augmenting
     return this.create({ ...data, promptKey, version: nextVersion, activate: data.activate });
   }
 
@@ -115,7 +112,6 @@ class PromptRegistry {
         version: promptDefinition.version,
         template: promptDefinition.template,
         inputSchema: promptDefinition.inputSchema,
-        userInstructions: promptDefinition.userInstructions,
         outputSchema: promptDefinition.outputSchema,
         temperature: promptDefinition.temperature,
         maxTokens: promptDefinition.maxTokens,
@@ -124,6 +120,7 @@ class PromptRegistry {
         createdAt: promptDefinition.createdAt,
         creatorName: user.name,
         creatorEmail: user.email,
+        systemPrompt: promptDefinition.systemPrompt,
       })
       .from(promptDefinition)
       .leftJoin(user, eq(promptDefinition.createdBy, user.id))
@@ -141,7 +138,6 @@ class PromptRegistry {
         version: promptDefinition.version,
         template: promptDefinition.template,
         inputSchema: promptDefinition.inputSchema,
-        userInstructions: promptDefinition.userInstructions,
         outputSchema: promptDefinition.outputSchema,
         temperature: promptDefinition.temperature,
         maxTokens: promptDefinition.maxTokens,
@@ -150,6 +146,7 @@ class PromptRegistry {
         createdAt: promptDefinition.createdAt,
         creatorName: user.name,
         creatorEmail: user.email,
+        systemPrompt: promptDefinition.systemPrompt,
       })
       .from(promptDefinition)
       .leftJoin(user, eq(promptDefinition.createdBy, user.id))
