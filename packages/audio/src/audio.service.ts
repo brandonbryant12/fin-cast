@@ -102,7 +102,7 @@ export class AudioService {
                      tempAudioFiles.push(finalOutputPath);
                  } catch { /* File doesn't exist, no need to add */ }
             }
-            throw error; // Re-throw the error after attempting to mark for cleanup
+            throw error;
         } finally {
             if (tempAudioFiles.length > 0) {
                 logger.info(`Cleaning up ${tempAudioFiles.length} temporary/output audio files...`);
@@ -111,7 +111,6 @@ export class AudioService {
                         await fs.unlink(tempFile);
                         logger.debug(`Deleted temporary/output file: ${tempFile}`);
                     } catch (cleanupError: any) {
-                        // Don't log error if file simply doesn't exist (e.g., merge failed before creation)
                         if (cleanupError?.code !== 'ENOENT') {
                             logger.error({ err: cleanupError, file: tempFile }, 'Failed to delete temporary/output audio file during cleanup.');
                         }
@@ -156,7 +155,7 @@ export class AudioService {
              return duration;
          } catch (error) {
              logger.error({ err: error, file: tempFilePath }, 'Error during ffprobe setup/file write for duration.');
-             return 0; // Return 0 on unexpected errors during setup
+             return 0;
          } finally {
              try {
                  await fs.unlink(tempFilePath);

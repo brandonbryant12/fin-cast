@@ -2,7 +2,7 @@ import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { type OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { generateText, type CoreMessage, type GenerateTextResult } from "ai";
 import type { ChatOptions, ChatResponse } from "./types";
-import { BaseLLM, type LLMInterface } from "./base_llm";
+import { type LLMInterface } from "./types";
 
 interface OpenAIClientOptions {
     apiKey: string;
@@ -14,16 +14,14 @@ interface OpenAIClientOptions {
 const DEFAULT_MODEL = "gpt-4o";
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant.";
 
-export class OpenAIClient extends BaseLLM implements LLMInterface {
+export class OpenAIClient implements LLMInterface {
     private client: OpenAIProvider;
     private options: OpenAIClientOptions;
 
     constructor(options: OpenAIClientOptions) {
-        super();
         if (!options.apiKey) {
             throw new Error("OpenAI API key is required.");
         }
-        // Store options including defaults
         this.options = {
             apiKey: options.apiKey,
             baseURL: options.baseURL,
@@ -39,34 +37,45 @@ export class OpenAIClient extends BaseLLM implements LLMInterface {
     }
 
     /**
-     * Executes the actual OpenAI API call.
-     * This method implements the abstract `_executeModel` from `BaseLLM`.
-     * @param request The formatted prompt string or message array.
-     * @param options Merged options potentially overriding client defaults.
-     * @returns Raw response from the OpenAI API.
+     * Executes a chat completion request with the OpenAI API.
+     *
+     * @param promptOrMessages Either a single prompt string or an array of messages.
+     * @param options Optional configuration for the chat request.
+     * @returns A promise resolving to the chat response.
      */
-    protected async _executeModel(
-        request: string | CoreMessage[],
-        options: ChatOptions,
+    public async chatCompletion(
+        promptOrMessages: string | CoreMessage[],
+        options?: ChatOptions, // options is optional here
     ): Promise<ChatResponse<string | null>> {
-        const modelId = options?.model ?? this.options.defaultModel;
-        const systemPrompt = options?.systemPrompt ?? this.options.defaultSystemPrompt;
-        const temperature = options?.temperature;
-        const maxTokens = options?.maxTokens;
+        // Resolve options, providing empty object if undefined to simplify access
+        const currentOptions = options ?? {};
 
+        const modelId = currentOptions.model ?? this.options.defaultModel;
+        const systemPrompt = currentOptions.systemPrompt ?? this.options.defaultSystemPrompt;
+        const temperature = currentOptions.temperature;
+        const maxTokens = currentOptions.maxTokens;
 
         try {
-            const generateTextParams = {
+            const generateTextParams: any = {
                 model: this.client(modelId as OpenAIChatModelId),
-                system: systemPrompt,
-                temperature: temperature,
-                maxTokens: maxTokens,
-                ...(typeof request === 'string'
-                    ? { prompt: request }
-                    : { messages: request }),
+                system: systemPrompt, // System prompt is always passed
             };
 
-            // Explicitly type the result expected
+            // Conditionally add temperature and maxTokens if they are defined
+            if (temperature !== undefined) {
+                generateTextParams.temperature = temperature;
+            }
+            if (maxTokens !== undefined) {
+                generateTextParams.maxTokens = maxTokens;
+            }
+
+            // Add prompt or messages based on the type of promptOrMessages
+            if (typeof promptOrMessages === 'string') {
+                generateTextParams.prompt = promptOrMessages;
+            } else {
+                generateTextParams.messages = promptOrMessages;
+            }
+
             const result: GenerateTextResult<never, Record<string, unknown>> = await generateText(generateTextParams);
             const { text, usage } = result;
             return {
@@ -76,23 +85,22 @@ export class OpenAIClient extends BaseLLM implements LLMInterface {
                     completionTokens: usage.completionTokens,
                     totalTokens: usage.totalTokens,
                 },
-                structuredOutput: undefined, // Raw call doesn't produce structured output
+                structuredOutput: undefined,
                 error: undefined,
             };
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Unknown error during API call";
             console.error(
                 `Error during OpenAI API call (Model: ${modelId}): ${message}`,
-                error, // Log full error
+                error,
             );
 
             return {
-                content: null, // Indicate failure clearly
+                content: null,
                 usage: undefined,
                 structuredOutput: undefined,
                 error: `OpenAI API Error: ${message}`,
             };
         }
     }
-
 } 

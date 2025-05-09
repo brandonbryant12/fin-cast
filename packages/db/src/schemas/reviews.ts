@@ -33,7 +33,7 @@ export const reviewRelations = relations(review, ({ one }) => ({
 }));
 
 export const SelectReview = createSelectSchema(review);
-export const InsertReview = v.omit(
+export const CreateReview = v.omit(
   createInsertSchema(review, {
     stars: v.pipe(v.number(), v.minValue(1), v.maxValue(5)),
     feedback: v.optional(v.pipe(v.string(), v.maxLength(400))),
@@ -42,4 +42,4 @@ export const InsertReview = v.omit(
 );
 
 export type Review = v.InferInput<typeof SelectReview>;
-export type NewReview = v.InferInput<typeof InsertReview>;
+export type NewReview = v.InferInput<typeof CreateReview>;

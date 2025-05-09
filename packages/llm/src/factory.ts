@@ -1,5 +1,5 @@
-import type { LLMInterface } from "./base_llm";
 import type { CustomOpenAIClientConfig } from "./custom-open-ai";
+import type { LLMInterface } from "./types";
 import { CustomOpenAIClient } from "./custom-open-ai";
 import { GeminiClient } from "./gemini";
 import { OpenAIClient } from "./openai";

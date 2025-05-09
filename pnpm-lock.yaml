@@ -583,6 +583,12 @@ importers:
         specifier: workspace:*
         version: link:../logger
     devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tools/eslint
+      '@repo/prettier-config':
+        specifier: workspace:*
+        version: link:../../tools/prettier
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../tools/typescript

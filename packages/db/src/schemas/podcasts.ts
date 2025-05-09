@@ -26,8 +26,8 @@ export const podcast = pgTable('podcast', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 256 }).notNull(),
-  summary: text('summary'), // Added summary field
-  description: text('description'), // Kept description, maybe repurpose later or remove if summary replaces it fully
+  summary: text('summary'),
+  description: text('description'),
   status: podcastStatusEnum('status').notNull().default('processing'),
   sourceType: text('source_type'),
   sourceDetail: text('source_detail'),

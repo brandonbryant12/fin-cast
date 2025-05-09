@@ -35,7 +35,7 @@ export const envSchema = v.object({
   PUBLIC_WEB_URL: v.pipe(v.string(), v.url()),
 
   LLM_PROVIDER: v.pipe(
-    v.optional(v.picklist(supportedLLMProviders, 'LLM_PROVIDER must be one of: openai, gemini, custom-openai'), 'openai'),
+    v.optional(v.picklist(supportedLLMProviders, 'LLM_PROVIDER must be one of: openai, gemini, custom-openai'), 'gemini'),
     v.transform(val => val as SupportedLLMProviders)
   ),
   OPENAI_API_KEY: v.optional(v.string()),

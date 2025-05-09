@@ -3,7 +3,6 @@ import {
   boolean,
   integer,
   jsonb,
-  numeric,
   pgTable,
   serial,
   text,

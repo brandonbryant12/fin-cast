@@ -3,7 +3,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 import superagent from 'superagent';
 import type { ChatOptions, ChatResponse } from './types';
 import type { CoreMessage } from 'ai';
-import { BaseLLM, type LLMInterface } from './base_llm';
+import { type LLMInterface } from './types';
 
 export interface CustomOpenAIClientConfig {
   BASE_URL: string;
@@ -21,13 +21,12 @@ interface TokenCache {
   expires_at: number;
 }
 
-export class CustomOpenAIClient extends BaseLLM implements LLMInterface {
+export class CustomOpenAIClient implements LLMInterface {
   private config: CustomOpenAIClientConfig;
   private tokenCache: TokenCache | null = null;
   private proxyAgent?: HttpsProxyAgent<string>;
 
   constructor(config: CustomOpenAIClientConfig) {
-    super();
     this.config = config;
     const proxyUrl = config.HTTPS_PROXY || config.HTTP_PROXY;
     if (proxyUrl) this.proxyAgent = new HttpsProxyAgent(proxyUrl);
@@ -67,36 +66,41 @@ export class CustomOpenAIClient extends BaseLLM implements LLMInterface {
     return access_token;
   }
 
-  /* ------------------------------------------------------ */
-  /*  _executeModel (replaces chatCompletion)             */
-  /* ------------------------------------------------------ */
-  protected async _executeModel(
-    request: string | CoreMessage[],
+  public async chatCompletion(
+    promptOrMessages: string | CoreMessage[],
     options?: ChatOptions,
   ): Promise<ChatResponse<string | null>> {
-
-    /* HTTP call */
     const token = await this.getToken();
-    let req = superagent
-      .post(this.config.BASE_URL)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Content-Type', 'application/json')
-      .disableTLSCerts();
-    req = this.proxyAgent ? req.agent(this.proxyAgent) : req.agent(new https.Agent({ rejectUnauthorized: false }));
 
-    // Use the request directly; JSON instruction handled by renderPrompt hook
-    const body = typeof request === 'string'
-        ? { messages: [{ role: 'user', content: request }] }
-        : { messages: request };
+    let actualMessages: CoreMessage[];
+    const finalOptions = { ...(options ?? {}) };
+
+    if (typeof promptOrMessages === 'string') {
+      actualMessages = [{ role: 'user', content: promptOrMessages }];
+      if (finalOptions.systemPrompt) {
+        actualMessages.unshift({ role: 'system', content: finalOptions.systemPrompt });
+      }
+    } else {
+      actualMessages = promptOrMessages;
+    }
+
+    const apiRequestBody = { messages: actualMessages };
 
     try {
-      const res = await req.send(body);
+      let req = superagent
+        .post(this.config.BASE_URL)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Content-Type', 'application/json')
+        .disableTLSCerts();
+      req = this.proxyAgent ? req.agent(this.proxyAgent) : req.agent(new https.Agent({ rejectUnauthorized: false }));
+
+      const res = await req.send(apiRequestBody);
       const rawContent = res.body?.choices?.[0]?.message?.content ?? null;
-      return { content: rawContent };
+      return { content: rawContent, error: undefined };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[Custom OpenAI Client] Error: ${msg}`, { error: err });
-      return { content: null, error: `Custom OpenAI Client failed: ${msg}`, structuredOutput: undefined, usage: undefined };
+      return { content: null, error: `Custom OpenAI Client failed: ${msg}` };
     }
   }
 }

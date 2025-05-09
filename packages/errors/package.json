@@ -6,6 +6,14 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "build": "tsc",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "dev": "tsc",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
   "types": "./src/index.ts",
   "dependencies": {
     "@repo/logger": "workspace:*",
@@ -13,6 +21,8 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
     "typescript": "catalog:"
   }
 }

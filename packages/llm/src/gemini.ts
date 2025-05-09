@@ -1,7 +1,7 @@
 import { type Content, type Part, GoogleGenAI } from "@google/genai";
 import { type CoreMessage } from "ai";
 import type { ChatOptions, ChatResponse } from "./types";
-import { BaseLLM, type LLMInterface } from "./base_llm";
+import { type LLMInterface } from "./types";
 
 interface GeminiClientOptions {
     apiKey: string;
@@ -54,12 +54,11 @@ function adaptMessagesToGoogleGenAIContent(messages: CoreMessage[], systemPrompt
     return history;
 }
 
-export class GeminiClient extends BaseLLM implements LLMInterface {
+export class GeminiClient implements LLMInterface {
     private client: GoogleGenAI;
     private options: GeminiClientOptions;
 
     constructor(options: GeminiClientOptions) {
-        super();
         if (!options.apiKey) {
             throw new Error("Gemini API key is required.");
         }
@@ -68,40 +67,51 @@ export class GeminiClient extends BaseLLM implements LLMInterface {
             defaultModel: options.defaultModel ?? DEFAULT_GEMINI_MODEL,
             defaultSystemPrompt: options.defaultSystemPrompt ?? DEFAULT_SYSTEM_PROMPT,
         };
-
         this.client = new GoogleGenAI({ apiKey: this.options.apiKey });
     }
 
     /**
-     * Executes the actual Gemini API call.
-     * This method implements the abstract `_executeModel` from `BaseLLM`.
-     * @param request The formatted prompt string or message array.
-     * @param options Merged options potentially overriding client defaults.
-     * @returns Raw response from the Gemini API.
+     * Executes a chat completion request with the Gemini API.
+     *
+     * @param promptOrMessages Either a single prompt string or an array of messages.
+     * @param options Optional configuration for the chat request.
+     * @returns A promise resolving to the chat response.
      */
-    protected async _executeModel(
-        request: string | CoreMessage[],
-        options: ChatOptions,
+    public async chatCompletion(
+        promptOrMessages: string | CoreMessage[],
+        options?: ChatOptions,
     ): Promise<ChatResponse<string | null>> {
         const modelId = options?.model ?? this.options.defaultModel ?? DEFAULT_GEMINI_MODEL;
-        const systemPrompt = options?.systemPrompt ?? this.options.defaultSystemPrompt ?? '';
+        const systemPromptForAdapt = options?.systemPrompt ?? this.options.defaultSystemPrompt ?? '';
+
+        let messagesToProcess: CoreMessage[];
+        if (typeof promptOrMessages === 'string') {
+            messagesToProcess = [{ role: 'user', content: promptOrMessages }];
+        } else {
+            messagesToProcess = promptOrMessages;
+        }
+
+        const finalContents: Content[] = adaptMessagesToGoogleGenAIContent(messagesToProcess, systemPromptForAdapt);
 
         try {
-            const contents: Content[] | string = Array.isArray(request)
-                ? adaptMessagesToGoogleGenAIContent(request, systemPrompt)
-                : request;
+            const generationConfig: Record<string, any> = {};
+            if (options?.temperature !== undefined) {
+                generationConfig.temperature = options.temperature;
+            }
+            if (options?.maxTokens !== undefined) {
+                generationConfig.maxOutputTokens = options.maxTokens;
+            }
 
-            // Use generateContent for both cases now
-            const response = await this.client.models.generateContent({
+            const apiPayload: { model: string, contents: Content[], generationConfig?: Record<string, any> } = {
                 model: modelId,
-                contents: contents,
-                // NOTE: Gemini API generationConfig (temp, maxTokens etc.) is set here if needed
-                // generationConfig: {
-                //   temperature: options.temperature,
-                //   maxOutputTokens: options.maxTokens
-                // }
-            });
-
+                contents: finalContents,
+            };
+            
+            if (Object.keys(generationConfig).length > 0) {
+                apiPayload.generationConfig = generationConfig;
+            }
+            
+            const response = await this.client.models.generateContent(apiPayload);
 
             const responseText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
             const usageMetadata = response?.usageMetadata;
@@ -111,7 +121,7 @@ export class GeminiClient extends BaseLLM implements LLMInterface {
                 usage: usageMetadata ? {
                     promptTokens: usageMetadata.promptTokenCount,
                     completionTokens: usageMetadata.candidatesTokenCount,
-                    totalTokens: usageMetadata.totalTokenCount
+                    totalTokens: usageMetadata.totalTokenCount,
                 } : undefined,
                 structuredOutput: undefined,
                 error: undefined,
@@ -120,7 +130,7 @@ export class GeminiClient extends BaseLLM implements LLMInterface {
             const message = error instanceof Error ? error.message : "Unknown error during API call";
             console.error(
                 `Error during Gemini API call (Model: ${modelId}): ${message}`,
-                error,
+                { errorDetails: error },
             );
 
             return {
