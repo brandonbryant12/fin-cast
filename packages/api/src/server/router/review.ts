@@ -1,9 +1,8 @@
 import { reviewContentTypeEnum } from '@repo/db/schema';
-import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 
 import type { ReviewService } from '@repo/reviews';
-import { protectedProcedure, router } from '../trpc';
+import { adminProcedure, protectedProcedure, router } from '../trpc';
 
 const ValibotContentTypeEnum = reviewContentTypeEnum.enumValues.reduce((acc, value) => {
   acc[value] = value;
@@ -26,60 +25,19 @@ export const GetReviewsInputSchema = v.object({
 
 export const createReviewRouter = ({ reviewService }: { reviewService: ReviewService }) => {
   return router({
-    /**
-     * Adds a new review for a specific entity.
-     */
     add: protectedProcedure
       .input(AddReviewInputSchema)
-      .mutation(async ({ ctx, input }) => {
-        const userId = ctx.session.user.id;
-        const procedureLogger = ctx.logger.child({ userId, entityId: input.entityId, procedure: 'addReview' });
-        
-        try {
-          procedureLogger.info('Calling ReviewService.addReview');
-          const result = await reviewService.addReview(userId, {
-              entityId: input.entityId,
-              contentType: input.contentType, 
-              stars: input.stars,
-              feedback: input.feedback,
-          });
-          procedureLogger.info('Review added successfully');
-          return result;
-        } catch (error) {
-          procedureLogger.error({ err: error }, 'Error calling ReviewService.addReview');
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: error instanceof Error ? error.message : 'Failed to add review', 
-            cause: error 
-          });
-        }
-      }),
-
-    /**
-     * Gets all reviews for a specific entity ID and content type.
-     */
+      .mutation(async ({ ctx, input }) => reviewService.addReview(ctx.session.user.id, {
+          entityId: input.entityId,
+          contentType: input.contentType, 
+          stars: input.stars,
+          feedback: input.feedback,
+    })),
     byEntityId: protectedProcedure
       .input(GetReviewsInputSchema)
-      .query(async ({ ctx, input }) => {
-        const userId = ctx.session.user.id;
-        const procedureLogger = ctx.logger.child({ userId, entityId: input.entityId, procedure: 'getReviews' });
-        
-        try {
-          procedureLogger.info('Calling ReviewService.getReviews');
-          const results = await reviewService.getReviews({
-            entityId: input.entityId,
-            contentType: input.contentType, 
-          });
-          procedureLogger.info({ count: results.length }, 'Successfully fetched reviews');
-          return results;
-        } catch (error) {
-          procedureLogger.error({ err: error }, 'Error calling ReviewService.getReviews');
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: error instanceof Error ? error.message : 'Failed to get reviews', 
-            cause: error 
-          });
-        }
-      }),
+      .query(async ({ input }) =>  reviewService.getReviews({
+        entityId: input.entityId,
+        contentType: input.contentType, 
+      }))
   });
 }; 

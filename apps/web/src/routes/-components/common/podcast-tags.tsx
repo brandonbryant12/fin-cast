@@ -20,7 +20,6 @@ const chipColorClasses = [
 ];
 
 export const PodcastTags: React.FC<PodcastTagsProps> = ({ tags, className }) => {
-  console.log(tags)
   if (!tags || tags.length === 0) {
     return null;
   }

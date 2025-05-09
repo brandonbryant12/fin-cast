@@ -123,13 +123,9 @@ export class PodcastGenerationService {
         } catch (error: unknown) {
             const errorMessage = this._formatErrorMessage(error, 'Background generation failed');
             logger.error({ err: error, errorMessage }, 'Background podcast generation process failed.');
-
-            try {
-                await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', errorMessage);
-                logger.warn({ errorMessage }, 'Podcast status updated to failed due to generation error.');
-            } catch (updateError) {
-                logger.fatal({ initialError: error, updateError }, 'CRITICAL FAILURE: Could not update podcast status to FAILED in generation error handler.');
-            }
+            await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', errorMessage);
+            throw error;
+      
         }
     }
 

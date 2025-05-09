@@ -1,4 +1,3 @@
-import { Badge } from '@repo/ui/components/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@repo/ui/components/card';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
@@ -12,7 +11,6 @@ export const Route = createFileRoute('/admin/prompts/')({
 
 function AdminPromptsPage() {
   const { data: promptsData, isLoading, isError, error } = useQuery(trpc.promptRegistry.listAll.queryOptions())
-  console.log({ promptsData })
   return (
     <Card>
       <CardHeader>

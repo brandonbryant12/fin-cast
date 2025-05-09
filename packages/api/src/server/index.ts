@@ -8,7 +8,6 @@ import type { TTSService } from '@repo/tts';
 import { createAdminRouter } from './router/admin';
 import { createAuthRouter } from './router/auth';
 import { createPodcastRouter } from './router/podcast';
-import { createPostRouter } from './router/post';
 import { createPromptRegistryRouter } from './router/prompt-registry';
 import { createReviewRouter } from './router/review';
 import { createTRPCContext as createTRPCContextInternal, router } from './trpc';
@@ -28,7 +27,6 @@ export const createAppRouter = ({
  return router({
   admin: createAdminRouter({ podcast }),
   auth: createAuthRouter(),
-  post: createPostRouter(),
   podcasts: createPodcastRouter({ podcast }),
   reviews: createReviewRouter({ reviewService }),
   promptRegistry: createPromptRegistryRouter({ promptRegistry: promptRegistryService }),

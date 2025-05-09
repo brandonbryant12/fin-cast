@@ -404,6 +404,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../db
+      '@repo/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@repo/logger':
         specifier: workspace:*
         version: link:../logger
@@ -567,6 +570,22 @@ importers:
       shx:
         specifier: 'catalog:'
         version: 0.4.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+
+  packages/errors:
+    dependencies:
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../db
+      '@repo/logger':
+        specifier: workspace:*
+        version: link:../logger
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../tools/typescript
       typescript:
         specifier: 'catalog:'
         version: 5.8.3
@@ -741,6 +760,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../db
+      '@repo/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@repo/llm':
         specifier: workspace:*
         version: link:../llm

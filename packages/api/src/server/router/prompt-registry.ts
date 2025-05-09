@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
 import type { createPromptRegistry as createPromptRegistryFn } from '@repo/prompt-registry';
 import { adminProcedure, router } from '../trpc';
@@ -31,85 +30,27 @@ const NewVersionInput = v.object({
 
 export const createPromptRegistryRouter = ({ promptRegistry }: { promptRegistry: ReturnType<typeof createPromptRegistryFn> }) =>
   router({
-  listAll: adminProcedure
-    .query(async ({ ctx }) => {
-      try {
-        ctx.logger.info('Listing all prompt definitions');
-        return await promptRegistry.listAll();
-      } catch (error) {
-        ctx.logger.error({ err: error }, 'Failed to list all prompt definitions');
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to retrieve prompt list.' });
-      }
-    }),
+  listAll: adminProcedure.query(() =>  promptRegistry.listAll()),
   getDetails: adminProcedure
     .input(PromptIdentifier)
-    .query(async ({ ctx, input }) => {
-      try {
-        ctx.logger.info({ promptKey: input.promptKey, version: input.version }, 'Getting prompt details');
-        const details = await promptRegistry.getDetails(input.promptKey, input.version);
-        if (!details) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Prompt version not found.' });
-        }
-        return details;
-      } catch (error) {
-        ctx.logger.error({ err: error, ...input }, 'Failed to get prompt details');
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to retrieve prompt details.' });
-      }
-    }),
+    .query(({ input }) => promptRegistry.getDetails(input.promptKey, input.version)),
   getByPromptByKey: adminProcedure
     .input(PromptKeyInput)
-    .query(async ({ ctx, input }) => {
-      try {
-        ctx.logger.info({ promptKey: input.promptKey }, 'Getting available versions for prompt');
-        return promptRegistry.listAllByPromptKey(input.promptKey);
-      } catch (error) {
-        ctx.logger.error({ err: error, ...input }, 'Failed to get available versions');
-        if (error instanceof TRPCError) throw error; // e.g. if registry method throws known error
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to retrieve available versions.'});
-      }
-    }),
+    .query(({ input }) =>  promptRegistry.listAllByPromptKey(input.promptKey)),
   setActive: adminProcedure
     .input(PromptIdentifier)
-    .mutation(async ({ ctx, input }) => {
-      ctx.logger.info({ ...input }, 'Setting active prompt version');
-      try {
-        await promptRegistry.setActive(input.promptKey, input.version);
-        ctx.logger.info({ ...input }, 'Active prompt version set successfully');
-        return { success: true };
-      } catch (error) {
-        ctx.logger.error({ err: error, ...input }, 'Failed to set active prompt version');
-        if (error instanceof Error) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
-        }
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'An unknown error occurred while setting the active prompt.' });
-      }
-    }),
+    .mutation(({ input }) => promptRegistry.setActive(input.promptKey, input.version)),
   createNewVersion: adminProcedure
   .input(NewVersionInput)
   .mutation(async ({ ctx, input }) => {
     const { promptKey, template, systemPrompt, temperature, maxTokens } = input;
-    ctx.logger.info({ promptKey }, 'Creating new prompt version');
-    try {
-      const current = await promptRegistry.getDetails(promptKey);
-      if (!current) throw new Error('Active version not found');
-      const newData = {
+      return promptRegistry.createNewVersion(promptKey, {
         template,
-        inputSchema: current.inputSchema as any,
-        outputSchema: current.outputSchema as any,
         systemPrompt,
         temperature,
         maxTokens,
-        createdBy: ctx.session?.user?.id ?? null,
         activate: true
-      };
-      const newVersion = await promptRegistry.createNewVersion(promptKey, newData);
-      return { success: true, newVersion};
-    } catch (error) {
-      ctx.logger.error({ err: error, promptKey }, 'Failed to create new prompt version');
-      if (error instanceof Error) throw new TRPCError({ code: 'BAD_REQUEST', message: error.message });
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create new version.' });
-    }
+      }, ctx.session?.user?.id);
   }),
 });
 

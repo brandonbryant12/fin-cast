@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createScraper, ScraperError } from './scraper';
+import { createScraper } from './scraper';
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error({ err: reason, promise }, 'Unhandled Rejection at Promise');
@@ -36,17 +36,7 @@ program
       console.info({ url, length: html.length, preview: html.substring(0, 500) + '...' }, 'Scrape successful');
       console.log(html);
     } catch (error) {
-      if (error instanceof ScraperError) {
-        console.error({
-          msg: 'Scraping failed',
-          url: error.url,
-          statusCode: error.statusCode,
-          originalError: error.originalError instanceof Error ? error.originalError.message : String(error.originalError),
-          err: error
-        }, error.message);
-      } else {
-        console.error({ url, err: error }, 'An unexpected error occurred during CLI scrape');
-      }
+      console.error({ url, err: error }, 'An unexpected error occurred during CLI scrape');
       process.exitCode = 1;
     }
   });

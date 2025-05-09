@@ -1,4 +1,5 @@
 import { promptDefinition, user, type NewPromptDefinition, type PromptDefinition } from '@repo/db/schema';
+import { NotFoundError } from '@repo/errors';
 import { eq, and, desc, max } from 'drizzle-orm';
 import type { PromptVersion, CompileCapablePromptVersion } from './types';
 import type { DatabaseInstance } from '@repo/db/client';
@@ -92,7 +93,8 @@ class PromptRegistry {
 
   async createNewVersion(
     promptKey: string,
-    data: Omit<NewPromptDefinition, 'id' | 'createdAt' | 'promptKey' | 'version' | 'isActive'> & { activate?: boolean },
+    data: Omit<NewPromptDefinition, 'id' | 'createdAt' | 'promptKey' | 'version' | 'isActive' | 'createdBy' | 'inputSchema' | 'outputSchema'> & { activate?: boolean },
+    createdBy: string | undefined,
   ): Promise<CompileCapablePromptVersion> {
     const latest = await this.db
       .select({ value: max(promptDefinition.version) })
@@ -100,8 +102,21 @@ class PromptRegistry {
       .where(eq(promptDefinition.promptKey, promptKey))
       .execute();
     const nextVersion = (latest[0]?.value ?? 0) + 1;
-    
-    return this.create({ ...data, promptKey, version: nextVersion, activate: data.activate });
+
+    // Fetch input and output schemas from the active version
+    const current = await this.getDetails(promptKey);
+    if (!current) throw new NotFoundError('Active version not found');
+
+    const newData = {
+      ...data,
+      promptKey,
+      version: nextVersion,
+      createdBy,
+      inputSchema: current.inputSchema as any,
+      outputSchema: current.outputSchema as any,
+    };
+
+    return this.create(newData);
   }
 
   async listAll(): Promise<CompileCapablePromptVersion[]> {
@@ -158,7 +173,7 @@ class PromptRegistry {
 
   async getDetails(promptKey: string, version?: number): Promise<PromptVersion | null> {
     const row = await this.fetchFromDbInternal(promptKey, version);
-    if (!row) return null;
+    if (!row) throw new NotFoundError('Prompt not found');
     const augmentedRow = this.augment(row);
     const { compile, ...promptVersionData } = augmentedRow;
     return promptVersionData as PromptVersion;

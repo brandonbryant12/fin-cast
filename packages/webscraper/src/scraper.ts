@@ -4,23 +4,6 @@ import superagent from 'superagent';
 import type { ScraperOptions, Scraper } from './types';
 import type { AppLogger } from '@repo/logger';
 
-export class ScraperError extends Error {
-  public readonly originalError?: unknown;
-  public readonly statusCode?: number;
-  public readonly url: string;
-
-  constructor(message: string, url: string, options?: { cause?: unknown; statusCode?: number }) {
-    super(message);
-    this.name = 'ScraperError';
-    this.url = url;
-    this.originalError = options?.cause;
-    this.statusCode = options?.statusCode;
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ScraperError);
-    }
-  }
-}
-
 /**
  * Factory function to create a Scraper instance.
  * @returns An object implementing the Scraper interface.
@@ -66,7 +49,6 @@ export const createScraper = (options: ScraperOptions = {}): Scraper => {
     req = req.agent(agent);
 
     let timeoutId: NodeJS.Timeout | undefined;
-    try {
       timeoutId = setTimeout(() => {
         logger.warn({ url, timeout: timeoutMs }, `Scraping timed out after ${timeoutMs}ms`);
         controller.abort();
@@ -95,39 +77,6 @@ export const createScraper = (options: ScraperOptions = {}): Scraper => {
       const cleanedContent = content.replace(/[ \t]*\n[ \t\n]*/g, '\n').replace(/^\n+|\n+$/g, '').trim();
 
       return cleanedContent;
-    } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
-      let errorMessage = `Failed to scrape URL: ${url}.`;
-      let statusCode: number | undefined;
-      let cause: unknown = error;
-
-      if (error instanceof Error && 'status' in error && typeof (error as any).status === 'number') {
-        statusCode = (error as any).status;
-        errorMessage += ` Status: ${statusCode ?? 'N/A'}.`;
-        if ((error as any).code) errorMessage += ` Code: ${(error as any).code}.`;
-        logger.error({
-          msg: "Superagent error during scrape",
-          url,
-          code: (error as any).code,
-          status: statusCode,
-          err: (error as Error).message
-        }, errorMessage);
-      } else if (error instanceof Error && error.name === 'AbortError') {
-        errorMessage = `Scraping timed out for URL: ${url} after ${timeoutMs}ms.`;
-        logger.error({ msg: "Timeout error during scrape", url, timeout: timeoutMs, err: error }, errorMessage);
-        cause = error;
-      } else if (error instanceof Error) {
-        errorMessage += ` Reason: ${error.message}`;
-        logger.error({ msg: "Generic error during scrape", url, err: error }, errorMessage);
-        cause = error;
-      } else {
-        errorMessage += ` Unknown error occurred.`;
-        logger.error({ msg: "Unknown error during scrape", url, err: error }, errorMessage);
-        cause = error;
-      }
-
-      throw new ScraperError(errorMessage, url, { cause, statusCode });
-    }
   };
 
   // Return the scraper object conforming to the Scraper interface

@@ -32,6 +32,7 @@
     "@repo/webscraper": "workspace:*",
     "@repo/podcast": "workspace:*",
     "@repo/reviews": "workspace:*",
+    "@repo/errors": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "superjson": "catalog:",

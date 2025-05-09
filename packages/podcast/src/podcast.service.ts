@@ -1,3 +1,4 @@
+import * as schema from '@repo/db/schema';
 import { createPromptRegistry } from '@repo/prompt-registry';
 import { TRPCError } from '@trpc/server';
 import * as v from 'valibot';
@@ -36,6 +37,7 @@ export class PodcastService {
     private readonly ttsService: TTSService;
     private enrichedPersonalitiesCache = new Map<TTSProvider, Promise<PersonalityInfo[]>>();
     private readonly isRunningInDocker: boolean;
+    private readonly db: DatabaseInstance;
 
     constructor(
         logger: AppLogger,
@@ -43,12 +45,14 @@ export class PodcastService {
         podcastGenerationService: PodcastGenerationService,
         ttsService: TTSService,
         isRunningInDocker: boolean,
+        db: DatabaseInstance
     ) {
         this.logger = logger.child({ service: 'PodcastService (Facade)' });
         this.podcastRepository = podcastRepository;
         this.podcastGenerationService = podcastGenerationService;
         this.ttsService = ttsService;
         this.isRunningInDocker = isRunningInDocker;
+        this.db = db;
         this.logger.info('PodcastService (Facade) initialized');
     }
 
@@ -84,12 +88,13 @@ export class PodcastService {
             hostPersonalityId,
             cohostPersonalityId
         ).catch(async (err)=> {
-            logger.error({ err, podcastId }, "Background podcast generation task promise rejected or initiation failed.");
-            try {
-               await this.podcastRepository.updatePodcastStatus(podcastId, 'failed', 'Failed to start generation task.');
-            } catch (updateErr) {
-              logger.error({ updateErr, podcastId }, "Failed to update podcast status after generation initiation error.");
-            }
+            await this.db.insert(schema.errorLog).values({
+                message: err.message,
+                stack: err.stack,
+                statusCode: 500,
+                path: 'createPodcast',
+                userId,
+              });
         });
 
         return initialPodcastSummary;
@@ -265,6 +270,7 @@ export function createPodcastService(dependencies: Omit<PodcastFactoryDependenci
         podcastGenerationService,
         dependencies.tts,
         dependencies.isRunningInDocker,
+        dependencies.db,
     );
 
     return podcastService;

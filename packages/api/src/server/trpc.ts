@@ -1,5 +1,4 @@
-import { eq } from '@repo/db';
-import * as schema from '@repo/db/schema';
+import { handleError } from "@repo/errors";
 import { initTRPC, TRPCError } from '@trpc/server';
 import SuperJSON from 'superjson';
 import type { AuthInstance } from '@repo/auth/server';
@@ -58,6 +57,17 @@ export const t = initTRPC.context<TRPCContext>().create({
 
 export const router = t.router;
 
+const mapStatusToTRPCCode = (status: number): TRPCError['code'] => {
+  switch (status) {
+    case 400: return 'BAD_REQUEST';
+    case 401: return 'UNAUTHORIZED';
+    case 403: return 'FORBIDDEN';
+    case 404: return 'NOT_FOUND';
+    case 409: return 'CONFLICT';
+    default:  return 'INTERNAL_SERVER_ERROR';
+  }
+};
+
 const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const start = Date.now();
   const result = await next();
@@ -74,30 +84,44 @@ const timingMiddleware = t.middleware(async ({ ctx, next, path }) => {
   return result;
 });
 
-export const publicProcedure = t.procedure.use(timingMiddleware);
+const errorHandlingMiddleware = t.middleware(async ({ ctx, path, next }) => {
+  try {
+    return await next();
+  } catch (err) {
+    ctx.logger.error(JSON.stringify(err) + ' ERROR ');
+    const { statusCode, message } = await handleError({
+      error: err,
+      logger: ctx.logger,
+      db: ctx.db,
+      path,
+      userId: ctx.session?.user.id ?? null,
+    });
+    throw new TRPCError({
+      code: mapStatusToTRPCCode(statusCode),
+      message,
+      cause: err instanceof Error ? err : undefined,
+    });
+  }
+});
 
-export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
+export const baseProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(errorHandlingMiddleware);
+
+export const publicProcedure = baseProcedure;
+
+export const protectedProcedure = baseProcedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
-  return next({
-    ctx: {
-      ...ctx,
-      session: { ...ctx.session },
-    },
-  });
+  return next({ ctx: { ...ctx, session: { ...ctx.session } } });
 });
 
 const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
   if (!ctx.isAdmin) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Requires admin privileges' });
   }
-  return next({
-    ctx: {
-      ...ctx,
-      session: ctx.session!,
-    },
-  });
+  return next({ ctx: { ...ctx, session: ctx.session! } });
 });
 
 export const adminProcedure = protectedProcedure.use(enforceUserIsAdmin);

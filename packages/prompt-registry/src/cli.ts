@@ -56,7 +56,7 @@ program
       maxTokens,
       activate: opts.activate,
     };
-    const created = await registry.createNewVersion(promptKey, fields);
+    const created = await registry.createNewVersion(promptKey, fields, undefined);
     console.log('Created prompt version:', created);
     process.exit(0);
   });

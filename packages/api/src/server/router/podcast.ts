@@ -48,7 +48,7 @@ const UpdatePodcastInput = v.pipe(
       v.check(
         (input) =>
             input.title !== undefined ||
-            input.summary !== undefined || // Added summary check
+            input.summary !== undefined ||
             input.content !== undefined ||
             input.hostPersonalityId !== undefined ||
             input.cohostPersonalityId !== undefined,
@@ -66,100 +66,28 @@ export const createPodcastRouter = ({ podcast }: { podcast: PodcastService}) => 
         .mutation(async ({ ctx, input }): Promise<SelectPodcast> => {
             const userId = ctx.session.user.id;
             const procedureLogger = ctx.logger.child({ userId, sourceUrl: input.sourceUrl, procedure: 'createPodcast' });
-
-            try {
-                procedureLogger.info('Calling PodcastService.createPodcast');
-                const initialPodcast = await podcast.createPodcast(userId, input.sourceUrl, input.hostPersonalityId, input.cohostPersonalityId);
-                procedureLogger.info({ podcastId: initialPodcast.id }, 'Podcast creation initiated by service.');
-                return initialPodcast;
-            } catch (error) {
-                procedureLogger.error({ err: error }, 'Error calling PodcastService.createPodcast');
-                 if (error instanceof Error) {
-                     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to initiate podcast creation: ${error.message}`, cause: error });
-                 }
-                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to initiate podcast creation due to an unknown error.', cause: error });
-            }
+            const initialPodcast = await podcast.createPodcast(userId, input.sourceUrl, input.hostPersonalityId, input.cohostPersonalityId);
+            procedureLogger.info({ podcastId: initialPodcast.id }, 'Podcast creation initiated by service.');
+            return initialPodcast;
         }),
 
     myPodcasts: protectedProcedure
-        .query(async ({ ctx }) => {
-            const userId = ctx.session.user.id;
-            const procedureLogger = ctx.logger.child({ userId, procedure: 'myPodcasts' });
-            try {
-                procedureLogger.info('Calling PodcastService.getMyPodcasts');
-                const results = await podcast.getMyPodcasts(userId);
-                procedureLogger.info({ count: results.length }, 'Successfully fetched podcasts via service');
-                return results;
-            } catch (error) {
-                 procedureLogger.error({ err: error }, 'Error calling PodcastService.getMyPodcasts');
-                  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error instanceof Error ? error.message : 'Could not retrieve your podcasts.', cause: error instanceof Error ? error : undefined });
-            }
-        }),
-
+        .query(async ({ ctx }) =>  podcast.getMyPodcasts(ctx.session.user.id)),
     byId: protectedProcedure
         .input(GetPodcastByIdInput)
-        .query(async ({ ctx, input }) => {
-            const userId = ctx.session.user.id;
-            const podcastId = input.id;
-            const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'byId' });
-            try {
-                procedureLogger.info('Calling PodcastService.getPodcastById');
-                const result = await podcast.getPodcastById(podcastId);
-                procedureLogger.info('Successfully fetched podcast by ID via service');
-                return result;
-            } catch(error) {
-                 procedureLogger.error({ err: error }, 'Error calling PodcastService.getPodcastById');
-                  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not retrieve the podcast due to an unknown error.', cause: error });
-            }
-        }),
-
+        .query(async ({ input }) => podcast.getPodcastById(input.id)),
     delete: protectedProcedure
         .input(DeletePodcastInput)
         .mutation(async ({ ctx, input }): Promise<{ success: boolean; deletedId?: string, error?: string  }> => {
-            const userId = ctx.session.user.id;
-            const podcastId = input.id;
-            const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'delete' });
-            try {
-                procedureLogger.info('Calling PodcastService.deletePodcast');
-                const result = await podcast.deletePodcast(userId, podcastId);
-                procedureLogger.info('Podcast deleted successfully via service');
-                return result;
-            } catch (error) {
-                 procedureLogger.error({ err: error }, `Error calling PodcastService.deletePodcast`);
-                  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete podcast due to an unknown error.', cause: error });
-            }
+            return podcast.deletePodcast(ctx.session.user.id, input.id);
         }),
-
     update: protectedProcedure
         .input(UpdatePodcastInput)
         .mutation(async ({ ctx, input }): Promise<{ success: boolean }> => {
-            const userId = ctx.session.user.id;
-            const podcastId = input.podcastId;
-            const procedureLogger = ctx.logger.child({ userId, podcastId, procedure: 'update' });
-
-            try {
-                procedureLogger.info('Calling PodcastService.updatePodcast');
-                const result = await podcast.updatePodcast(userId, input);
-                procedureLogger.info('Podcast update initiated by service.');
-                return result;
-            } catch (error) {
-                procedureLogger.error({ err: error }, 'Error calling PodcastService.updatePodcast');
-                 if (error instanceof TRPCError) {
-                    throw error;
-                 }
-                 if (error instanceof Error) {
-                     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to initiate podcast update: ${error.message}`, cause: error });
-                 }
-                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to initiate podcast update due to an unknown error.', cause: error });
-            }
+            const result = await podcast.updatePodcast(ctx.session.user.id, input);
+            return result;
         }),
-
     getAvailablePersonalities: protectedProcedure
-        .query(async ({ ctx }) => {
-             const procedureLogger = ctx.logger.child({ userId: ctx.session.user.id, procedure: 'getAvailablePersonalities' });
-             procedureLogger.info('Fetching available personalities');
-            const voices = await podcast.getAvailablePersonalities();
-            return voices; 
-        }),
+        .query(() =>  podcast.getAvailablePersonalities())
   });
 };

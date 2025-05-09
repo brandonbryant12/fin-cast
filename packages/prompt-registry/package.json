@@ -26,6 +26,7 @@
   "dependencies": {
     "@repo/db": "workspace:*",
     "@repo/llm": "workspace:*",
+    "@repo/errors": "workspace:*",
     "drizzle-orm": "catalog:",
     "ai": "4.3.2",
     "handlebars": "^4.7.8",
