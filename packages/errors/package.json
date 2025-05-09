@@ -2,9 +2,14 @@
   "name": "@repo/errors",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
   },
   "scripts": {
     "build": "tsc",
@@ -14,15 +19,17 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
-  "types": "./src/index.ts",
   "dependencies": {
     "@repo/logger": "workspace:*",
     "@repo/db": "workspace:*"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/prettier-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "typescript": "catalog:"
   }
 }
