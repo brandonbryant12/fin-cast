@@ -3,6 +3,7 @@ import { ValidationError } from '@repo/errors';
 import pLimit from 'p-limit';
 import type { PodcastRepository } from '../podcast.repository';
 import type { PodcastScriptOutput } from '../types/podcast-script';
+import type { DialogueSegment } from '../validations/validations';
 import type { AudioService } from '@repo/audio';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { LLMInterface } from '@repo/llm';
@@ -112,24 +113,32 @@ export default class CreatePodcastUseCase {
         });
     }
 
-    async generateAudioBuffers(podcastScript: PodcastScriptOutput, hostInfo: PersonalityInfo, cohostInfo: PersonalityInfo) {
-        const speakerVoiceMap = {
+    async generateAudioBuffers(podcastScript: PodcastScriptOutput, hostInfo: PersonalityInfo, cohostInfo: PersonalityInfo): Promise<(Buffer | null)[]> {
+        const speakerVoiceMap: Record<string, string | undefined> = { // Ensure voiceName can be undefined
             [hostInfo.name]: hostInfo.voiceName,
             [cohostInfo.name]: cohostInfo.voiceName,
         };
 
         const limit = pLimit(P_LIMIT);
-        const audioBufferPromises = podcastScript.dialogue.map((segment, i) => {
+        const audioBufferPromises = podcastScript.dialogue.map((segment: DialogueSegment, i: number) => {
             return limit(async () => {
                 const assignedPersonality = speakerVoiceMap[segment.speaker];
+                if (!assignedPersonality) {
+                    this.logger.warn(`No voice mapping for speaker: ${segment.speaker}. Skipping segment ${i + 1}.`);
+                    return null;
+                }
                 this.logger.info(`Synthesizing segment ${i + 1}/${podcastScript.dialogue.length} for speaker "${segment.speaker}" with personality ${assignedPersonality}`);
-                const audioBuffer = await this.tts.synthesize(segment.line, {
-                    voice: assignedPersonality,
-                    format: AUDIO_FORMAT
-                });
-                this.logger.debug(`Segment ${i + 1} synthesized successfully.`);
-                return audioBuffer;
- 
+                try {
+    const audioBuffer = await this.tts.synthesize(segment.line, {
+    voice: assignedPersonality,
+    format: AUDIO_FORMAT
+    });
+    this.logger.debug(`Segment ${i + 1} synthesized successfully.`);
+    return audioBuffer;
+                } catch (error) {
+    this.logger.error({ err: error, segment, speaker: segment.speaker }, `Failed to synthesize segment ${i + 1}.`);
+    return null;
+                }
             });
         });
         return Promise.all(audioBufferPromises);

@@ -1,6 +1,7 @@
 import { desc, eq, and } from '@repo/db';
 import * as schema from '@repo/db/schema';
 import type { PersonalityId } from './personalities/personalities';
+import type { PodcastContent } from './validations/validations';
 import type { DatabaseInstance } from '@repo/db/client';
 
 type SelectTranscript = typeof schema.transcript.$inferSelect;
@@ -18,11 +19,6 @@ export type PodcastWithTranscript = FullPodcast & {
 };
 
 export type PodcastStatus = FullPodcast['status'];
-
-export interface DialogueSegment {
-    speaker: string;
-    line: string;
-}
 
 type PodcastUpdatePayload = Partial<Omit<FullPodcast, 'id' | 'userId' | 'createdAt' | 'sourceType' | 'sourceDetail'> & { summary?: string | null }>;
 
@@ -85,14 +81,10 @@ export class PodcastRepository {
             updateData.errorMessage = null;
         }
 
-        const result = await this.db.update(schema.podcast)
+        await this.db.update(schema.podcast)
             .set(updateData)
             .where(eq(schema.podcast.id, podcastId))
             .returning({ id: schema.podcast.id });
-
-        if (result.length === 0) {
-            console.warn(`Podcast with ID ${podcastId} not found for status update.`);
-        }
     }
 
     /**
@@ -157,7 +149,7 @@ export class PodcastRepository {
 
     async updateTranscriptContent(
         podcastId: string,
-        dialogue: DialogueSegment[]
+        dialogue: PodcastContent
     ): Promise<void> {
         const contentToUpdate = dialogue ?? [];
         await this.db.update(schema.transcript)
@@ -173,17 +165,10 @@ export class PodcastRepository {
      */
     async addTagsForPodcast(podcastId: string, tags: string[]): Promise<void> {
       if (tags.length === 0) {
-        return; // Nothing to insert
+        return;
       }
       const tagRecords = tags.map(tag => ({ podcastId, tag }));
-      try {
-        // Use onConflictDoNothing to avoid errors if a tag already exists for the podcast
-        await this.db.insert(schema.tag).values(tagRecords).onConflictDoNothing();
-      } catch (error) {
-        console.error(`Failed to add tags for podcast ${podcastId}:`, error);
-        // Optionally re-throw or handle more gracefully
-        throw new Error(`Could not add tags for podcast ${podcastId}`);
-      }
+      await this.db.insert(schema.tag).values(tagRecords).onConflictDoNothing();
     }
   
     async findPodcastsByUser(userId: string): Promise<PodcastSummaryWithTags[]> {
@@ -213,79 +198,59 @@ export class PodcastRepository {
         return result?.audioUrl;
     }
 
-    async deletePodcast(userId: string, podcastId: string): Promise<{ success: boolean; deletedId: string } | { success: boolean; error: string }> {
-        try {
-            const deletedResult = await this.db.transaction(async (tx) => {
-                const podcast = await tx.query.podcast.findFirst({
-                    where: eq(schema.podcast.id, podcastId),
-                    columns: { id: true, userId: true },
-                });
-
-                const user = await tx.query.user.findFirst({
-                  where: eq(schema.user.id, userId),
-                  columns: { isAdmin: true }
-                });
-
-                if (!podcast) {
-                    throw new Error(`Podcast not found: ${podcastId}`);
-                }
-                if (podcast.userId !== userId && !user?.isAdmin) {
-                    throw new Error('Unauthorized delete');
-                }
-
-                // Delete related records first (or handle cascade delete in DB schema)
-                await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
-                await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId)); // Delete tags
-        
-                // Then delete podcast
-                const result = await tx
-                    .delete(schema.podcast)
-                    .where(eq(schema.podcast.id, podcastId))
-                    .returning({ deletedId: schema.podcast.id });
-
-                if (!result || result.length === 0 || !result[0]?.deletedId) {
-                    throw new Error('Failed to confirm podcast deletion in DB transaction');
-                }
-                return result[0].deletedId;
-            });
-            return { success: true, deletedId: deletedResult };
-        } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown deletion error';
-            console.error(`Failed to delete podcast ${podcastId}: ${message}`);
-            return { success: false, error: message };
-        }
-    }
-
-    async adminDeletePodcast(podcastId: string): Promise<{ success: boolean; deletedId: string } | { success: boolean; error: string }> {
-      // This method assumes the caller (admin service) has already verified permissions.
-      // It deletes the podcast regardless of userId.
-      try {
+    async deletePodcast(userId: string, podcastId: string): Promise<{ success: boolean; deletedId: string } > {
         const deletedResult = await this.db.transaction(async (tx) => {
-          // Delete related records first (or handle cascade delete in DB schema)
-          await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
-          await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId));
-          await tx.delete(schema.review).where(and(
-              eq(schema.review.entityId, podcastId),
-              eq(schema.review.contentType, 'podcast')
-          ));
+            const podcast = await tx.query.podcast.findFirst({
+                where: eq(schema.podcast.id, podcastId),
+                columns: { id: true, userId: true },
+            });
 
-          // Then delete podcast
-          const result = await tx
-            .delete(schema.podcast)
-            .where(eq(schema.podcast.id, podcastId))
-            .returning({ deletedId: schema.podcast.id });
+            const user = await tx.query.user.findFirst({
+              where: eq(schema.user.id, userId),
+              columns: { isAdmin: true }
+            });
 
-          if (!result || result.length === 0 || !result[0]?.deletedId) {
-            // Podcast might have already been deleted, consider this success or failure based on needs
-            throw new Error('Podcast not found or failed to confirm deletion.');
-          }
-          return result[0].deletedId;
+            if (!podcast) {
+                throw new Error(`Podcast not found: ${podcastId}`);
+            }
+            if (podcast.userId !== userId && !user?.isAdmin) {
+                throw new Error('Unauthorized delete');
+            }
+
+            await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
+            await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId));
+            const result = await tx
+                .delete(schema.podcast)
+                .where(eq(schema.podcast.id, podcastId))
+                .returning({ deletedId: schema.podcast.id });
+
+            if (!result || result.length === 0 || !result[0]?.deletedId) {
+                throw new Error('Failed to confirm podcast deletion in DB transaction');
+            }
+            return result[0].deletedId;
         });
         return { success: true, deletedId: deletedResult };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown deletion error';
-        console.error(`Admin failed to delete podcast ${podcastId}: ${message}`);
-        return { success: false, error: message };
-      }
+    }
+
+    async adminDeletePodcast(podcastId: string): Promise<{ success: boolean; deletedId: string }> {
+      const deletedResult = await this.db.transaction(async (tx) => {
+        await tx.delete(schema.transcript).where(eq(schema.transcript.podcastId, podcastId));
+        await tx.delete(schema.tag).where(eq(schema.tag.podcastId, podcastId));
+        await tx.delete(schema.review).where(and(
+            eq(schema.review.entityId, podcastId),
+            eq(schema.review.contentType, 'podcast')
+        ));
+
+        const result = await tx
+          .delete(schema.podcast)
+          .where(eq(schema.podcast.id, podcastId))
+          .returning({ deletedId: schema.podcast.id });
+
+        if (!result || result.length === 0 || !result[0]?.deletedId) {
+          throw new Error('Podcast not found or failed to confirm deletion.');
+        }
+        return result[0].deletedId;
+      });
+      return { success: true, deletedId: deletedResult };
     }
 } 

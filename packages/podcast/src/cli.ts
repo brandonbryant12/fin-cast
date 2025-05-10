@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { createTtsService, type TTSProvider } from '@repo/tts'; 
+import { createTtsService } from '@repo/tts'; 
 import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import { openaiPersonalityMap, azurePersonalityMap } from './personalities/personalities';

@@ -9,24 +9,9 @@ import type { AppLogger } from '@repo/logger';
 import type { TTSService } from '@repo/tts';
 
 import { PersonalityId, getPersonalityInfo, type PersonalityInfo } from '../personalities/personalities';
-import { PodcastRepository, type DialogueSegment } from '../podcast.repository';
+import { PodcastRepository } from '../podcast.repository';
+import { PodcastContentSchema, type UpdatePodcastInput, type PodcastContent } from '../validations/validations';
 import CreateAudioFromPodcastScriptUseCase from './create-audio-from-podcast-script-use-case';
-
-const DialogueSegmentSchema = v.object({
-    speaker: v.string(),
-    line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
-});
-const ContentSchema = v.pipe(v.array(DialogueSegmentSchema), v.minLength(1, 'Podcast content must contain at least one segment.'));
-
-export type UpdatePodcastInput = {
-    userId: string; // For authorization
-    podcastId: string;
-    title?: string;
-    summary?: string;
-    content?: DialogueSegment[];
-    hostPersonalityId?: PersonalityId;
-    cohostPersonalityId?: PersonalityId;
-};
 
 export default class UpdatePodcastUseCase {
     private readonly logger: AppLogger;
@@ -55,17 +40,17 @@ export default class UpdatePodcastUseCase {
         this.db = db;
     }
 
-    async execute(input: UpdatePodcastInput) {
+    async execute(input: UpdatePodcastInput) { // Type is now imported
         const { userId, podcastId, title, summary, content, hostPersonalityId, cohostPersonalityId } = input;
-        const currentPodcast = await this.podcastRepository.findPodcastById(podcastId); // TODO only user or admin can edit podcast
-        const user = await this.db.query.user.findFirst({  where: (eq(schema.user.id, userId)),});
+        const currentPodcast = await this.podcastRepository.findPodcastById(podcastId);
+        const user = await this.db.query.user.findFirst({  where: (eq(schema.user.id, userId)),});
         if (!currentPodcast || (!user?.isAdmin && currentPodcast.userId !== userId)) {
             throw new NotFoundError('Podcast not found.');
         }
 
-        let dialogue;
+        let dialogue: PodcastContent | undefined;
         if (content) {
-            const result = v.safeParse(ContentSchema, content);
+            const result = v.safeParse(PodcastContentSchema, content); // Use imported PodcastContentSchema
             if (result.success) {
                 dialogue = result.output;
             } else {
@@ -75,7 +60,8 @@ export default class UpdatePodcastUseCase {
         const podcastScript = {
             title: title ?? currentPodcast.title,
             summary: summary ?? currentPodcast.summary,
-            dialogue: dialogue ?? currentPodcast.transcript?.content
+            dialogue: dialogue ?? currentPodcast.transcript?.content as PodcastContent, // Ensure type compatibility
+            tags: currentPodcast.tags?.map(t => t.tag) ?? [], // Add tags from currentPodcast or default to empty array
         } as PodcastScriptOutput;
 
         const hostId = hostPersonalityId ?? currentPodcast.hostPersonalityId as PersonalityId;
@@ -91,30 +77,46 @@ export default class UpdatePodcastUseCase {
         if (content) needsRegeneration = true;
         if (hostId !== currentPodcast.hostPersonalityId) needsRegeneration = true;
         if (cohostId !== currentPodcast.cohostPersonalityId) needsRegeneration = true;
-        const podcastUpdate = {
+        const podcastUpdateData: Partial<typeof schema.podcast.$inferSelect> = { // Corrected type
             title,
             summary,
+            hostPersonalityId: hostId,
+            cohostPersonalityId: cohostId,
             status: needsRegeneration ? 'processing' : currentPodcast.status,
-            audioUrl: needsRegeneration ? null : undefined,
+            audioUrl: needsRegeneration ? null : currentPodcast.audioUrl,
+            durationSeconds: needsRegeneration ? null : currentPodcast.durationSeconds,
         };
-        const updatedPodcast = await this.podcastRepository.updatePodcast(podcastId, podcastUpdate);
+        // Filter out undefined values to prevent overriding with null in the DB unless explicitly null
+        const filteredUpdateData = Object.fromEntries(Object.entries(podcastUpdateData).filter(([, value]) => value !== undefined));
+
+
+        const updatedPodcast = await this.podcastRepository.updatePodcast(podcastId, filteredUpdateData as Partial<typeof schema.podcast.$inferSelect>); // Cast if necessary after filtering
         if(needsRegeneration) {
-            this.updatePodcastAudio(podcastId, podcastScript, host, cohost);
+            this.updatePodcastAudioInBackground(podcastId, podcastScript, host, cohost);
         }
         return updatedPodcast;
     }
 
-    async updatePodcastAudio(podcastId: string, podcastScript: PodcastScriptOutput, host: PersonalityInfo, cohost: PersonalityInfo) {
-        await this.podcastRepository.updateTranscriptContent(podcastId, podcastScript.dialogue);
-        const { audioUrl, durationSeconds } = await new CreateAudioFromPodcastScriptUseCase({
-            audioService: this.audioService,
-            logger: this.logger,
-            tts: this.tts,
-        }).execute(podcastId, podcastScript, host, cohost);
-        await this.podcastRepository.updatePodcast(podcastId, {
-            status: 'success',
-            audioUrl,
-            durationSeconds
-        });
+    private async updatePodcastAudioInBackground(podcastId: string, podcastScript: PodcastScriptOutput, host: PersonalityInfo, cohost: PersonalityInfo) {
+        try {
+            await this.podcastRepository.updateTranscriptContent(podcastId, podcastScript.dialogue as PodcastContent);
+            const { audioUrl, durationSeconds } = await new CreateAudioFromPodcastScriptUseCase({
+                audioService: this.audioService,
+                logger: this.logger,
+                tts: this.tts,
+            }).execute(podcastId, podcastScript, host, cohost);
+            await this.podcastRepository.updatePodcast(podcastId, {
+                status: 'success',
+                audioUrl,
+                durationSeconds,
+                errorMessage: null, // Clear any previous error message
+            });
+        } catch (error) {
+            this.logger.error({ err: error, podcastId }, "Failed to update podcast audio in background");
+            await this.podcastRepository.updatePodcast(podcastId, {
+                status: 'failed',
+                errorMessage: error instanceof Error ? error.message : "Unknown error during audio regeneration",
+            });
+        }
     }
 }

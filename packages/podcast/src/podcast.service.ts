@@ -1,6 +1,6 @@
-import { InternalServerError, NotFoundError, ValidationError } from '@repo/errors';
+
 import { createPromptRegistry, type PromptRegistry } from '@repo/prompt-registry';
-import * as v from 'valibot';
+import type { PodcastServiceUpdateInput, PodcastContent, UpdatePodcastInput } from './validations/validations';
 import type { AudioService } from '@repo/audio';
 import type { DatabaseInstance } from '@repo/db/client';
 import type { LLMInterface } from '@repo/llm';
@@ -11,11 +11,6 @@ import { PersonalityId, enrichPersonalities, type PersonalityInfo } from './pers
 import { PodcastRepository, type PodcastSummary, type PodcastWithTranscript, type PodcastSummaryWithTags } from './podcast.repository';
 import CreatePodcastUseCase from './use-cases/create-podcast-use-case';
 import UpdatePodcastUseCase from './use-cases/update-podcast-use-case';
-const DialogueSegmentSchema = v.object({
-    speaker: v.string(),
-    line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
-});
-const ContentSchema = v.pipe(v.array(DialogueSegmentSchema), v.minLength(1, 'Podcast content must contain at least one segment.'));
 
 interface PodcastServiceDependencies {
     logger: AppLogger;
@@ -107,25 +102,24 @@ export class PodcastService {
      * it updates the status to 'processing' and triggers a background task.
      * Returns immediately after initiating the update.
      */
-    // Create an UpdatePodcastUseCase
-    async updatePodcast(userId: string, input: {
-        podcastId: string,
-        title?: string | undefined,
-        summary?: string | undefined, // Added summary
-        content?: any,
-        hostPersonalityId?: PersonalityId | undefined
-        cohostPersonalityId?: PersonalityId | undefined
-      }): Promise<{ success: boolean }> {
+    async updatePodcast(userId: string, input: PodcastServiceUpdateInput): Promise<{ success: boolean }> { // Updated input type
+        const updateUseCaseInput: UpdatePodcastInput = {
+            userId,
+            podcastId: input.podcastId,
+            title: input.title,
+            summary: input.summary,
+            content: input.content as PodcastContent | undefined, // Cast to PodcastContent
+            hostPersonalityId: input.hostPersonalityId,
+            cohostPersonalityId: input.cohostPersonalityId,
+        };
+
         await new UpdatePodcastUseCase({
             logger: this.logger,
             tts: this.tts,
             podcastRepository: this.podcastRepository,
             audioService: this.audioService,
             db: this.db
-        }).execute({
-            userId,
-            ...input
-        });
+        }).execute(updateUseCaseInput);
         this.logger.info('Podcast update request processed successfully.');
         return { success: true };
     }
@@ -149,7 +143,7 @@ export class PodcastService {
     }
 }
 
-export function createPodcastService(dependencies: Omit<PodcastFactoryDependencies, 'podcastGenerationService' | 'dialogueSynthesisService'>): PodcastService {
+export function createPodcastService(dependencies: PodcastFactoryDependencies): PodcastService {
     const mainLogger = dependencies.logger;
     const podcastRepository = new PodcastRepository(dependencies.db);
     const promptRegistry = createPromptRegistry({ db: dependencies.db });
