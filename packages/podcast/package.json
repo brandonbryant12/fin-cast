@@ -32,6 +32,7 @@
     "@repo/audio": "workspace:*",
     "@repo/logger": "workspace:*",
     "@repo/webscraper": "workspace:*",
+    "@repo/errors": "workspace:*",
     "@repo/prompt-registry": "workspace:*",
     "@trpc/server": "catalog:",
     "fluent-ffmpeg": "catalog:",

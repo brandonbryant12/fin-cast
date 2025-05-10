@@ -1,6 +1,5 @@
-import * as schema from '@repo/db/schema';
-import { createPromptRegistry } from '@repo/prompt-registry';
-import { TRPCError } from '@trpc/server';
+import { InternalServerError, NotFoundError, ValidationError } from '@repo/errors';
+import { createPromptRegistry, type PromptRegistry } from '@repo/prompt-registry';
 import * as v from 'valibot';
 import type { AudioService } from '@repo/audio';
 import type { DatabaseInstance } from '@repo/db/client';
@@ -8,16 +7,27 @@ import type { LLMInterface } from '@repo/llm';
 import type { AppLogger } from '@repo/logger';
 import type { TTSService, TTSProvider } from '@repo/tts';
 import type { Scraper } from '@repo/webscraper';
-import { DialogueSynthesisService } from './dialogue-synthesis.service';
 import { PersonalityId, enrichPersonalities, type PersonalityInfo } from './personalities/personalities';
-import { PodcastGenerationService } from './podcast-generation.service';
 import { PodcastRepository, type PodcastSummary, type PodcastWithTranscript, type PodcastSummaryWithTags } from './podcast.repository';
-
+import CreatePodcastUseCase from './use-cases/create-podcast-use-case';
+import UpdatePodcastUseCase from './use-cases/update-podcast-use-case';
 const DialogueSegmentSchema = v.object({
     speaker: v.string(),
     line: v.pipe(v.string(), v.minLength(1, 'Dialogue line cannot be empty.'))
 });
 const ContentSchema = v.pipe(v.array(DialogueSegmentSchema), v.minLength(1, 'Podcast content must contain at least one segment.'));
+
+interface PodcastServiceDependencies {
+    logger: AppLogger;
+    podcastRepository: PodcastRepository;
+    tts: TTSService;
+    isRunningInDocker: boolean;
+    db: DatabaseInstance;
+    audioService: AudioService;
+    llm: LLMInterface;
+    scraper: Scraper;
+    promptRegistry: PromptRegistry;
+}
 
 interface PodcastFactoryDependencies {
     db: DatabaseInstance;
@@ -27,33 +37,30 @@ interface PodcastFactoryDependencies {
     tts: TTSService;
     audioService: AudioService, 
     isRunningInDocker: boolean;
-    podcastGenerationService: PodcastGenerationService;
 }
 
 export class PodcastService {
     private readonly logger: AppLogger;
     private readonly podcastRepository: PodcastRepository;
-    private readonly podcastGenerationService: PodcastGenerationService;
-    private readonly ttsService: TTSService;
+    private readonly tts: TTSService;
+    private readonly llm: LLMInterface;
+    private readonly audioService: AudioService;
     private enrichedPersonalitiesCache = new Map<TTSProvider, Promise<PersonalityInfo[]>>();
     private readonly isRunningInDocker: boolean;
     private readonly db: DatabaseInstance;
+    private readonly scraper: Scraper;
+    private readonly promptRegistry: PromptRegistry;
 
-    constructor(
-        logger: AppLogger,
-        podcastRepository: PodcastRepository,
-        podcastGenerationService: PodcastGenerationService,
-        ttsService: TTSService,
-        isRunningInDocker: boolean,
-        db: DatabaseInstance
-    ) {
-        this.logger = logger.child({ service: 'PodcastService (Facade)' });
-        this.podcastRepository = podcastRepository;
-        this.podcastGenerationService = podcastGenerationService;
-        this.ttsService = ttsService;
-        this.isRunningInDocker = isRunningInDocker;
-        this.db = db;
-        this.logger.info('PodcastService (Facade) initialized');
+    constructor(dependencies: PodcastServiceDependencies) {
+        this.logger = dependencies.logger;
+        this.podcastRepository = dependencies.podcastRepository;
+        this.tts = dependencies.tts;
+        this.isRunningInDocker = dependencies.isRunningInDocker;
+        this.db = dependencies.db;
+        this.audioService = dependencies.audioService;
+        this.llm = dependencies.llm;
+        this.scraper = dependencies.scraper;
+        this.promptRegistry = dependencies.promptRegistry;
     }
 
     async createPodcast(
@@ -62,42 +69,21 @@ export class PodcastService {
         hostPersonalityId: PersonalityId = PersonalityId.Arthur,
         cohostPersonalityId: PersonalityId = PersonalityId.Chloe
     ): Promise<PodcastSummary> { 
-        if (hostPersonalityId === cohostPersonalityId) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: "Host and cohost personalities must be different." });
-        }
-
-        const logger = this.logger.child({ userId, sourceUrl, method: 'createPodcast', hostPersonalityId, cohostPersonalityId });
-
-        logger.info('Calling repository to create initial podcast entries.');
-        const initialPodcastSummary = await this.podcastRepository.createInitialPodcast(
+        return new CreatePodcastUseCase({
+            logger: this.logger,
+            podcastRepository: this.podcastRepository,
+            llm: this.llm,
+            tts: this.tts,
+            scraper: this.scraper,
+            promptRegistry: this.promptRegistry,
+            audioService: this.audioService,
+            db: this.db,
+        }).execute({
             userId,
             sourceUrl,
             hostPersonalityId,
             cohostPersonalityId
-        );
-
-        if (!initialPodcastSummary?.id) {
-            throw new Error('Podcast creation failed unexpectedly after repository call.');
-        }
-
-        const podcastId = initialPodcastSummary.id;
-        logger.info({ podcastId }, 'Initial DB entries created. Triggering background generation.');
-        this.podcastGenerationService.generatePodcast(
-            podcastId,
-            sourceUrl,
-            hostPersonalityId,
-            cohostPersonalityId
-        ).catch(async (err)=> {
-            await this.db.insert(schema.errorLog).values({
-                message: err.message,
-                stack: err.stack,
-                statusCode: 500,
-                path: 'createPodcast',
-                userId,
-              });
         });
-
-        return initialPodcastSummary;
     }
 
     async getMyPodcasts(userId: string): Promise<PodcastSummaryWithTags[]> {
@@ -113,9 +99,6 @@ export class PodcastService {
     }
 
     async adminDeletePodcast(podcastId: string): Promise<{ success: boolean; deletedId?: string; error?: string }> {
-      const logger = this.logger.child({ podcastId, method: 'adminDeletePodcast' });
-      logger.info('Admin request to delete podcast received.');
-      // Directly call repo method that doesn't check user ID
       return this.podcastRepository.adminDeletePodcast(podcastId);
     }
 
@@ -124,6 +107,7 @@ export class PodcastService {
      * it updates the status to 'processing' and triggers a background task.
      * Returns immediately after initiating the update.
      */
+    // Create an UpdatePodcastUseCase
     async updatePodcast(userId: string, input: {
         podcastId: string,
         title?: string | undefined,
@@ -132,104 +116,22 @@ export class PodcastService {
         hostPersonalityId?: PersonalityId | undefined
         cohostPersonalityId?: PersonalityId | undefined
       }): Promise<{ success: boolean }> {
-        const { podcastId, title, summary, content, hostPersonalityId, cohostPersonalityId } = input;
-        const logger = this.logger.child({ userId, podcastId, method: 'updatePodcast' });
-
-        logger.info('Fetching podcast for update and authorization check.');
-        const currentPodcast = await this.podcastRepository.findPodcastById(podcastId);
-
-        if (!currentPodcast) {
-            logger.warn('Podcast not found or user not authorized.');
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Podcast not found.' });
-        }
-
-        // --- Validation ---
-        if (content !== undefined) {
-            const contentResult = v.safeParse(ContentSchema, content);
-            if (!contentResult.success) {
-                logger.warn({ issues: contentResult.issues }, 'Invalid content structure provided.');
-                throw new TRPCError({ code: 'BAD_REQUEST', message: `Invalid content format: ${contentResult.issues.map(i => i.message).join(', ')}` });
-            }
-        }
-
-        const finalHostId = hostPersonalityId ?? currentPodcast.hostPersonalityId as PersonalityId;
-        const finalCohostId = cohostPersonalityId ?? currentPodcast.cohostPersonalityId as PersonalityId;
-
-        if (finalHostId === finalCohostId) {
-            logger.warn('Host and co-host personalities cannot be the same.');
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Host and co-host personalities must be different.' });
-        }
-        // Ensure selected personalities are valid (though enum check in API helps)
-        if (!Object.values(PersonalityId).includes(finalHostId) || !Object.values(PersonalityId).includes(finalCohostId)) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: "Invalid PersonalityId provided." });
-        }
-        // --- End Validation ---
-
-
-        // --- Determine Regeneration & Prepare Initial Update ---
-        let needsRegeneration = false;
-        if (content !== undefined) needsRegeneration = true;
-        if (hostPersonalityId !== undefined && hostPersonalityId !== currentPodcast.hostPersonalityId) needsRegeneration = true;
-        if (cohostPersonalityId !== undefined && cohostPersonalityId !== currentPodcast.cohostPersonalityId) needsRegeneration = true;
-
-        const initialUpdatePayload: any = {
-            updatedAt: new Date(),
-            errorMessage: null, // Clear previous errors on new update attempt
-        };
-  
-        if (title !== undefined) initialUpdatePayload.title = title;
-        if (summary !== undefined) initialUpdatePayload.summary = summary; // Added summary
-        if (hostPersonalityId !== undefined) initialUpdatePayload.hostPersonalityId = hostPersonalityId;
-        if (cohostPersonalityId !== undefined) initialUpdatePayload.cohostPersonalityId = cohostPersonalityId;
-  
-        if (needsRegeneration) {
-            logger.info('Regeneration required. Setting status to processing and clearing audio fields.');
-            initialUpdatePayload.status = 'processing';
-            initialUpdatePayload.audioUrl = null;
-            initialUpdatePayload.durationSeconds = null;
-            initialUpdatePayload.generatedAt = null;
-        } else {
-            logger.info('No regeneration required. Updating metadata only.');
-            initialUpdatePayload.status = 'success';
-        }
-
-        // --- Perform Initial DB Updates ---
-        try {
-            logger.info('Performing initial database update.');
-            await this.podcastRepository.updatePodcast(podcastId, initialUpdatePayload);
-
-            if (content !== undefined) {
-                logger.info('Updating transcript content.');
-                await this.podcastRepository.updateTranscriptContent(podcastId, content);
-            }
-
-        } catch (dbError) {
-            logger.error({ err: dbError }, 'Failed initial database update.');
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save initial updates.', cause: dbError });
-        }
-
-
-        // --- Trigger Background Regeneration (if needed) ---
-        if (needsRegeneration) {
-            logger.info('Triggering background audio regeneration task.');
-            const dialogueToRegenerate = content ?? currentPodcast.transcript?.content ?? [];
-            this.podcastGenerationService.regeneratePodcastAudio(
-                podcastId,
-                dialogueToRegenerate,
-                finalHostId,
-                finalCohostId,
-                title,
-              ).catch((err) => {
-                logger.error({ err, podcastId }, "Background podcast regeneration task failed after initiation.");
-            });
-        }
-
-        logger.info('Podcast update request processed successfully.');
+        await new UpdatePodcastUseCase({
+            logger: this.logger,
+            tts: this.tts,
+            podcastRepository: this.podcastRepository,
+            audioService: this.audioService,
+            db: this.db
+        }).execute({
+            userId,
+            ...input
+        });
+        this.logger.info('Podcast update request processed successfully.');
         return { success: true };
     }
 
     async getAvailablePersonalities(): Promise<PersonalityInfo[]> {
-        const providerName = this.ttsService.getProvider();
+        const providerName = this.tts.getProvider();
         if (this.enrichedPersonalitiesCache.has(providerName)) {
             this.logger.debug({ providerName }, 'Returning cached personalities');
             return this.enrichedPersonalitiesCache.get(providerName)!;
@@ -250,28 +152,20 @@ export class PodcastService {
 export function createPodcastService(dependencies: Omit<PodcastFactoryDependencies, 'podcastGenerationService' | 'dialogueSynthesisService'>): PodcastService {
     const mainLogger = dependencies.logger;
     const podcastRepository = new PodcastRepository(dependencies.db);
-    const dialogueSynthesisService = new DialogueSynthesisService({ tts: dependencies.tts, logger: mainLogger });
-
     const promptRegistry = createPromptRegistry({ db: dependencies.db });
-    const podcastGenerationService = new PodcastGenerationService({
-        podcastRepository,
-        scraper: dependencies.scraper,
-        llm: dependencies.llm,
-        tts: dependencies.tts,
-        audioService: dependencies.audioService,
-        dialogueSynthesisService,
+
+
+    const podcastService = new PodcastService({
         logger: mainLogger,
+        podcastRepository,
+        tts: dependencies.tts,
+        isRunningInDocker: dependencies.isRunningInDocker,
+        db: dependencies.db,
+        audioService: dependencies.audioService,
+        llm: dependencies.llm,
+        scraper: dependencies.scraper,
         promptRegistry,
     });
-
-    const podcastService = new PodcastService(
-        mainLogger,
-        podcastRepository,
-        podcastGenerationService,
-        dependencies.tts,
-        dependencies.isRunningInDocker,
-        dependencies.db,
-    );
 
     return podcastService;
 }

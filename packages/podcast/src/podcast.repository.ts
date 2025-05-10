@@ -44,6 +44,7 @@ export class PodcastRepository {
             const [podcastRecord] = await tx.insert(schema.podcast).values({
                 userId,
                 title: `Podcast from ${sourceUrl}`,
+                summary:  `Podcast from ${sourceUrl}`,
                 status: 'processing',
                 sourceType: 'url',
                 sourceDetail: sourceUrl,
@@ -132,7 +133,7 @@ export class PodcastRepository {
     async updatePodcast(
         podcastId: string,
         data: PodcastUpdatePayload
-    ): Promise<void> {
+    ): Promise<PodcastWithTranscript | null> {
         const updateData: any = { ...data };
         updateData.updatedAt = new Date();
         if ('audioUrl' in updateData && updateData.audioUrl === undefined) {
@@ -147,14 +148,11 @@ export class PodcastRepository {
         if ('generatedAt' in updateData && updateData.generatedAt === undefined) {
           updateData.generatedAt = null;
         }    
-        const result = await this.db.update(schema.podcast)
+        await this.db.update(schema.podcast)
             .set(updateData)
             .where(eq(schema.podcast.id, podcastId))
             .returning({ id: schema.podcast.id });
-
-        if (result.length === 0) {
-            console.warn(`Podcast with ID ${podcastId} not found for update.`);
-        }
+        return this.findPodcastById(podcastId);
     }
 
     async updateTranscriptContent(
@@ -162,14 +160,10 @@ export class PodcastRepository {
         dialogue: DialogueSegment[]
     ): Promise<void> {
         const contentToUpdate = dialogue ?? [];
-        const result = await this.db.update(schema.transcript)
+        await this.db.update(schema.transcript)
             .set({ content: contentToUpdate, updatedAt: new Date() })
             .where(eq(schema.transcript.podcastId, podcastId))
             .returning({ id: schema.transcript.id });
-
-        if (result.length === 0) {
-            console.warn(`Transcript for podcast ID ${podcastId} not found for update.`);
-        }
     }
   
     /**

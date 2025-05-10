@@ -738,6 +738,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../db
+      '@repo/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@repo/llm':
         specifier: workspace:*
         version: link:../llm

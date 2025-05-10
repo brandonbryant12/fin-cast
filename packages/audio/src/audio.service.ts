@@ -174,7 +174,7 @@ export class AudioService {
      * @param buffer The audio buffer.
      * @returns The base64 encoded data URI string.
      */
-    encodeToBase64(buffer: Buffer): string {
+    audioUrlFromBuffer(buffer: Buffer): string {
         const base64String = buffer.toString('base64');
         const dataUri = `data:audio/${AUDIO_FORMAT};base64,${base64String}`;
         this.logger.info(`Encoded audio buffer to base64 data URI (length: ${dataUri.length}).`);

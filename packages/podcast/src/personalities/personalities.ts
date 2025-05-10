@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { ValidationError } from '@repo/errors';
 import { type TTSProvider } from "@repo/tts";
 
 const getDirname = (metaUrl: string): string => {
@@ -87,13 +88,16 @@ function getVoiceMap(providerName: TTSProvider): Record<PersonalityId, string> |
 }
 
 
-export function getPersonalityInfo(name: PersonalityId, ttsProvider: TTSProvider): PersonalityInfo | undefined {
+export function getPersonalityInfo(name: PersonalityId, ttsProvider: TTSProvider): PersonalityInfo {
   const personality = personalities.find(p => p.name === name);
   if (personality && ttsProvider === 'openai') {
     personality.voiceName = openaiPersonalityMap[name];
   }
   if(personality &&  ttsProvider === 'azure') {
     personality.voiceName = azurePersonalityMap[name];
+  }
+  if(!personality) {
+    throw new ValidationError(`${name} - invalid personality id`);
   }
   return personality;
 } 
