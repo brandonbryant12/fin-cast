@@ -28,10 +28,6 @@ export interface LoggerConfig {
    * @example 'web-server', 'api-service'
    */
   serviceName?: string;
-
-  // Future considerations:
-  // destination?: string | WritableStream; // Output destination
-  // redact?: string[] | pino.RedactionOptions; // Paths to redact
 }
 
 /**
@@ -39,7 +35,4 @@ export interface LoggerConfig {
  * Extends pino's logger interface for familiarity.
  */
 export interface AppLogger extends pino.Logger {
-  // We can add custom methods here later if needed,
-  // but for now, inheriting pino's methods is sufficient.
-  // e.g., audit(details: object, message: string): void;
 } 

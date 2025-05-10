@@ -14,14 +14,6 @@ Provides a centralized, structured logging solution for the monorepo based on Pi
 
 This package is part of the monorepo. Ensure `pino` is installed in the root or relevant app. If using `prettyPrint`, ensure `pino-pretty` is installed as a dev dependency in the **consuming application's** `package.json`.
 
-```bash
-# In the consuming app (e.g., apps/server)
-pnpm add -D pino-pretty
-# or
-yarn add -D pino-pretty
-# or
-npm install -D pino-pretty
-```
 
 ## Usage
 
@@ -29,47 +21,15 @@ npm install -D pino-pretty
 
 ```typescript
 import { createLogger, AppLogger, LoggerConfig } from "@repo/logger";
-import { env } from "../env"; // Assuming env validation happens here
+import { env } from "../env";
 
 const loggerConfig: LoggerConfig = {
-  level: env.LOG_LEVEL, // Assuming LOG_LEVEL is validated in env.ts (e.g., 'debug', 'info')
-  prettyPrint: env.NODE_ENV === "development", // Enable in dev, disable in prod/test
+  level: env.LOG_LEVEL,
+  prettyPrint: env.NODE_ENV === "development",
   serviceName: "my-server-app",
 };
 
 export const logger: AppLogger = createLogger(loggerConfig);
-```
-
-**2. Use the Logger**
-
-```typescript
-import { logger } from "./config/logger"; // Import the configured instance
-
-logger.info("Server started successfully.");
-
-function processRequest(requestId: string, userId: string) {
-  logger.debug({ requestId, userId }, "Processing request");
-  try {
-    // ... processing logic ...
-    const someCondition = Math.random() > 0.8;
-    if (someCondition) {
-      logger.warn({ requestId, userId, reason: "Condition met" }, "Potential issue detected");
-    }
-    logger.info({ requestId, userId }, "Request processed successfully");
-  } catch (error: unknown) {
-    logger.error(
-      {
-        requestId,
-        userId,
-        // Log the error object directly if possible, otherwise its string representation
-        err: error instanceof Error ? error : String(error),
-      },
-      "Failed to process request"
-    );
-  }
-}
-
-processRequest("req-123", "user-456");
 ```
 
 ## Configuration Options (`LoggerConfig`)

@@ -48,7 +48,7 @@
     "@radix-ui/react-toggle-group": "^1.1.3",
     "@radix-ui/react-tooltip": "catalog:",
     "class-variance-authority": "catalog:",
-    "lucide-react": "^0.487.0",
+    "lucide-react": "catalog:",
     "next-themes": "catalog:",
     "radix-ui": "catalog:",
     "sonner": "catalog:",

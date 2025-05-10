@@ -31,7 +31,5 @@ export function createLogger(config: LoggerConfig = {}): AppLogger {
   };
 
   const logger = pino(options);
-
-  // Cast to AppLogger to allow for potential future extensions
   return logger as AppLogger;
 } 

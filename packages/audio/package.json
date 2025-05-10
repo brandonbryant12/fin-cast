@@ -22,13 +22,13 @@
   },
   "dependencies": {
     "@repo/logger": "workspace:*",
-    "fluent-ffmpeg": "2.1.3"
+    "fluent-ffmpeg": "catalog:"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/prettier-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/fluent-ffmpeg": "2.1.3",
+    "@types/fluent-ffmpeg": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",

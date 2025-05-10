@@ -28,11 +28,11 @@
     "@repo/llm": "workspace:*",
     "@repo/errors": "workspace:*",
     "drizzle-orm": "catalog:",
-    "ai": "4.3.2",
+    "ai": "catalog:",
     "handlebars": "^4.7.8",
     "valibot": "catalog:",
-    "commander": "^12.1.0",
-    "dotenv": "^16.4.7",
+    "commander": "catalog:",
+    "dotenv": "catalog:",
     "tsx": "catalog:"
   },
   "devDependencies": {
